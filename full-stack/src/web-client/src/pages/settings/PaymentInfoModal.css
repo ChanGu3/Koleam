@@ -1,0 +1,126 @@
+.payment-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.payment-modal {
+  background: #232323;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  padding: 32px 32px 24px 32px;
+  min-width: 340px;
+  max-width: 95vw;
+  width: 400px;
+  color: #fff;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.payment-modal-title {
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: #87ceeb;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.payment-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.payment-modal-form label {
+  font-size: 0.97rem;
+  font-weight: 500;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.payment-modal-form input,
+.payment-modal-form select {
+  background: #3a3939;
+  border: 1.5px solid #282828;
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 0.97rem;
+  outline: none;
+  margin-top: 2px;
+}
+.payment-modal-form input:focus,
+.payment-modal-form select:focus {
+  border-color: #87ceeb;
+}
+.payment-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+.payment-modal-actions .btn.cancel {
+  background: #2b2a2a;
+  color: #fff;
+  border: 1.5px solid #888;
+  border-radius: 6px;
+  font-weight: 500;
+  padding: 6px 15px;
+  font-size: 0.97rem;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.payment-modal-actions .btn.cancel:hover {
+  background: #3a3939;
+}
+.payment-modal-actions .btn.save {
+  background: #87ceeb;
+  color: #181a1b;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  padding: 6px 15px;
+  font-size: 0.97rem;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.payment-modal-actions .btn.save:hover {
+  background: #b3e6fa;
+  color: #181a1b;
+}
+.payment-modal-form select {
+  background: #3a3939;
+  border: 1.5px solid #282828;
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 0.97rem;
+  outline: none;
+  margin-top: 2px;
+  height: 2.3em;
+  box-sizing: border-box;
+}
+.payment-modal-actions .btn.cancel,
+.payment-modal-actions .btn.save {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1;
+  height: 2.3em;
+}
+@media (max-width: 500px) {
+  .payment-modal {
+    min-width: 0;
+    width: 98vw;
+    padding: 18px 6vw 18px 6vw;
+  }
+}

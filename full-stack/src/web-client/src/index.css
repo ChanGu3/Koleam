@@ -1,0 +1,9 @@
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* height of device screen */
+}
+
+main {
+  flex-grow: 1; /* extends to fit height of #root */
+}

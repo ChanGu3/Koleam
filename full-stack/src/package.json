@@ -1,0 +1,32 @@
+{
+  "name": "koleam",
+  "version": "0.0.1",
+  "description": "Self Hosting Video Streaming Application",
+  "scripts": {
+    "dev": "npm run clean & concurrently \"npm run dev --workspace=web-client\" \"npm run dev --workspace=server\"",
+    "create-build": "npm run clean-build & npm run build --workspace=web-client & npm run build --workspace=server",
+    "clean-build": "npm run clean --workspace=web-client & npm run clean --workspace=server",
+    "start-build": "npm run start --prefix ../dist/server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChanGu3/koleam.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ChanGu3/koleam/issues"
+  },
+  "homepage": "https://github.com/ChanGu3/koleam#readme",
+  "private": "true",
+  "workspaces": [
+    "web-client",
+    "server"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prettier": "3.8.3",
+    "rimraf": "^6.0.1"
+  }
+}

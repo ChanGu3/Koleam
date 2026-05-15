@@ -1,6 +1,6 @@
 import "../tailwind.css";
 import { use, useEffect, useState } from "react";
-import { ShortenCountAsString } from "../Helpers/documentfunction.mjs";
+import { ShortenCountAsString } from "../Helpers/DocumentFunction.mjs" //"../Helpers/documentfunction.mjs";
 
 function LikeButton({ streamID }) {
   if (streamID == null || streamID == undefined) {

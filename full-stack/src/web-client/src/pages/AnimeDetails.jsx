@@ -7,7 +7,7 @@ import Dropdown from "../components/Dropdown.jsx";
 import StreamModule2 from "../components/StreamModule2.jsx";
 import FavoriteButton from "../components/FavoriteButton.jsx";
 
-import { ShortenCountAsString } from "../Helpers/documentfunction.mjs";
+import { ShortenCountAsString } from "../Helpers/DocumentFunction.mjs";
 import { useParams, useNavigate } from "react-router-dom";
 
 function AnimeDetails() {

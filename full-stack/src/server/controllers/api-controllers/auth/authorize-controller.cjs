@@ -3,27 +3,27 @@ const db = require("../../../models/database.cjs")
 async function AuthorizeMember(req, res, next) {
     try {
         if (req.session.user) {
-            if (await db.Member.Exists(req.session.user.email)) {
+            if (await db.models.Member.Exists(req.session.user.email)) {
                 next()
                 return
             }
         }
     } catch (err) {}
 
-    res.status(200).json({ error: "Not Authorized" })
+    res.status(401).json({ error: "Not Authorized" })
 }
 
 async function AuthorizeAdmin(req, res, next) {
     try {
-        if (req.session.user) {
-            if (await db.Admin.Exists(req.session.user.email)) {
+        if (req.session.admin) {
+            if (await db.models.Admin.Exists(req.session.admin.username)) {
                 next()
                 return
             }
         }
     } catch (err) {}
 
-    res.status(200).json({ error: "Not Authorized" })
+    res.status(401).json({ error: "Not Authorized" })
 }
 
 async function Authorized(req, res, next) {

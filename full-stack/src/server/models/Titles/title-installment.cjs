@@ -1,10 +1,12 @@
 const path = require("path")
-const { DataTypes, fn, col } = require("sequelize")
+const { DataTypes, fn, col, literal } = require("sequelize")
 const { Logging, errormsg } = require("../../server-logging.cjs")
 const { uploads } = require("../../server-uploads.cjs")
 const { ModelExtension } = require("../model-extension.cjs")
 
 class TitleInstallment extends ModelExtension {
+    static #models = null
+
     /**
      * @override
      */
@@ -50,6 +52,8 @@ class TitleInstallment extends ModelExtension {
                 ],
             }
         )
+
+        TitleInstallment.#models = models
 
         return
     }
@@ -135,7 +139,7 @@ class TitleInstallment extends ModelExtension {
         })
     }
 
-    static UpdateInDB(id, { label = null, installmentNum = null, isSeason = null }, transaction = null) {
+    static UpdateInDB(id, { label = null, installmentNum = null, isSeason = null } = {}, transaction = null) {
         return new Promise(async (resolve, reject) => {
             try {
                 const installment = await TitleInstallment.GetByID(id)
@@ -222,6 +226,19 @@ class TitleInstallment extends ModelExtension {
         })
     }
 
+    static GET_STREAMS_INCLUDE(isPlural = false) {
+        return [
+            [
+                literal(`(
+                SELECT COUNT(*)
+                FROM TitleInstallmentStreams AS tis
+                WHERE tis.installmentID = TitleInstallment${isPlural ? "s" : ""}.id
+            )`),
+                "streams_count",
+            ],
+        ]
+    }
+
     static GetByID(id) {
         return new Promise(async (resolve, reject) => {
             try {
@@ -232,17 +249,25 @@ class TitleInstallment extends ModelExtension {
                         },
                         include: [
                             {
-                                model: "TitleInstallmentStream",
+                                model: TitleInstallment.#models.TitleInstallmentStream,
                                 required: true,
+                                attributes: {
+                                    exclude: ["createdAt", "updatedAt"],
+                                    include: ["id", "installmentID", "titleID", "label", "streamNumber", "synopsis", "releaseDate"].concat(
+                                        TitleInstallment.#models.TitleInstallmentStream.GET_STREAMLIKES_INCLUDE(true),
+                                        TitleInstallment.#models.TitleInstallmentStream.GET_WATCHHISTORY_INCLUDE(true)
+                                    ),
+                                },
+                                order: ["streamNumber", "ASC"],
                             },
                         ],
                         attributes: {
-                            exclude: ["createdAt", "updatedAt"],
-                            include: ["id", "titleID", "label", "isSeason", "installmentNum", [fn("COUNT", col("TitleInstallmentStream.id")), "streams_count"]],
+                            include: ["id", "titleID", "label", "isSeason", "installmentNum"].concat(TitleInstallment.GET_STREAMS_INCLUDE(false)),
                         },
                         group: [col("TitleInstallment.id")],
                     })
-                    resolve(installment.toJSON())
+                    const { createdAt: c1, updatedAt: u1, ...rest } = installment.toJSON()
+                    resolve(rest)
                 } else {
                     reject(new Error(`could not get ${TitleInstallment.name} with id: ${id}`))
                 }
@@ -253,10 +278,14 @@ class TitleInstallment extends ModelExtension {
         })
     }
 
-    static GetAll({ titleID = null, installmentNum = null } = {}, transaction = null) {
+    static GetAll({ titleID = null, installmentNum = null, limit = 10, offset = 0 } = {}, transaction = null) {
         return new Promise(async (resolve, reject) => {
             try {
-                const query = {}
+                const query = {
+                    limit: limit,
+                    offset: offset,
+                    where: {},
+                }
                 query.order = []
                 query.order.push(["createdAt", "ASC"])
 
@@ -265,32 +294,40 @@ class TitleInstallment extends ModelExtension {
                 }
 
                 if (titleID) {
-                    query.where = { titleID: titleID }
+                    query.where.titleID = titleID
                 }
 
                 if (installmentNum) {
-                    query.where = { installmentNum: installmentNum }
+                    query.where.installmentNum = installmentNum
                 }
 
                 query.include = [
                     {
-                        model: "TitleInstallmentStream",
+                        model: TitleInstallment.#models.TitleInstallmentStream,
                         required: true,
+                        attributes: {
+                            exclude: ["createdAt", "updatedAt"],
+                            include: ["id", "installmentID", "titleID", "label", "streamNumber", "synopsis", "releaseDate"].concat(
+                                TitleInstallment.#models.TitleInstallmentStream.GET_STREAMLIKES_INCLUDE(true),
+                                TitleInstallment.#models.TitleInstallmentStream.GET_WATCHHISTORY_INCLUDE(true)
+                            ),
+                            order: ["streamNumber", "ASC"],
+                        },
                     },
                 ]
 
                 query.attributes = {
-                    exclude: ["createdAt", "updatedAt"],
-                    include: ["id", "titleID", "label", "isSeason", "installmentNum", [fn("COUNT", col("TitleInstallmentStream.id")), "streams_count"]],
+                    include: ["id", "titleID", "label", "isSeason", "installmentNum"].concat(TitleInstallment.GET_STREAMS_INCLUDE(false)),
                 }
 
-                query.group = [col("TitleInstallment.id")]
+                query.group = [col("id")]
 
                 const installmentList = await TitleInstallment.findAll(query)
 
                 resolve(
                     installmentList.map((element) => {
-                        return element.toJSON()
+                        const { createdAt: c1, updatedAt: u1, ...rest } = element.toJSON()
+                        return rest
                     })
                 )
             } catch (err) {

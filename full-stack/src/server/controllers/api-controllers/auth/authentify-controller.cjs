@@ -48,8 +48,8 @@ async function AttemptAdminSignIn(req, res) {
         const userJSON = user.toJSON()
         req.session.admin = {}
         req.session.admin.username = userJSON.username
-        //req.session.member_id = user.id;
-        const newSession = await db.models.Session.AddToDB(req.sessionID, userJSON.email, db.models.Session.SESSION_ROLES.ADMIN)
+        //req.session.member_id = user.id; [NOTE MEMEBER AND ADMIN SESSIONS ARE THE SAME BUT ITS OKAY SINCE THEY SHARE THE SAME SESSIONID Space]
+        const newSession = await db.models.Session.AddToDB(req.sessionID, userJSON.username, db.models.Session.SESSION_ROLES.ADMIN)
         res.status(200).end()
     } catch (err) {
         res.clearCookie("connect.sid")

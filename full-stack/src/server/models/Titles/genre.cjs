@@ -120,10 +120,14 @@ class Genre extends ModelExtension {
         })
     }
 
-    static GetAll() {
+    static GetAll({ limit = 10, offset = 0 } = {}) {
         return new Promise(async (resolve, reject) => {
             try {
-                const allGenre = await Genre.findAll()
+                const allGenre = await Genre.findAll({
+                    order: [["name", "ASC"]],
+                    limit,
+                    offset,
+                })
                 resolve(
                     allGenre.map((element) => {
                         const { createdAt, updatedAt, ...rest } = element.toJSON()
@@ -142,15 +146,15 @@ class Genre extends ModelExtension {
             try {
                 const list = await this.GetAll()
                 if (list.length > 0) {
-                    resolve(this.GetAll())
+                    resolve(list)
                 } else {
                     const genres = ["Action", "Adventure", "Comedy", "Drama", "Fantasy", "Romance", "Sports", "Sci-Fi", "Supernatural", "Thriller"]
 
                     genres.forEach(async (value, index) => {
-                        this.AddToDB(value).then().catch()
+                        await this.AddToDB(value)
                     })
 
-                    resolve(this.GetAll())
+                    resolve(await this.GetAll())
                 }
             } catch (err) {
                 Logging.LogError(`could not setup genre properly --- ${err.message}`)

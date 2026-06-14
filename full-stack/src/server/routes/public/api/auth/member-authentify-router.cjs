@@ -5,16 +5,16 @@ const authentifyController = require("../../../../controllers/api-controllers/au
 //
 // Sign In
 //
-authentifyRouter.post("/signin", authentifyController.AttemptMemberSignIn)
+authentifyRouter.post("/signin/member", authentifyController.AttemptMemberSignIn)
 
 //
 // Sign Out
 //
-authentifyRouter.post("/signout", authentifyController.AttemptSignOut)
+authentifyRouter.post("/signout/member", authentifyController.AttemptSignOut)
 
 //
 // Sign Up
 //
-authentifyRouter.post("/signup", authentifyController.AttemptMemberSignUp, authentifyController.AttemptMemberSignIn)
+authentifyRouter.post("/signup/member", authentifyController.AttemptMemberSignUp, authentifyController.AttemptMemberSignIn)
 
 module.exports = authentifyRouter

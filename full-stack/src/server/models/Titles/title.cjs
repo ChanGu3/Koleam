@@ -4,6 +4,15 @@ const { uploads } = require("../../server-uploads.cjs")
 const { ModelExtension } = require("../model-extension.cjs")
 
 class Title extends ModelExtension {
+    static #models = null
+
+    static FILM_RATING = Object.freeze({
+        G: "G",
+        PG: "PG",
+        PG13: "PG13",
+        R: "R",
+    })
+
     /**
      * @override
      */
@@ -26,11 +35,22 @@ class Title extends ModelExtension {
                 },
                 copyright: {
                     type: DataTypes.STRING,
-                    allowNull: false,
+                    allowNull: true,
                 },
                 originalTranslation: {
                     type: DataTypes.STRING,
                     allowNull: false,
+                },
+                filmSuitablilty: {
+                    type: DataTypes.ENUM,
+                    values: Object.values(Title.FILM_RATING),
+                    allowNull: true,
+                    defaultValue: null,
+                },
+                filmAgeMin: {
+                    type: DataTypes.INTEGER,
+                    allowNull: true,
+                    defaultValue: null,
                 },
             },
             {
@@ -38,6 +58,8 @@ class Title extends ModelExtension {
                 modelName: `${Title.name}`,
             }
         )
+
+        Title.#models = models
 
         return
     }
@@ -65,6 +87,12 @@ class Title extends ModelExtension {
         })
 
         Title.hasMany(models.TitleGenre, {
+            foreignKey: "titleID",
+            sourceKey: "id",
+            onDelete: "CASCADE",
+        })
+
+        Title.hasMany(models.TitleContentAdvisory, {
             foreignKey: "titleID",
             sourceKey: "id",
             onDelete: "CASCADE",
@@ -140,7 +168,7 @@ class Title extends ModelExtension {
         })
     }
 
-    static UpdateInDB(id, { label = undefined, description = undefined, copyright = undefined, originalTranslation = undefined }, transaction = null) {
+    static UpdateInDB(id, { label = undefined, description = undefined, copyright = undefined, originalTranslation = undefined } = {}, transaction = null) {
         return new Promise(async (resolve, reject) => {
             try {
                 const title = await Title.GetByID(id)
@@ -208,11 +236,164 @@ class Title extends ModelExtension {
         })
     }
 
+    static GET_INSTALLMENT_INCLUDE = [
+        // Total Installments Count
+        [
+            literal(`(
+                SELECT COUNT(*)
+                FROM TitleInstallments AS ti
+                WHERE ti.titleId = Title.id
+            )`),
+            "installments_count",
+        ],
+        // Season Installment Count
+        [
+            literal(`(
+                SELECT COUNT(*)
+                FROM TitleInstallments AS ti
+                WHERE ti.titleId = Title.id AND ti.isSeason = true
+            )`),
+            "seasons_count",
+        ],
+        [
+            literal(`(
+                SELECT COUNT(*)
+                FROM TitleInstallments AS ti
+                WHERE ti.titleId = Title.id AND ti.isSeason = false
+            )`),
+            "movie_group_count",
+        ],
+        // Movies Count
+        [
+            literal(`(
+                SELECT COUNT(*)
+                FROM TitleInstallments as ti INNER JOIN TitleInstallmentStreams AS tis
+                ON ti.id = tis.installmentID
+                WHERE ti.titleId = Title.id AND ti.isSeason = false
+            )`),
+            "stream_episodes_count",
+        ],
+        // Episodes Count
+        [
+            literal(`(
+                SELECT COUNT(*)
+                FROM TitleInstallments as ti INNER JOIN TitleInstallmentStreams AS tis
+                ON ti.id = tis.installmentID
+                WHERE ti.titleId = Title.id AND ti.isSeason = true
+            )`),
+            "stream_movies_count",
+        ],
+    ]
+
+    static GET_OTHERTRANSLATIONS_INCLUDE = [
+        // ALL OTHER TRANSLATIONS
+        [
+            literal(`(
+                SELECT GROUP_CONCAT(tot.translation)
+                FROM TitleOtherTranslations AS tot
+                WHERE tot.titleId = Title.id
+            )`),
+            "all_other_translations",
+        ],
+    ]
+
+    static GET_RATINGS_INCLUDE = [
+        [
+            literal(`(
+                SELECT COUNT(CASE WHEN tr.rating = 1 THEN 1 END)
+                FROM TitleRatings AS tr
+                WHERE tr.titleId = Title.id
+            )`),
+            "rating_1_count",
+        ],
+        [
+            literal(`(
+                SELECT COUNT(CASE WHEN tr.rating = 2 THEN 1 END)
+                FROM TitleRatings AS tr
+                WHERE tr.titleId = Title.id
+            )`),
+            "rating_2_count",
+        ],
+        [
+            literal(`(
+                SELECT COUNT(CASE WHEN tr.rating = 3 THEN 1 END)
+                FROM TitleRatings AS tr
+                WHERE tr.titleId = Title.id
+            )`),
+            "rating_3_count",
+        ],
+        [
+            literal(`(
+                SELECT COUNT(CASE WHEN tr.rating = 4 THEN 1 END)
+                FROM TitleRatings AS tr
+                WHERE tr.titleId = Title.id
+            )`),
+            "rating_4_count",
+        ],
+        [
+            literal(`(
+                SELECT COUNT(CASE WHEN tr.rating = 5 THEN 1 END)
+                FROM TitleRatings AS tr
+                WHERE tr.titleId = Title.id
+            )`),
+            "rating_5_count",
+        ],
+        [
+            literal(`(
+                SELECT AVG(tr.rating)
+                FROM TitleRatings AS tr
+                WHERE tr.titleId = Title.id
+            )`),
+            "rating_average",
+        ],
+        [
+            literal(`(
+                SELECT COUNT(tr.email)
+                FROM TitleRatings AS tr
+                WHERE tr.titleId = Title.id
+            )`),
+            "rating_count",
+        ],
+    ]
+
+    static GET_GENRES_INCLUDE = [
+        [
+            literal(`(
+                SELECT GROUP_CONCAT(tg.genre)
+                FROM TitleGenres AS tg
+                WHERE tg.titleId = Title.id
+            )`),
+            "all_genres",
+        ],
+    ]
+
+    static GET_FAVORITES_INCLUDE = [
+        [
+            literal(`(
+                SELECT COUNT(tf.email)
+                FROM TitleFavorites AS tf
+                WHERE tf.titleId = Title.id
+            )`),
+            "favorite_count",
+        ],
+    ]
+
+    static GET_CONTENT_ADVISORIES_INCLUDE = [
+        [
+            literal(`(
+                SELECT GROUP_CONCAT(tcd.contentAdvisory)
+                FROM TitleContentAdvisories AS tcd
+                WHERE tcd.titleId = Title.id
+            )`),
+            "all_content_advisories",
+        ],
+    ]
+
     static GetByID(id, transaction = null) {
         return new Promise(async (resolve, reject) => {
             try {
                 if (await this.Exists(id)) {
-                    default_query = {
+                    const default_query = {
                         where: {
                             id: id,
                         },
@@ -227,105 +408,23 @@ class Title extends ModelExtension {
                         where: default_query.where,
                         attributes: {
                             exclude: ["createdAt", "updatedAt"],
-                            include: ["id", "label", "description", "copyright", "originalTranslation"],
+                            include: ["id", "label", "description", "copyright", "originalTranslation"].concat(
+                                Title.GET_INSTALLMENT_INCLUDE,
+                                Title.GET_OTHERTRANSLATIONS_INCLUDE,
+                                Title.GET_RATINGS_INCLUDE,
+                                Title.GET_GENRES_INCLUDE,
+                                Title.GET_FAVORITES_INCLUDE,
+                                Title.GET_CONTENT_ADVISORIES_INCLUDE
+                            ),
                         },
                         group: default_query.group,
                     })
 
-                    const installment_title_data = await Title.findOne({
-                        where: default_query.where,
-                        include: [
-                            {
-                                model: "TitleInstallment",
-                                required: false,
-                            },
-                        ],
-                        attributes: {
-                            exclude: ["createdAt", "updatedAt"],
-                            include: [
-                                [fn("COUNT", col("TitleInstallment.id")), "installments_count"],
-                                [fn("COUNT", col("CASE WHEN TitleInstallment.isSeason = true THEN 1 END")), "season_count"],
-                                [fn("COUNT", col("CASE WHEN TitleInstallment.isSeason = false THEN 1 END")), "movie_count"],
-                            ],
-                        },
-                        group: default_query.group,
-                    })
-
-                    const other_translations_title_data = await Title.findOne({
-                        where: default_query.where,
-                        include: [
-                            {
-                                model: "TitleOtherTranslation",
-                                required: false,
-                            },
-                        ],
-                        attributes: {
-                            exclude: ["createdAt", "updatedAt"],
-                            include: [[fn("GROUP_CONCAT", col("TitleOtherTranslation.translation")), "all_other_translations"]],
-                        },
-                        group: default_query.group,
-                    })
-
-                    const rating_title_data = await Title.findOne({
-                        where: default_query.where,
-                        include: [
-                            {
-                                model: "TitleRating",
-                                required: false,
-                            },
-                        ],
-                        attributes: {
-                            exclude: ["createdAt", "updatedAt"],
-                            include: [
-                                [fn("COUNT", literal("CASE WHEN TitleRating.rating = 1 THEN 1 END")), "rating_1_count"],
-                                [fn("COUNT", literal("CASE WHEN TitleRating.rating = 2 THEN 1 END")), "rating_2_count"],
-                                [fn("COUNT", literal("CASE WHEN TitleRating.rating = 3 THEN 1 END")), "rating_3_count"],
-                                [fn("COUNT", literal("CASE WHEN TitleRating.rating = 4 THEN 1 END")), "rating_4_count"],
-                                [fn("COUNT", literal("CASE WHEN TitleRating.rating = 5 THEN 1 END")), "rating_5_count"],
-                                [fn("AVG", col("TitleRating.rating")), "rating_average"],
-                                [fn("COUNT", col("TitleRating.id")), "rating_count"],
-                            ],
-                        },
-                        group: default_query.group,
-                    })
-
-                    const genre_title_data = await Title.findOne({
-                        where: default_query.where,
-                        include: [
-                            {
-                                model: "TitleGenre",
-                                required: false,
-                            },
-                        ],
-                        attributes: {
-                            exclude: ["createdAt", "updatedAt"],
-                            include: [[fn("GROUP_CONCAT", col("TitleGenre.genre")), "all_genres"]],
-                        },
-                        group: default_query.group,
-                    })
-
-                    const favorite_title_data = await Title.findOne({
-                        where: default_query.where,
-                        include: [
-                            {
-                                model: "TitleFavorite",
-                                required: false,
-                            },
-                        ],
-                        attributes: {
-                            exclude: ["createdAt", "updatedAt"],
-                            include: [[fn("COUNT", col("TitleFavorite.email")), "favorite_count"]],
-                        },
-                        group: default_query.group,
-                    })
-
-                    all_title_data = {
-                        ...original_title_data.toJSON(),
-                        ...installment_title_data.toJSON(),
-                        ...other_translations_title_data.toJSON(),
-                        ...rating_title_data.toJSON(),
-                        ...genre_title_data.toJSON(),
-                        ...favorite_title_data.toJSON(),
+                    const { createdAt: c1, updatedAt: u1, all_other_translations, all_genres, ...rest1 } = original_title_data.toJSON()
+                    const all_title_data = {
+                        ...rest1,
+                        all_other_translations: all_other_translations ? all_other_translations.split(",") : [],
+                        all_genres: all_genres ? all_genres.split(",") : [],
                     }
 
                     resolve(all_title_data)
@@ -340,173 +439,78 @@ class Title extends ModelExtension {
         })
     }
 
-    static GetAll({ getNewestReleases = false, limit = 10, offset = 0, search = undefined, genereFilter = [], transaction = null } = {}) {
+    static GetAll({ getNewestReleases = false, limit = 10, offset = 0, search = undefined, genereFilter = [] } = {}, transaction = null) {
         return new Promise(async (resolve, reject) => {
+            const newestReleasesShowing = 6
+
             try {
-                const default_query = {}
+                const default_query = {
+                    where: {},
+                    include: [],
+                    order: [],
+                    having: {},
+                    group: [col("Title.id")],
+                }
 
                 if (transaction) {
                     default_query.transaction = transaction
                 }
 
-                default_query.order = {}
                 if (getNewestReleases) {
                     default_query.order.push(["createdAt", "ASC"])
                 }
 
-                default_query.having = {}
-                if (genereFilter.length > 0) {
-                    default_query.having.all_genres = { [Op.in]: genereFilter }
+                if (genereFilter && genereFilter.length > 0) {
+                    default_query.include.push({
+                        model: Title.#models.TitleGenre,
+                        required: true,
+                        attributes: [],
+                        where: {
+                            genre: {
+                                [Op.in]: genereFilter,
+                            },
+                        },
+                    })
                 }
 
-                default_query.where = {
-                    id: id,
+                if (search) {
+                    default_query.where.label = { [Op.like]: `%${search}%` }
                 }
 
-                default_query.group = [col("Title.id")]
+                default_query.limit = getNewestReleases ? newestReleasesShowing : limit
 
-                default_query.search = search ? { label: { [Op.like]: `%${search}%` } } : undefined
-
-                default_query.limit = getNewestReleases ? 6 : limit
-
-                defgault_query.offset = getNewestReleases ? 0 : offset
+                default_query.offset = getNewestReleases ? 0 : offset
 
                 const original_title_data = await Title.findAll({
                     where: default_query.where,
+                    include: default_query.include,
                     attributes: {
                         exclude: ["createdAt", "updatedAt"],
-                        include: ["id", "label", "description", "copyright", "originalTranslation"],
+                        include: ["id", "label", "description", "copyright", "originalTranslation"].concat(
+                            this.GET_INSTALLMENT_INCLUDE,
+                            this.GET_OTHERTRANSLATIONS_INCLUDE,
+                            this.GET_RATINGS_INCLUDE,
+                            this.GET_GENRES_INCLUDE,
+                            this.GET_FAVORITES_INCLUDE,
+                            Title.GET_CONTENT_ADVISORIES_INCLUDE
+                        ),
                     },
                     group: default_query.group,
                     having: default_query.having,
                     order: default_query.order,
                     limit: default_query.limit,
                     offset: default_query.offset,
-                    include: default_query.search,
-                })
-
-                const installment_title_data = await Title.findAll({
-                    where: default_query.where,
-                    include: [
-                        {
-                            model: "TitleInstallment",
-                            required: false,
-                        },
-                    ],
-                    attributes: {
-                        exclude: ["createdAt", "updatedAt"],
-                        include: [
-                            [fn("COUNT", col("TitleInstallment.id")), "installments_count"],
-                            [fn("COUNT", col("CASE WHEN TitleInstallment.isSeason = true THEN 1 END")), "season_count"],
-                            [fn("COUNT", col("CASE WHEN TitleInstallment.isSeason = false THEN 1 END")), "movie_count"],
-                        ],
-                    },
-                    group: default_query.group,
-                    having: default_query.having,
-                    order: default_query.order,
-                    limit: default_query.limit,
-                    offset: default_query.offset,
-                    search: default_query.search,
-                })
-
-                const other_translations_title_data = await Title.findAll({
-                    where: default_query.where,
-                    include: [
-                        {
-                            model: "TitleOtherTranslation",
-                            required: false,
-                        },
-                    ],
-                    attributes: {
-                        exclude: ["createdAt", "updatedAt"],
-                        include: [[fn("GROUP_CONCAT", col("TitleOtherTranslation.translation")), "all_other_translations"]],
-                    },
-                    group: default_query.group,
-                    having: default_query.having,
-                    order: default_query.order,
-                    limit: default_query.limit,
-                    offset: default_query.offset,
-                    search: default_query.search,
-                })
-
-                const rating_title_data = await Title.findAll({
-                    where: default_query.where,
-                    include: [
-                        {
-                            model: "TitleRating",
-                            required: false,
-                        },
-                    ],
-                    attributes: {
-                        exclude: ["createdAt", "updatedAt"],
-                        include: [
-                            [fn("COUNT", literal("CASE WHEN TitleRating.rating = 1 THEN 1 END")), "rating_1_count"],
-                            [fn("COUNT", literal("CASE WHEN TitleRating.rating = 2 THEN 1 END")), "rating_2_count"],
-                            [fn("COUNT", literal("CASE WHEN TitleRating.rating = 3 THEN 1 END")), "rating_3_count"],
-                            [fn("COUNT", literal("CASE WHEN TitleRating.rating = 4 THEN 1 END")), "rating_4_count"],
-                            [fn("COUNT", literal("CASE WHEN TitleRating.rating = 5 THEN 1 END")), "rating_5_count"],
-                            [fn("AVG", col("TitleRating.rating")), "rating_average"],
-                            [fn("COUNT", col("TitleRating.id")), "rating_count"],
-                        ],
-                    },
-                    group: default_query.group,
-                    having: default_query.having,
-                    order: default_query.order,
-                    limit: default_query.limit,
-                    offset: default_query.offset,
-                    search: default_query.search,
-                })
-
-                const genre_title_data = await Title.findAll({
-                    where: default_query.where,
-                    include: [
-                        {
-                            model: "TitleGenre",
-                            required: false,
-                        },
-                    ],
-                    attributes: {
-                        exclude: ["createdAt", "updatedAt"],
-                        include: [[fn("GROUP_CONCAT", col("TitleGenre.genre")), "all_genres"]],
-                    },
-                    group: default_query.group,
-                    having: default_query.having,
-                    order: default_query.order,
-                    limit: default_query.limit,
-                    offset: default_query.offset,
-                    search: default_query.search,
-                })
-
-                const favorite_title_data = await Title.findAll({
-                    where: default_query.where,
-                    include: [
-                        {
-                            model: "TitleFavorite",
-                            required: false,
-                        },
-                    ],
-                    attributes: {
-                        exclude: ["createdAt", "updatedAt"],
-                        include: [[fn("COUNT", col("TitleFavorite.email")), "favorite_count"]],
-                    },
-                    group: default_query.group,
-                    having: default_query.having,
-                    order: default_query.order,
-                    limit: default_query.limit,
-                    offset: default_query.offset,
-                    search: default_query.search,
                 })
 
                 resolve(
                     original_title_data.map((element, index) => {
-                        return {
-                            ...element.toJSON(),
-                            ...installment_title_data[index].toJSON(),
-                            ...other_translations_title_data[index].toJSON(),
-                            ...rating_title_data[index].toJSON(),
-                            ...genre_title_data[index].toJSON(),
-                            ...favorite_title_data[index].toJSON(),
+                        const { createdAt: c1, updatedAt: u1, all_other_translations, all_genres, ...rest1 } = element.toJSON()
+                        const all_title_data = {
+                            ...rest1,
+                            all_other_translations: all_other_translations ? all_other_translations.split(",") : [],
+                            all_genres: all_genres ? all_genres.split(",") : [],
                         }
+                        return all_title_data
                     })
                 )
             } catch (err) {

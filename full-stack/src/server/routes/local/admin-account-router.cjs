@@ -4,8 +4,7 @@ const adminController = require("../../controllers/api-controllers/auth/admin-co
 const adminAccountRouter = express.Router()
 
 adminAccountRouter.get("/", adminController.AdminGetSingleAdmin)
-adminAccountRouter.delete("/", adminController.AdminDeleteAdmin)
-adminAccountRouter.put("/", adminController.AdminUpdatePassword)
-adminAccountRouter.put("/", adminController.AdminUpdateUsername)
+adminAccountRouter.put("/password", adminController.AdminUpdatePassword)
+
 
 module.exports = adminAccountRouter

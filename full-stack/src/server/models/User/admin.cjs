@@ -2,8 +2,9 @@ const { DataTypes } = require("sequelize")
 const bcrypt = require("bcrypt")
 const { Logging, errormsg } = require("../../server-logging.cjs")
 const { HashPassword, saltRounds } = require("./util.cjs")
-const adminDefault = { username: "username", password: "password" }
+const adminDefault = { username: "username", password: "Password*0" }
 const { ModelExtension } = require("../model-extension.cjs")
+const { validatePassword } = require("../../../shared/Validations/account-validations")
 
 class Admin extends ModelExtension {
     /**
@@ -59,6 +60,10 @@ class Admin extends ModelExtension {
                 return
             }
 
+            if (validatePassword(password) === false) {
+                reject(new Error("Invalid password format"))
+            }
+
             const hash = await HashPassword(password, saltRounds)
 
             try {
@@ -94,7 +99,7 @@ class Admin extends ModelExtension {
         })
     }
 
-    static GetAll({ limit, offset }) {
+    static GetAll({ limit = 10, offset = 0 }) {
         return new Promise(async (resolve, reject) => {
             try {
                 const querys = {}
@@ -148,17 +153,17 @@ class Admin extends ModelExtension {
                         if (await bcrypt.compare(password, existingAdmin.password)) {
                             resolve(existingAdmin)
                         } else {
-                            reject(new Error(errormsg.authentificationFail))
+                            reject(new Error(errormsg.adminAuthentificationFail))
                         }
                     } catch (err) {
                         Logging.LogError(`Could Not Hash ${username} --- ${err.message}`)
                         reject(new Error(errormsg.fallback))
                     }
                 } else {
-                    reject(new Error(errormsg.authentificationFail))
+                    reject(new Error(errormsg.adminAuthentificationFail))
                 }
             } else {
-                reject(new Error(errormsg.authentificationFail))
+                reject(new Error(errormsg.adminAuthentificationFail))
             }
         })
     }
@@ -226,6 +231,11 @@ class Admin extends ModelExtension {
                 // Verify current password
                 if (!(await bcrypt.compare(currentPassword, existingAdmin.password))) {
                     reject(new Error("Current password is incorrect"))
+                    return
+                }
+
+                if (validatePassword(newPassword) === false) {
+                    reject(new Error(validatePassword))
                     return
                 }
 

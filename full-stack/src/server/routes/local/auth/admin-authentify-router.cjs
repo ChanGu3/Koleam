@@ -5,11 +5,11 @@ const authentifyRouter = express.Router()
 //
 // Sign In
 //
-authentifyRouter.post("/admin/signin", authentificationController.AttemptAdminSignIn)
+authentifyRouter.post("/signin/admin", authentificationController.AttemptAdminSignIn)
 
 //
 // Sign Out
 //
-authentifyRouter.post("/admin/signout", authentificationController.AttemptSignOut)
+authentifyRouter.post("/signout/admin", authentificationController.AttemptSignOut)
 
 module.exports = authentifyRouter

@@ -65,7 +65,7 @@ class TitleFavorite extends ModelExtension {
     //
     // Member Exists in DB true otherwise false
     //
-    static async #Exists(email, titleID) {
+    static async Exists(email, titleID) {
         const instance = await TitleFavorite.findOne({
             where: {
                 email: email,
@@ -81,7 +81,7 @@ class TitleFavorite extends ModelExtension {
     //
     static AddToDB(email, titleID) {
         return new Promise(async (resolve, reject) => {
-            if (await this.#Exists(email, titleID)) {
+            if (await this.Exists(email, titleID)) {
                 Logging.LogWarning(`email & titleID pair exists`)
                 reject(new Error(`${email} already has this ${titleID}`))
                 return
@@ -111,7 +111,7 @@ class TitleFavorite extends ModelExtension {
     //
     static RemoveFromDB(email, titleID) {
         return new Promise(async (resolve, reject) => {
-            if (!(await this.#Exists(email, titleID))) {
+            if (!(await this.Exists(email, titleID))) {
                 Logging.LogWarning(`email & titleID pair does not exist`)
                 reject(new Error(`${email} is already not having ${titleID} as a favorite`))
                 return
@@ -136,7 +136,7 @@ class TitleFavorite extends ModelExtension {
     static GetByEmailANDTitleID(email, titleID, transaction = null) {
         return new Promise(async (resolve, reject) => {
             try {
-                query = {}
+                const query = {}
                 if (transaction) {
                     query.transaction = transaction
                 }
@@ -154,11 +154,7 @@ class TitleFavorite extends ModelExtension {
                 const titleFavorites = await TitleFavorite.findOne(query)
 
                 if (titleFavorites) {
-                    const { titleID, ...rest } = titleFavorites.toJSON()
-
-                    const titleData = await TitleFavorite.#models.Title.GetByID(titleID, transaction)
-
-                    resolve({ titleData, ...rest })
+                    resolve(titleFavorites.toJSON())
                 } else {
                     reject(new Error(`does not exist in database email:${email}|titleID:${titleID}`))
                 }
@@ -169,10 +165,10 @@ class TitleFavorite extends ModelExtension {
         })
     }
 
-    static GetAllByEmail(email, { limit, offset }, transaction = null) {
+    static GetAllByEmail(email, { limit = 10, offset = 0 } = {}, transaction = null) {
         return new Promise(async (resolve, reject) => {
             try {
-                query = {
+                const query = {
                     where: {
                         email: email,
                     },
@@ -187,15 +183,31 @@ class TitleFavorite extends ModelExtension {
                     query.offset = offset
                 }
 
+                query.include = [
+                    {
+                        model: TitleFavorite.#models.Title,
+                        attributes: {
+                            exclude: ["createdAt", "updatedAt", "id"],
+                            include: ["label", "description", "copyright", "originalTranslation"].concat(
+                                TitleFavorite.#models.Title.GET_INSTALLMENT_INCLUDE,
+                                TitleFavorite.#models.Title.GET_OTHERTRANSLATIONS_INCLUDE,
+                                TitleFavorite.#models.Title.GET_RATINGS_INCLUDE,
+                                TitleFavorite.#models.Title.GET_GENRES_INCLUDE,
+                                TitleFavorite.#models.Title.GET_FAVORITES_INCLUDE
+                            ),
+                        },
+                    },
+                ]
+
+                query.group = ["titleID"]
+
                 const titleFavorites = await TitleFavorite.findAll(query)
                 resolve(
-                    await titleFavorites.map(async (element) => {
-                        const { createdAt, updatedAt, titleID, ...rest } = element.toJSON()
+                    await Promise.all(titleFavorites.map(async (element) => {
+                        const { createdAt, updatedAt, ...rest } = element.toJSON()
 
-                        const titleData = await TitleFavorite.#models.Title.GetByID(titleID, transaction)
-
-                        return { titleData, ...rest }
-                    })
+                        return rest
+                    }))
                 )
             } catch (err) {
                 Logging.LogError(`could not get list of ${TitleFavorite.name} from database using email:${email} --- ${err.message}`)

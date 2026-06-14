@@ -20,13 +20,9 @@ async function GetAllMembers(req, res) {
     const query = {}
     const { limit, offset, search } = req.query
 
-    query.limit = 10
-    if (limit && Number.isNaN(Number(limit))) {
-        query.limit = Number(limit)
-    }
-    if (offset && Number.isNaN(Number(offset))) {
-        query.offset = Number(offset)
-    }
+    query.limit = limit && !Number.isNaN(Number(limit)) ? Number(limit) : 10
+    query.offset = offset && !Number.isNaN(Number(offset)) ? Number(offset) : 0
+
     if (search) {
         query.search = search
     }
@@ -60,12 +56,14 @@ async function MemberGetSingleMember(req, res) {
     }
 }
 
-async function MemberGetAllAnimeStreamHistory(req, res) {
-    const { latestStreamPerSeries, titleID } = req.query
+async function MemberGetAllTitleStreamHistory(req, res) {
+    const { latestStreamPerSeries, titleID, limit, offset } = req.query
 
     const query = {}
     query.latestStreamPerSeries = latestStreamPerSeries === "true" ? true : false
     query.titleID = titleID ? titleID : false
+    query.limit = limit && !Number.isNaN(Number(limit)) ? Number(limit) : false
+    query.offset = offset && !Number.isNaN(Number(offset)) ? Number(offset) : false
 
     try {
         const streamHistoryList = await db.models.TitleInstallmentStreamWatchHistory.GetWatchHistoryByEmail(req.session.user.email, query)
@@ -75,7 +73,7 @@ async function MemberGetAllAnimeStreamHistory(req, res) {
     }
 }
 
-async function MemberGetSingleAnimeStreamHistory(req, res) {
+async function MemberGetSingleTitleStreamHistory(req, res) {
     const { streamID } = req.params
 
     try {
@@ -88,10 +86,11 @@ async function MemberGetSingleAnimeStreamHistory(req, res) {
 
 async function MemberLogStreamWatchedStreamHistory(req, res) {
     const { streamID } = req.params
+    const { lastTimeStampInSeconds } = req.body
 
     try {
         if (await db.models.TitleInstallmentStreamWatchHistory.Exists(req.session.user.email, streamID)) {
-            await db.models.TitleInstallmentStreamWatchHistory.UpdateDB(req.session.user.email, streamID)
+            await db.models.TitleInstallmentStreamWatchHistory.UpdateDB(req.session.user.email, streamID, { lastTimeStampInSeconds: lastTimeStampInSeconds })
             res.status(200).json({ success: "updated the streamID to history" })
         } else {
             await db.models.TitleInstallmentStreamWatchHistory.AddToDB(req.session.user.email, streamID)
@@ -102,15 +101,28 @@ async function MemberLogStreamWatchedStreamHistory(req, res) {
     }
 }
 
+async function MemberDeleteStreamWatchedStreamHistory(req, res) {
+    const { streamID } = req.params
+
+    try {
+        await db.models.TitleInstallmentStreamWatchHistory.RemoveFromDB(req.session.user.email, streamID)
+        res.status(200).json({
+            success: `successfully removed ${db.models.TitleInstallmentStreamWatchHistory.name} with ${streamID}`,
+        })
+    } catch (err) {
+        res.status(500).json({ error: err.message })
+    }
+}
+
 async function MemberGetAllTitleFavorite(req, res) {
     try {
         const query = {}
         const { limit, offset } = req.query
 
-        if (limit && Number.isNaN(Number(limit))) {
+        if (limit && !Number.isNaN(Number(limit))) {
             query.limit = Number(limit)
         }
-        if (offset && Number.isNaN(Number(offset))) {
+        if (offset && !Number.isNaN(Number(offset))) {
             query.offset = Number(offset)
         }
 
@@ -134,26 +146,17 @@ async function MemberGetTitleFavorite(req, res) {
     }
 }
 
-async function MemberAddTitleFavorite(req, res) {
+async function MemberUpdateTitleFavorite(req, res) {
     const { titleID } = req.params
 
     try {
-        await db.models.TitleFavorite.AddToDB(req.session.user.email, titleID)
+        if (await db.models.TitleFavorite.Exists(req.session.user.email, titleID)) {
+            await db.models.TitleFavorite.RemoveFromDB(req.session.user.email, titleID)
+        } else {
+            await db.models.TitleFavorite.AddToDB(req.session.user.email, titleID)
+        }
         res.status(200).json({
-            success: `successfully added ${db.models.TitleFavorite.name} with ${titleID}`,
-        })
-    } catch (err) {
-        res.status(500).json({ error: err.message })
-    }
-}
-
-async function MemberDeleteTitleFavorite(req, res) {
-    const { titleID } = req.params
-
-    try {
-        await db.models.TitleFavorite.RemoveFromDB(req.session.user.email, titleID)
-        res.status(200).json({
-            success: `successfully removed ${db.models.TitleFavorite.name} with ${titleID}`,
+            success: `successfully updated ${db.models.TitleFavorite.name} with ${titleID}`,
         })
     } catch (err) {
         res.status(500).json({ error: err.message })
@@ -165,29 +168,22 @@ async function MemberGetStreamLike(req, res) {
 
     try {
         const streamLike = await db.models.TitleInstallmentStreamLike.GetByEmailANDStreamID(req.session.user.email, streamID)
-        res.status(200).json({ streamLike })
+        res.status(200).json(streamLike)
     } catch (err) {
         res.status(500).json({ error: err.message })
     }
 }
 
-async function MemberAddStreamLike(req, res) {
+async function MemberUpdateStreamLike(req, res) {
     const { streamID } = req.params
 
     try {
-        await db.models.TitleInstallmentStreamLike.AddToDB(req.session.user.email, streamID)
-        res.status(200).json({ success: `successfully added ${db.models.TitleInstallmentStreamLike.name} with ${streamID}` })
-    } catch (err) {
-        res.status(500).json({ error: err.message })
-    }
-}
-
-async function MemberDeleteStreamLike(req, res) {
-    const { streamID } = req.params
-
-    try {
-        await db.models.TitleInstallmentStreamLike.RemoveFromDB(req.session.user.email, streamID)
-        res.status(200).json({ success: `successfully removed ${db.models.TitleInstallmentStreamLike.name} with ${streamID}` })
+        if (await db.models.TitleInstallmentStreamLike.Exists(req.session.user.email, streamID)) {
+            await db.models.TitleInstallmentStreamLike.RemoveFromDB(req.session.user.email, streamID)
+        } else {
+            await db.models.TitleInstallmentStreamLike.AddToDB(req.session.user.email, streamID)
+        }
+        res.status(200).json({ success: `successfully aupdated ${db.models.TitleInstallmentStreamLike.name} with ${streamID}` })
     } catch (err) {
         res.status(500).json({ error: err.message })
     }
@@ -204,51 +200,36 @@ async function MemberGetTitleRating(req, res) {
     }
 }
 
-async function MemberAddTitleRating(req, res) {
-    const { titleID } = req.params
-    const { rating } = req.body
-
-    try {
-        await db.models.TitleRating.AddToDB(req.session.user.email, titleID, rating)
-        res.status(200).json({
-            success: `successfully added AnimeRate with ${titleID} and rating ${rating}`,
-        })
-    } catch (err) {
-        res.status(500).json({ error: err.message })
-    }
-}
-
 async function MemberUpdateTitleRating(req, res) {
     const { titleID } = req.params
     const { rating } = req.body
 
     try {
-        await db.models.TitleRating.UpdateDB(req.session.user.email, titleID, rating)
+        if (await db.models.TitleRating.Exists(req.session.user.email, titleID)) {
+            if (rating === 0) {
+                await db.models.TitleRating.RemoveFromDB(req.session.user.email, titleID)
+            } else {
+                await db.models.TitleRating.UpdateDB(req.session.user.email, titleID, { rating })
+            }
+        } else {
+            if (rating !== 0) {
+                await db.models.TitleRating.AddToDB(req.session.user.email, titleID, rating)
+            }
+        }
         res.status(200).json({
-            success: `successfully added ${db.models.TitleRating.name} with ${titleID} and rating ${rating}`,
+            success: `successfully updated rating for ${db.models.TitleRating.name} with ${titleID} and rating ${rating}`,
         })
-    } catch (err) {
-        res.status(500).json({ error: err.message })
-    }
-}
-
-async function MemberDeleteTitleRating(req, res) {
-    const { titleID } = req.params
-
-    try {
-        await db.models.TitleRating.RemoveFromDB(req.session.user.email, titleID)
-        res.status(200).json({ success: `successfully removed ${db.models.TitleRating.name} with ${titleID}` })
     } catch (err) {
         res.status(500).json({ error: err.message })
     }
 }
 
 async function MemberUpdateEmail(req, res) {
-    const { newEmail, currentPassword } = req.body
+    const { newEmail } = req.body
     const currentEmail = req.session.user.email
 
     try {
-        await db.models.Member.UpdateEmail(currentEmail, newEmail, currentPassword)
+        await db.models.Member.UpdateEmail(currentEmail, newEmail)
         req.session.user.email = newEmail.toLowerCase()
         res.status(200).json({ email: req.session.user.email })
     } catch (err) {
@@ -274,19 +255,16 @@ const MemberController = {
     GetSingleMember,
     MemberGetSingleMember,
     MemberGetAllTitleFavorite,
-    MemberGetAllAnimeStreamHistory,
-    MemberGetSingleAnimeStreamHistory,
+    MemberGetAllTitleStreamHistory,
+    MemberGetSingleTitleStreamHistory,
     MemberLogStreamWatchedStreamHistory,
+    MemberDeleteStreamWatchedStreamHistory,
     MemberGetTitleFavorite,
-    MemberAddTitleFavorite,
-    MemberDeleteTitleFavorite,
+    MemberUpdateTitleFavorite,
     MemberGetStreamLike,
-    MemberAddStreamLike,
-    MemberDeleteStreamLike,
+    MemberUpdateStreamLike,
     MemberGetTitleRating,
-    MemberAddTitleRating,
     MemberUpdateTitleRating,
-    MemberDeleteTitleRating,
     MemberUpdateEmail,
     MemberUpdatePassword,
 }

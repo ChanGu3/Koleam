@@ -1,31 +1,3 @@
-import { GetSavedColorTheme } from "./src/services/ui-config/ColorTheme.cjs"
-
-const DEFAULT_COLOR_THEME = Object.freeze({
-    WHITE: "#F8F8FF",
-    PRIMARY: "#87CEEB",
-    SECONDARY: "#59CFFF",
-    TERTIARY: "#429ABE",
-    "DARK-PRIMARY": "#1A1A1A",
-    "DARK-SECONDARY": "#777777",
-    "DARK-TERTIARY": "#0F0F0F",
-    "LINK-VISITED": "#9333EA",
-    ERROR: "#BE185D",
-})
-
-const savedColorTheme = await GetSavedColorTheme()
-
-const SELECTED_COLOR_THEME = {
-    WHITE: !!savedColorTheme ? savedColorTheme.WHITE : DEFAULT_COLOR_THEME.WHITE,
-    PRIMARY: !!savedColorTheme ? savedColorTheme.PRIMARY : DEFAULT_COLOR_THEME.PRIMARY,
-    SECONDARY: !!savedColorTheme ? savedColorTheme.SECONDARY : DEFAULT_COLOR_THEME.SECONDARY,
-    TERTIARY: !!savedColorTheme ? savedColorTheme.TERTIARY : DEFAULT_COLOR_THEME.TERTIARY,
-    "DARK-PRIMARY": !!savedColorTheme ? savedColorTheme["DARK-PRIMARY"] : DEFAULT_COLOR_THEME["DARK-PRIMARY"],
-    "DARK-SECONDARY": !!savedColorTheme ? savedColorTheme["DARK-SECONDARY"] : DEFAULT_COLOR_THEME["DARK-SECONDARY"],
-    "DARK-TERTIARY": !!savedColorTheme ? savedColorTheme["DARK-TERTIARY"] : DEFAULT_COLOR_THEME["DARK-TERTIARY"],
-    "LINK-VISITED": !!savedColorTheme ? savedColorTheme["LINK-VISITED"] : DEFAULT_COLOR_THEME["LINK-VISITED"],
-    ERROR: !!savedColorTheme ? savedColorTheme.ERROR : DEFAULT_COLOR_THEME.ERROR,
-}
-
 export default {
     content: [
         "./index.html", // Look for classes in your main HTML file
@@ -34,15 +6,16 @@ export default {
     theme: {
         extend: {
             colors: {
-                "s-white": SELECTED_COLOR_THEME.WHITE,
-                "s-primary": SELECTED_COLOR_THEME.PRIMARY,
-                "s-secondary": SELECTED_COLOR_THEME.SECONDARY,
-                "s-tertiary": SELECTED_COLOR_THEME.TERTIARY,
-                "s-dark-primary": SELECTED_COLOR_THEME["DARK-PRIMARY"],
-                "s-dark-secondary": SELECTED_COLOR_THEME["DARK-SECONDARY"],
-                "s-dark-tertiary": SELECTED_COLOR_THEME["DARK-TERTIARY"],
-                "s-link-visited": SELECTED_COLOR_THEME["LINK-VISITED"],
-                "s-error": SELECTED_COLOR_THEME.ERROR,
+                "s-white": "var(--color-s-white)",
+                "s-primary": "var(--color-s-primary)",
+                "s-secondary": "var(--color-s-secondary)",
+                "s-tertiary": "var(--color-s-tertiary)",
+                "s-dark-primary": "var(--color-s-dark-primary)",
+                "s-dark-secondary": "var(--color-s-dark-secondary)",
+                "s-dark-tertiary": "var(--color-s-dark-tertiary)",
+                "s-link-visited": "var(--color-s-link-visited)",
+                "s-error": "var(--color-s-error)",
+                "s-success": "var(--color-s-success)",
             },
             backgroundImage: {
                 vignette: "radial-gradient(ellipse at center, #00000000 0%, #0F0F0F 100%)",
@@ -60,11 +33,19 @@ export default {
                     "0%": { transform: "scaleX(0)" },
                     "100%": { transform: "scaleX(1)" },
                 },
+                "heart-beat-keyframe": {
+                    "0%": { opacity: "1", transform: "scale(1)" },
+                    "25%": { opacity: "0.75", transform: "scale(1.25)" },
+                    "50%": { opacity: "0.5", transform: "scale(1)" },
+                    "75%": { opacity: "0.75", transform: "scale(1.25)" },
+                    "100%": { opacity: "1", transform: "scale(1)" },
+                },
             },
             animation: {
                 "fade-in": "fade-in-keyframe 0.8s ease-out forwards",
                 "fade-out": "fade-out-keyframe 0.8s ease-in forwards",
                 "fill-from-left": "fill-from-left-keyframe 7.5s linear forwards",
+                "heart-beat": "heart-beat-keyframe 1.0s ease-in-out infinite",
             },
         },
     },

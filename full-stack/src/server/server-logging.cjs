@@ -6,7 +6,8 @@ const processName = "koleam"
 const fallback = "Server Error - please try again later"
 const emailExists = "email already exists - please sign in or use a different email"
 const usernameExists = "username already in use - please sign in or use a different username"
-const authentificationFail = "email or password is invalid please try again"
+const memberAuthentificationFail = "email or password is invalid please try again"
+const adminAuthentificationFail = "username or password is invalid please try again"
 const sessionDoesNotExist = "session does not exists so could not retrieve email"
 const genreDoesNotExist = "genre does not exists so could not retrieve it"
 const titleGenreDoesNotExist = "AnimeGenre does not exists so could not retrieve it"
@@ -35,7 +36,8 @@ function LogDev(msg) {
 const errormsg = {
     fallback,
     emailExists,
-    authentificationFail,
+    memberAuthentificationFail,
+    adminAuthentificationFail,
     sessionDoesNotExist,
     genreDoesNotExist,
     titleGenreDoesNotExist,

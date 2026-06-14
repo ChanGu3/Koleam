@@ -1,7 +1,4 @@
-// TODO: FRONTEND RE_VAMP FIX ANY LINGERING PREVIOUS ISSUES OR EXISTING UI THAT IS UNECESSARY AND TO HOW THE LOGIC WORKS NOW
-// TODO: VIDEO LOGIC, CONTROOLLER, ROUTES
-
-// ENVIRONMENT VARIABLES AND PRIVATE SERVER SETUP FOR DESKTOP APP USAGE
+// TODO: ENVIRONMENT VARIABLES AND PRIVATE SERVER SETUP FOR DESKTOP APP USAGE
 require("dotenv").config()
 
 const PRIVATE_PORT = process.env.PRIVATE_PORT || 5774
@@ -120,7 +117,7 @@ function LocalAppSetup() {
         })
     }
 
-    local_app.listen(LOCAL_PORT, "127.0.0.1", () => {
+    local_app.listen(LOCAL_PORT, "0.0.0.0", () => {
         Logging.LogProcess(`server running on http://localhost:${LOCAL_PORT} Locally`)
     })
 }
@@ -192,7 +189,7 @@ function PublicAppSetup() {
     //
     // - SERVER PORT -
     //
-    public_app.listen(PUBLIC_PORT, () => {
+    public_app.listen(PUBLIC_PORT, "0.0.0.0", () => {
         Logging.LogProcess(`server running on http://localhost:${PUBLIC_PORT} Publicly`)
     })
 }

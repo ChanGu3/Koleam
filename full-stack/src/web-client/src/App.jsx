@@ -1,290 +1,292 @@
-import { useEffect, useState } from "react"
-import { Navigate } from "react-router-dom"
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
-import NotFound from "./pages/NotFound.jsx"
-import Home from "./pages/Home.jsx"
-import Signin from "./pages/Signin.jsx"
-import Signup from "./pages/signup/Signup.jsx"
-import SignupSuccess from "./pages/signup/SignupSuccess.jsx"
-import About from "./pages/About.jsx"
-import Search from "./pages/Search.jsx"
-//import SafeSpace from './pages/SafeSpace.jsx'
-import CategoryResult from "./pages/CategoryResult.jsx"
-//import Categories from './pages/Categories.jsx'
-import AnimeDetails from "./pages/AnimeDetails.jsx"
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom"
+
+import { COPYRIGHT_NAME, ACCESS_TYPE } from "./constants.js"
+
+import useUIConfig from "./hooks/useUIConfig.jsx"
+import useMember from "./hooks/useMember.jsx"
+import useAdmin from "./hooks/useAdmin.jsx"
+
+import MainPageWrapper from "./components/main/MainPageWrapper.jsx"
+
+import NotFoundPage from "./pages/NotFoundPage.jsx"
+import AboutPage from "./pages/AboutPage.jsx"
+import CategoryResultPage from "./pages/discovery/CategoryResultPage.jsx"
+import LoadingPage from "./pages/other/LoadingPage.jsx"
+import SignupPage from "./pages/auth/signup/SignupPage.jsx"
+import HomePage from "./pages/discovery/HomePage.jsx"
+import SignInPage from "./pages/auth/SignInPage.jsx"
+import SignupSuccessPage from "./pages/auth/signup/SignupSuccessPage.jsx"
+import SearchPage from "./pages/discovery/SearchPage.jsx"
+import TitleDetailsPage from "./pages/TitleDetailsPage.jsx"
+import SafeSpacePage from "./pages/member-only/SafeSpacePage.jsx"
+
 import AnimeStream from "./pages/AnimeStream.jsx"
-import ForgotPassword from "./pages/forgotpassword/ForgotPassword"
-import ManageMembership from "./pages/settings/ManageMembership"
-import EmailPassword from "./pages/settings/EmailPassword"
-import PreferredLanguage from "./pages/settings/PreferredLanguage"
-import PaymentInfo from "./pages/settings/PaymentInfo"
-import BillingHistory from "./pages/settings/BillingHistory"
-import Favorites from "./pages/Favorites"
-import AdminDashboard from "./pages/admin/AdminDashboard"
-import AdminMembers from "./pages/admin/AdminMembers"
-import AdminTitle from "./pages/admin/AdminTitle.jsx"
-import AdminAnalytics from "./pages/admin/AdminAnalytics"
 
-function MemberAuthorization({ children, hideFromMember = false, redirectURL = "/404", restrictIfBanned = false }) {
-    const [auth, setAuth] = useState(null)
+import MemberAccountPage from "./pages/member-only/MemberAccountPage/MemberAccountPage.jsx"
+import AdminAccountPage from "./pages/admin-only/AdminAccountPage/AdminAccountPage.jsx"
 
-    useEffect(() => {
-        fetch("/api/authorize/member?getData=true", {
-            method: "GET",
-            credentials: "include",
-        })
-            .then((response) => {
-                if (response.ok) {
-                    return response.json()
-                } else {
-                    setAuth(false)
-                }
-            })
-            .then((data) => {
-                if (data.user) {
-                    setAuth(true)
-                    if (restrictIfBanned) {
-                        if (data.user.banned === true) {
-                            setAuth(false)
-                        }
-                    }
-                } else {
-                    setAuth(false)
-                }
-            })
-            .catch((error) => {
-                setAuth(false)
-            })
-    }, [])
+import AdminDashboard from "./pages/admin-only/AdminDashboard.jsx"
+import AdminTitles from "./pages/admin-only/AdminTitles.jsx"
+import AdminMembersControl from "./pages/admin-only/AdminMembersControl.jsx"
 
-    if (auth === null) {
-        return <div></div>
-    }
-
-    if (auth && !hideFromMember) {
-        return children
-    } else if (!auth && hideFromMember) {
-        return children
-    } else {
-        return <Navigate to={redirectURL} replace />
-    }
-}
-
-function AdminAuthorization({ children, hideFromAdmin = false, redirectURL = "/404" }) {
-    const [auth, setAuth] = useState(null)
-
-    useEffect(() => {
-        fetch("/api/authorize/admin", {
-            method: "GET",
-            credentials: "include",
-        })
-            .then((response) => {
-                if (response.ok) {
-                    return response.json()
-                } else {
-                    setAuth(false)
-                }
-            })
-            .then((data) => {
-                if (data.success) {
-                    setAuth(true)
-                } else {
-                    setAuth(false)
-                }
-            })
-            .catch((error) => {
-                setAuth(false)
-            })
-    }, [])
-
-    if (auth === null) {
-        return <div></div>
-    }
-
-    if (auth && !hideFromAdmin) {
-        return children
-    } else if (!auth && hideFromAdmin) {
-        return children
-    } else {
-        return <Navigate to={redirectURL} replace />
-    }
-}
-
-function SignOut() {
-    const [navigateURL, SetIsNavigate] = useState(null)
-
-    useEffect(() => {
-        fetch("/api/authentify/signout", {
-            method: "POST",
-            headers: { "Content-type": "application/json" },
-            credentials: "include",
-        })
-            .then((response) => {
-                if (response.ok) {
-                    if (response.status === 200) {
-                        SetIsNavigate("/auth/signin")
-                    }
-                } else {
-                    SetIsNavigate("/")
-                }
-            })
-            .catch((err) => {
-                SetIsNavigate("/")
-            })
-    }, [])
-
-    if (navigateURL !== null) {
-        return <Navigate to={navigateURL} replace />
-    }
-
-    return <div>Loading...</div>
-}
+import HomeSignOutLocalPage from "./pages/admin-only/HomeSignOutLocalPage.jsx"
 
 function App() {
+    const { CURRENT_ACCESS_TYPE } = useUIConfig()
+    const { adminIsSignedIn } = useAdmin()
+
+    if (!CURRENT_ACCESS_TYPE || adminIsSignedIn === null) {
+        return <LoadingPage />
+    }
+
     return (
         <Router>
-            <Routes>
-                {/*Root URL*/}
-                <Route path="/" element={<Home />} />
-                <Route path="/404" element={<NotFound />} />
-                <Route path="/about" element={<About />} />
-                <Route path="*" element={<Navigate to="/404" replace />} />
-
-                <Route path="discover">
-                    <Route path="" element={<Navigate to="/404" replace />} />
-                    <Route path="search" element={<Search />} />
-                    <Route path="genre/:genre" element={<CategoryResult isGenre={true} isAZ={true} />} />
-                    <Route path="other/A-Z" element={<CategoryResult isGenre={false} isAZ={true} />} />
-                    {/*<Route path="genres" element={<Categories typeTitle="Genres"/>} />*/}
-                    {/*<Route path="other" element={<Categories typeTitle="Other"/>} />*/}
-                </Route>
-
-                <Route path="series">
-                    <Route path="" element={<Navigate to="/404" replace />} />
-                    <Route path=":animeID/:title" element={<AnimeDetails />} />
-                </Route>
-
-                <Route path="stream">
+            <MainPageWrapper>
+                <Routes>
+                    {/*Root URL*/}
                     <Route
-                        path=":streamID/:title"
-                        element={
-                            <MemberAuthorization hideFromMember={false} redirectURL={"/auth/signin"}>
-                                <MemberAuthorization restrictIfBanned={true} redirectURL={"/"}>
-                                    <AnimeStream />
-                                </MemberAuthorization>
-                            </MemberAuthorization>
-                        }
-                    />
-                </Route>
-
-                {/* Authentication */}
-                <Route path="auth">
-                    <Route path="" element={<Navigate to="/404" replace />} />
-                    <Route
-                        path="signin"
-                        element={
-                            <MemberAuthorization hideFromMember={true}>
-                                <Signin />
-                            </MemberAuthorization>
-                        }
+                        path="/"
+                        element={CURRENT_ACCESS_TYPE === ACCESS_TYPE.LOCAL && !adminIsSignedIn ? <HomeSignOutLocalPage /> : <HomePage />} // TODO: NEED TO TEST WITH MEMBER
                     />
                     <Route
-                        path="signup"
+                        path="/404"
+                        element={<NotFoundPage />}
+                    />
+                    <Route
+                        path="*"
                         element={
-                            <MemberAuthorization hideFromMember={true}>
-                                <Signup />
-                            </MemberAuthorization>
+                            <Navigate
+                                to="/404"
+                                replace
+                            />
                         }
                     />
-                    <Route path="signup/success" element={<SignupSuccess />} />
-                    <Route path="signout" element={<SignOut />} />
-                    <Route path="forgot-password" element={<ForgotPassword />} />
-                </Route>
 
-                <Route
-                    path="/settings/membership"
-                    element={
-                        <MemberAuthorization>
-                            <ManageMembership />
-                        </MemberAuthorization>
-                    }
-                />
-                <Route
-                    path="/settings/email-password"
-                    element={
-                        <MemberAuthorization>
-                            <EmailPassword />
-                        </MemberAuthorization>
-                    }
-                />
-                <Route
-                    path="/settings/language"
-                    element={
-                        <MemberAuthorization>
-                            <PreferredLanguage />
-                        </MemberAuthorization>
-                    }
-                />
-                <Route
-                    path="/settings/payment-info"
-                    element={
-                        <MemberAuthorization>
-                            <PaymentInfo />
-                        </MemberAuthorization>
-                    }
-                />
-                <Route
-                    path="/settings/billing-history"
-                    element={
-                        <MemberAuthorization>
-                            <BillingHistory />
-                        </MemberAuthorization>
-                    }
-                />
-                <Route
-                    path="/favorites"
-                    element={
-                        <MemberAuthorization>
-                            <Favorites />
-                        </MemberAuthorization>
-                    }
-                />
+                    {/* Koleam Specific */}
+                    <Route path={COPYRIGHT_NAME.toLowerCase()}>
+                        <Route
+                            path="about"
+                            element={<AboutPage />}
+                        />
+                    </Route>
 
-                <Route
-                    path="/admin"
-                    element={
-                        <AdminAuthorization>
-                            <AdminDashboard />
-                        </AdminAuthorization>
-                    }>
-                    <Route
-                        index
-                        element={
-                            <AdminAuthorization>
-                                <AdminMembers />
-                            </AdminAuthorization>
-                        }
-                    />
-                    <Route
-                        path="title"
-                        element={
-                            <AdminAuthorization>
-                                <AdminTitle />
-                            </AdminAuthorization>
-                        }
-                    />
-                    <Route
-                        path="analytics"
-                        element={
-                            <AdminAuthorization>
-                                <AdminAnalytics />
-                            </AdminAuthorization>
-                        }
-                    />
-                </Route>
-            </Routes>
+                    <Route element={<RestrictIfLocalAdminSignedOut />}>
+                        {/* Discovering */}
+                        <Route path="discover">
+                            <Route
+                                path=""
+                                element={
+                                    <Navigate
+                                        to="/404"
+                                        replace
+                                    />
+                                }
+                            />
+                            <Route
+                                path="search"
+                                element={<SearchPage />}
+                            />
+                            <Route
+                                path="genre/:genre"
+                                element={<CategoryResultPage isGenre={true} />}
+                            />
+                            <Route
+                                path="A-Z"
+                                element={<CategoryResultPage isAZ={true} />}
+                            />
+                        </Route>
+
+                        {/* Title */}
+                        <Route path="title">
+                            <Route
+                                path=""
+                                element={
+                                    <Navigate
+                                        to="/404"
+                                        replace
+                                    />
+                                }
+                            />
+                            <Route
+                                path=":titleID/:label"
+                                element={<TitleDetailsPage />} // TODO STILL GOT TO FIX THIS WAY MORE AND TEST WITH MEMBER
+                            />
+                        </Route>
+
+                        {/* Streams */}
+                        <Route path="stream">
+                            <Route
+                                path=""
+                                element={
+                                    <Navigate
+                                        to="/404"
+                                        replace
+                                    />
+                                }
+                            />
+                            <Route
+                                path=":streamID/:label"
+                                element={<AnimeStream />} // TODO STILL GOT TO FIX THIS WAY MORE AND TEST WITH MEMBER
+                            />
+                        </Route>
+                    </Route>
+
+                    {/* Authentication */}
+                    <Route path="auth">
+                        <Route
+                            path=""
+                            element={
+                                <Navigate
+                                    to="/404"
+                                    replace
+                                />
+                            }
+                        />
+                        <Route
+                            path="signup"
+                            element={
+                                CURRENT_ACCESS_TYPE === ACCESS_TYPE.PUBLIC ? (
+                                    <SignupPage />
+                                ) : (
+                                    <Navigate
+                                        to="/404"
+                                        replace
+                                    />
+                                )
+                            }
+                        />
+                        <Route
+                            path="signup/success"
+                            element={
+                                CURRENT_ACCESS_TYPE === ACCESS_TYPE.PUBLIC ? (
+                                    <SignupSuccessPage />
+                                ) : (
+                                    <Navigate
+                                        to="/404"
+                                        replace
+                                    />
+                                )
+                            }
+                        />
+                        <Route
+                            path="signin"
+                            element={<SignInPage />}
+                        />
+                    </Route>
+
+                    {/* Member Protected Routes */}
+                    <Route element={<RequireMember />}>
+                        <Route
+                            path="safespace"
+                            element={<SafeSpacePage />}
+                        />
+                        <Route
+                            path="settings/member/account"
+                            element={<MemberAccountPage />}
+                        />
+                    </Route>
+
+                    {/* Admin Protected Routes */}
+                    <Route element={<RequireAdmin />}>
+                        <Route
+                            path="settings/admin/account"
+                            element={<AdminAccountPage />}
+                        />
+
+                        <Route path="administration">
+                            <Route
+                                path=""
+                                element={
+                                    <Navigate
+                                        to="/404"
+                                        replace
+                                    />
+                                }
+                            />
+                            <Route
+                                path="dashboard"
+                                element={<AdminDashboard />}
+                            >
+                                <Route
+                                    path="members"
+                                    element={<AdminMembersControl />}
+                                />
+                                <Route
+                                    path="titles"
+                                    element={<AdminTitles />}
+                                />
+                            </Route>
+                        </Route>
+                    </Route>
+                </Routes>
+            </MainPageWrapper>
         </Router>
     )
 }
 
 export default App
+
+function RequireMember() {
+    const { CURRENT_ACCESS_TYPE } = useUIConfig()
+    const { memberIsSignedIn } = useMember()
+
+    if (CURRENT_ACCESS_TYPE !== ACCESS_TYPE.PUBLIC)
+        return (
+            <Navigate
+                to="/404"
+                replace
+            />
+        )
+    if (memberIsSignedIn === null) return <LoadingPage />
+    if (!memberIsSignedIn)
+        return (
+            <Navigate
+                to="/auth/signin"
+                replace
+            />
+        )
+
+    return <Outlet />
+}
+
+function RequireAdmin() {
+    const { CURRENT_ACCESS_TYPE } = useUIConfig()
+    const { adminIsSignedIn } = useAdmin()
+
+    if (CURRENT_ACCESS_TYPE !== ACCESS_TYPE.LOCAL)
+        return (
+            <Navigate
+                to="/404"
+                replace
+            />
+        )
+    if (adminIsSignedIn === null) return <LoadingPage />
+    if (!adminIsSignedIn)
+        return (
+            <Navigate
+                to="/auth/signin"
+                replace
+            />
+        )
+
+    return <Outlet />
+}
+
+function RestrictIfLocalAdminSignedOut() {
+    const { CURRENT_ACCESS_TYPE } = useUIConfig()
+    const { adminIsSignedIn } = useAdmin()
+
+    if (adminIsSignedIn === null) return <LoadingPage />
+
+    if (CURRENT_ACCESS_TYPE === ACCESS_TYPE.LOCAL && !adminIsSignedIn) {
+        console.log("Restricting access to local admin signed out users")
+        return (
+            <Navigate
+                to="/404"
+                replace
+            />
+        )
+    }
+
+    return <Outlet />
+}

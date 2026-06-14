@@ -1,8 +1,9 @@
-const { DataTypes } = require("sequelize")
+const { DataTypes, Op } = require("sequelize")
 const bcrypt = require("bcrypt")
 const { HashPassword, saltRounds } = require("./util.cjs")
 const { Logging, errormsg } = require("../../server-logging.cjs")
 const { ModelExtension } = require("../model-extension.cjs")
+const { validatePassword, validateEmail, validePasswordFailMsg } = require("../../../shared/Validations/account-validations")
 
 class Member extends ModelExtension {
     /**
@@ -44,10 +45,12 @@ class Member extends ModelExtension {
         return instance ? true : false
     }
 
-    static GetAll({ limit, offset, search = null }) {
+    static GetAll({ limit = 10, offset = 0, search = null } = {}) {
         return new Promise(async (resolve, reject) => {
             try {
-                const querys = {}
+                const querys = {
+                    where: {},
+                }
                 if (limit) {
                     querys.limit = limit
                 }
@@ -56,7 +59,7 @@ class Member extends ModelExtension {
                 }
 
                 if (search) {
-                    query.where.email = {
+                    querys.where.email = {
                         [Op.like]: `%${search}%`,
                     }
                 }
@@ -104,6 +107,10 @@ class Member extends ModelExtension {
             if (await Member.Exists(emailLower)) {
                 reject(new Error(errormsg.emailExists))
                 return
+            }
+
+            if (validatePassword(password) === false) {
+                reject(new Error("Invalid password format"))
             }
 
             try {
@@ -156,17 +163,17 @@ class Member extends ModelExtension {
                         if (await bcrypt.compare(password, existingUser.password)) {
                             resolve(existingUser)
                         } else {
-                            reject(new Error(errormsg.authentificationFail))
+                            reject(new Error(errormsg.memberAuthentificationFail))
                         }
                     } catch (err) {
                         Logging.LogError(`Could Not Hash ${email} --- ${err.message}`)
                         reject(new Error(errormsg.fallback))
                     }
                 } else {
-                    reject(new Error(errormsg.authentificationFail))
+                    reject(new Error(errormsg.memberAuthentificationFail))
                 }
             } else {
-                reject(new Error(errormsg.authentificationFail))
+                reject(new Error(errormsg.memberAuthentificationFail))
             }
         })
     }
@@ -175,23 +182,16 @@ class Member extends ModelExtension {
     // reject --> string: error msg
     // resolve --> instance: updated Member
     //
-    static UpdateEmail(oldEmail, newEmail, password) {
+    static UpdateEmail(oldEmail, newEmail) {
         return new Promise(async (resolve, reject) => {
             const oldEmailLower = oldEmail.toLowerCase()
             const newEmailLower = newEmail.toLowerCase()
 
             try {
-                // Check if old email exists and password is correct
+                // Check if old email exists
                 if (!(await Member.Exists(oldEmailLower))) {
                     Logging.LogError(`User not found ${oldEmail} to ${newEmail}`)
                     reject(new Error("User not found"))
-                    return
-                }
-
-                const existingMember = await Member.findByPk(oldEmailLower)
-                if (!(await bcrypt.compare(password, existingMember.password))) {
-                    Logging.LogError(`Current password is incorrect ${oldEmail} to ${newEmail}`)
-                    reject(new Error("Current password is incorrect"))
                     return
                 }
 
@@ -199,6 +199,12 @@ class Member extends ModelExtension {
                 if (await Member.Exists(newEmailLower)) {
                     Logging.LogError(`New email already exists ${oldEmail} to ${newEmail}`)
                     reject(new Error("New email already exists"))
+                    return
+                }
+
+                if (validateEmail(newEmailLower) === false) {
+                    Logging.LogError(`Invalid email format ${oldEmail} to ${newEmail}`)
+                    reject(new Error("Invalid email format"))
                     return
                 }
 
@@ -214,7 +220,7 @@ class Member extends ModelExtension {
                     }
                 )
 
-                resolve(existingMember)
+                resolve({ success: "Successfully updated email" })
             } catch (err) {
                 Logging.LogError(`Could Not Update Email ${oldEmail} to ${newEmail} --- ${err.message}`)
                 reject(new Error(errormsg.fallback))
@@ -242,6 +248,11 @@ class Member extends ModelExtension {
                 // Verify current password
                 if (!(await bcrypt.compare(currentPassword, existingMember.password))) {
                     reject(new Error("Current password is incorrect"))
+                    return
+                }
+
+                if (validatePassword(newPassword) === false) {
+                    reject(new Error(validePasswordFailMsg))
                     return
                 }
 

@@ -9,34 +9,28 @@ memberTitleRouter.get("/favorite", memberController.MemberGetAllTitleFavorite)
 
 memberTitleRouter.get("/:titleID/favorite", memberController.MemberGetTitleFavorite)
 
-memberTitleRouter.post("/:titleID/favorite", memberController.MemberAddTitleFavorite)
-
-memberTitleRouter.delete("/:titleID/favorite", memberController.MemberDeleteTitleFavorite)
+memberTitleRouter.put("/:titleID/favorite", memberController.MemberUpdateTitleFavorite)
 
 /// RATING
 
 memberTitleRouter.get("/:titleID/rating", memberController.MemberGetTitleRating)
 
-memberTitleRouter.post("/:titleID/rating", memberController.MemberAddTitleRating)
-
 memberTitleRouter.put("/:titleID/rating", memberController.MemberUpdateTitleRating)
-
-memberTitleRouter.delete("/:titleID/rating", memberController.MemberDeleteTitleRating)
 
 /// LIKE
 
 memberTitleRouter.get("/stream/:streamID/like", memberController.MemberGetStreamLike)
 
-memberTitleRouter.post("/stream/:streamID/like", memberController.MemberAddStreamLike)
-
-memberTitleRouter.delete("/stream/:streamID/like", memberController.MemberDeleteStreamLike)
+memberTitleRouter.put("/stream/:streamID/like", memberController.MemberUpdateStreamLike)
 
 /// HISTORY
 
-memberTitleRouter.get("/stream/lastwatched", memberController.MemberGetAllAnimeStreamHistory)
+memberTitleRouter.get("/stream/lastwatched", memberController.MemberGetAllTitleStreamHistory)
 
-memberTitleRouter.get("/stream/lastwatched/:streamID", memberController.MemberGetSingleAnimeStreamHistory)
+memberTitleRouter.get("/stream/lastwatched/:streamID", memberController.MemberGetSingleTitleStreamHistory)
 
 memberTitleRouter.put("/stream/lastwatched/:streamID", memberController.MemberLogStreamWatchedStreamHistory)
+
+memberTitleRouter.delete("/stream/lastwatched/:streamID", memberController.MemberDeleteStreamWatchedStreamHistory)
 
 module.exports = memberTitleRouter

@@ -68,7 +68,7 @@ class TitleRating extends ModelExtension {
     //
     // Member Exists in DB true otherwise false
     //
-    static async #Exists(email, titleID) {
+    static async Exists(email, titleID) {
         const instance = await TitleRating.findOne({
             where: {
                 email: email,
@@ -86,7 +86,7 @@ class TitleRating extends ModelExtension {
     // rating must be a INTEGER within [1,5]
     static AddToDB(email, titleID, rating) {
         return new Promise(async (resolve, reject) => {
-            if (await this.#Exists(email, titleID)) {
+            if (await this.Exists(email, titleID)) {
                 Logging.LogWarning(`email & titleID pair exists`)
                 reject(new Error(`${email} already has this ${titleID}`))
                 return
@@ -117,7 +117,7 @@ class TitleRating extends ModelExtension {
     //
     static RemoveFromDB(email, titleID) {
         return new Promise(async (resolve, reject) => {
-            if (!(await this.#Exists(email, titleID))) {
+            if (!(await this.Exists(email, titleID))) {
                 Logging.LogWarning(`email & titleID pair does not exist`)
                 reject(new Error(`${email} does not have a rating for ${titleID}`))
                 return
@@ -143,9 +143,9 @@ class TitleRating extends ModelExtension {
     // reject --> string: error msg
     // resolve --> nothing
     //
-    static UpdateDB(email, titleID, rating) {
+    static UpdateDB(email, titleID, { rating = undefined } = {}) {
         return new Promise(async (resolve, reject) => {
-            if (!(await this.#Exists(email, titleID))) {
+            if (!(await this.Exists(email, titleID))) {
                 Logging.LogWarning(`email & titleID pair does not exist`)
                 reject(new Error(`${email} does not have a rating for ${titleID}`))
                 return
@@ -172,12 +172,14 @@ class TitleRating extends ModelExtension {
         })
     }
 
-    static GetAllByAnimeID(titleID) {
+    static GetAllByTitleID(titleID, { limit = 10, offset = 0 } = {}) {
         return new Promise(async (resolve, reject) => {
             try {
                 const titleRatings = await TitleRating.findAll({
                     where: {
                         titleID: titleID,
+                        limit: limit,
+                        offset: offset,
                     },
                 })
                 resolve(
@@ -218,26 +220,14 @@ class TitleRating extends ModelExtension {
         })
     }
 
-    //
-    // reject --> string: error msg
-    // resolve --> instance: multiple found TitleRating from a single Title
-    //
-    static async GetAnimeIDRatingData(titleID) {
-        try {
-            const titleRatingList = await this.GetAllByAnimeID(titleID)
-            return TitleRating(titleRatingList)
-        } catch (err) {
-            Logging.LogError(`could not get rating info from titleID:${titleID} --- ${err.message}`)
-            throw new Error(errormsg.fallback)
-        }
-    }
-
-    //
-    // reject --> string: error msg
-    // resolve --> instance: multiple found TitleRating rows Title rating Data
-    //
+    /**
+     * reject --> string: error msg
+     * resolve --> instance: multiple found TitleRating rows Title rating Data
+     *
+     * @deprecated this is only useful in cases where we do not get the title data themselves as they include the rating data for a title now using the Title model gets. ( USE MODEL Title )
+     */
     static async GetTitleRatingData(titleID) {
-        const titleRatingList = await this.GetAllByAnimeID(titleID)
+        const titleRatingList = await this.GetAllByTitleID(titleID)
 
         const rateData = {}
 

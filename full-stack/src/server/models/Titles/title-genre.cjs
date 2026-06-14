@@ -109,13 +109,15 @@ class TitleGenre extends ModelExtension {
     //
     //
     //
-    static GetAllByTitleID(titleID) {
+    static GetAllByTitleID(titleID, { limit = 10, offset = 0 } = {}) {
         return new Promise(async (resolve, reject) => {
             try {
                 const titleGenres = await TitleGenre.findAll({
                     where: {
                         titleID: titleID,
                     },
+                    limit: limit,
+                    offset: offset,
                 })
                 resolve(
                     titleGenres.map((element) => {
@@ -132,7 +134,7 @@ class TitleGenre extends ModelExtension {
     //
     //
     //
-    static GetAllByGenre(genre) {
+    static GetAllByGenre(genre, { limit = 10, offset = 0 } = {}) {
         return new Promise(async (resolve, reject) => {
             try {
                 const titleGenres = await TitleGenre.findAll({
@@ -152,7 +154,7 @@ class TitleGenre extends ModelExtension {
         })
     }
 
-    static GetByAnimeGenre(titleID, genre) {
+    static GetByTitleIDAndGenre(titleID, genre) {
         return new Promise(async (resolve, reject) => {
             try {
                 if (await this.Exists(titleID, genre)) {

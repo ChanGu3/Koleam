@@ -145,12 +145,14 @@ class TitleOtherTranslation extends ModelExtension {
         })
     }
 
-    static GetAllByTitleID(titleID) {
+    static GetAllByTitleID(titleID, { limit = 10, offset = 0 } = {}) {
         return new Promise(async (resolve, reject) => {
             try {
                 const titleOtherTranslations = await TitleOtherTranslation.findAll({
                     where: {
                         titleID: titleID,
+                        limit: limit,
+                        offset: offset,
                     },
                 })
                 resolve(
@@ -166,12 +168,14 @@ class TitleOtherTranslation extends ModelExtension {
         })
     }
 
-    static GetAllByGenre(translation) {
+    static GetAllByTranslation(translation, { limit = 10, offset = 0 } = {}) {
         return new Promise(async (resolve, reject) => {
             try {
                 const titleOtherTranslations = await TitleOtherTranslation.findAll({
                     where: {
                         translation: translation,
+                        limit: limit,
+                        offset: offset,
                     },
                 })
                 resolve(titleOtherTranslations)

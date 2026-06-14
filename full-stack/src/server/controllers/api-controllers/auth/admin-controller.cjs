@@ -1,24 +1,10 @@
 const db = require("../../../models/database.cjs")
 
 async function DeleteAdmin(req, res) {
-    const { username } = req.params
+    const { username } = req.query
 
     try {
         db.models.Admin.RemoveByUsername(username)
-
-        await res.status(200).json({
-            success: `${db.models.Admin.name} with username:${username} has been deleted`,
-        })
-    } catch {
-        res.status(500).json({
-            error: `${db.models.Admin.name} with username:${username} could not be deleted`,
-        })
-    }
-}
-
-async function AdminDeleteAdmin(req, res) {
-    try {
-        db.models.Admin.RemoveByUsername(req.session.admin.username)
 
         await res.status(200).json({
             success: `${db.models.Admin.name} with username:${username} has been deleted`,
@@ -100,7 +86,6 @@ async function AdminUpdatePassword(req, res) {
 
 const AdminController = {
     DeleteAdmin,
-    AdminDeleteAdmin,
     GetAllAdmin,
     GetSingleAdmin,
     AdminGetSingleAdmin,

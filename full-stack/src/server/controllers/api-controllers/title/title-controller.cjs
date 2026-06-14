@@ -1,23 +1,26 @@
 const db = require("../../../models/database.cjs")
 const { uploads_image } = require("../../../server-uploads-image.cjs")
 const { sequelize } = require("sequelize")
+const { uploads } = require("../../../server-uploads.cjs")
+const events = require("../../../server-events.cjs")
 
 async function GetAllTitles(req, res) {
     const query = {}
 
-    const { limit, getNewestReleases, isAZ, genres, search, shuffle } = req.query
+    const { limit, offset, getNewestReleases, isAZ, genres, search, shuffle } = req.query
     if (getNewestReleases === "true") {
         query.getNewestReleases = true
     }
-    if (limit && Number.isNaN(Number(limit))) {
+    if (limit && !Number.isNaN(Number(limit))) {
         query.limit = Number(limit)
     }
+    query.offset = offset && !Number.isNaN(Number(offset)) ? Number(offset) : 0
     if (isAZ === "true") {
         query.isAZ = true
     }
     let genresList = null
     if (genres !== "null" && genres !== "undefined" && genres) {
-        genresList = [].concat(genres)
+        genresList = genres.split(",")
     }
     if (search) {
         query.search = search
@@ -31,6 +34,7 @@ async function GetAllTitles(req, res) {
             limit: query.limit,
             isAZ: query.isAZ,
             search: query.search,
+            offset: query.offset,
             shuffle: query.shuffle,
             genereFilter: genresList,
         })
@@ -52,8 +56,15 @@ async function GetSingleTitle(req, res) {
 }
 
 async function GetAllGenres(req, res) {
+    const query = {}
+    if (req.query.limit && !Number.isNaN(Number(req.query.limit))) {
+        query.limit = Number(req.query.limit)
+    }
+    if (req.query.offset && !Number.isNaN(Number(req.query.offset))) {
+        query.offset = Number(req.query.offset)
+    }
     try {
-        const genres = await Genre.GetAll()
+        const genres = await db.models.Genre.GetAll(query)
 
         res.status(200).json(genres)
     } catch (err) {
@@ -125,7 +136,7 @@ async function GetAllTitleInstallmentStream(req, res) {
 async function GetSingleTitleInstallmentStream(req, res) {
     const { streamID } = req.params
     try {
-        const titleStream = await db.models.TitleInstallmentStream.GetByID(streamID)
+        const titleStream = await db.models.TitleInstallmentStream.GetByID(streamID, true)
         res.status(200).json(titleStream)
     } catch (err) {
         res.status(500).json({ error: err.message })
@@ -318,7 +329,7 @@ async function AddStream(req, res) {
             streamData.releaseDate
         )
 
-        await uploads_image.uploadTitleInstallmentStreamThumbnail(stream.titleID, stream.installmentID, stream.streamID, streamThumbnail.buffer)
+        await uploads_image.uploadTitleInstallmentStreamThumbnail(stream.titleID, stream.installmentID, stream.label, streamThumbnail.buffer)
 
         res.status(200).json({ success: "successfully added stream" })
     } catch (err) {
@@ -350,7 +361,7 @@ async function UpdateStream(req, res) {
             t
         )
 
-        await uploads_iamge.uploadTitleInstallmentStreamThumbnail(stream.titleID, stream.installmentID, stream.streamID, streamThumbnail.buffer)
+        await uploads_iamge.uploadTitleInstallmentStreamThumbnail(stream.titleID, stream.installmentID, stream.label, streamThumbnail.buffer)
 
         t.commit()
 
@@ -370,6 +381,270 @@ async function DeleteStream(req, res) {
         res.status(200).json({ success: "successfully removed stream" })
     } catch (err) {
         res.status(400).json({ error: "failed to remove stream" })
+    }
+}
+
+async function AddStreamVideo(req, res) {
+    try {
+        const { streamID } = req.params
+        const { tempFileID } = JSON.parse(req.body)
+
+        if (!streamID || !tempFileID) {
+            res.status(400).json({ error: "missing required data within request" })
+            return
+        }
+
+        if (db.models.StreamVideo.Exists(streamID)) {
+            res.status(400).json({ error: "stream video already exists" })
+        }
+
+        const tempUpload = await db.models.TempUpload.GetByID(tempFileID)
+        const tempUploadFilename = db.models.TempUpload.GetFilename(tempUpload.id, db.models.TempUpload.GetExtension(tempUpload.originalFilename))
+
+        db.models.StreamVideo.AddToDB(uploads.temp.getTempPath(tempUploadFilename), { streamID: streamID }).then()
+
+        res.status(200).json({ success: `successfully started adding stream video process for ${streamID}}` })
+    } catch (err) {
+        res.status(400).json({ error: err.message })
+    }
+}
+
+async function AddStreamAudio(req, res) {
+    try {
+        const { streamID, label } = req.params
+        const { streamIndexAudioOnly, tempFileID } = JSON.parse(req.body)
+        if (!streamID || !tempFileID) {
+            res.status(400).json({ error: "missing required data within request" })
+            return
+        }
+
+        if (db.models.StreamAudio.Exists(streamID, label)) {
+            res.status(400).json({ error: "stream audio already exists" })
+        }
+
+        const tempUpload = await db.models.TempUpload.GetByID(tempFileID)
+        const tempUploadFilename = db.models.TempUpload.GetFilename(tempUpload.id, db.models.TempUpload.GetExtension(tempUpload.originalFilename))
+
+        db.models.StreamAudio.AddToDB(uploads.temp.getTempPath(tempUploadFilename), streamIndexAudioOnly, { streamID: streamID, label: label }).then()
+
+        res.status(200).json({ success: `successfully started adding stream audio process for ${streamID} with label ${label}` })
+    } catch (err) {
+        res.status(400).json({ error: err.message })
+    }
+}
+
+async function AddStreamSubtitle(req, res) {
+    try {
+        const { streamID, label } = req.params
+        const { streamIndexSubtitleOnly, tempFileID } = JSON.parse(req.body)
+        if (!streamID || !tempFileID) {
+            res.status(400).json({ error: "missing required data within request" })
+            return
+        }
+
+        if (db.models.StreamSubtitle.Exists(streamID, label)) {
+            res.status(400).json({ error: "stream subtitle already exists" })
+        }
+
+        const tempUpload = await db.models.TempUpload.GetByID(tempFileID)
+        const tempUploadFilename = db.models.TempUpload.GetFilename(tempUpload.id, db.models.TempUpload.GetExtension(tempUpload.originalFilename))
+
+        db.models.StreamSubtitle.AddToDB(uploads.temp.getTempPath(tempUploadFilename), streamIndexSubtitleOnly, { streamID: streamID, label: label }).then()
+
+        res.status(200).json({ success: `successfully started adding stream subtitle process for ${streamID} with label ${label}` })
+    } catch (err) {
+        res.status(400).json({ error: err.message })
+    }
+}
+
+async function DeleteStreamVideo(req, res) {
+    try {
+        const { streamID } = req.params
+
+        await db.models.StreamVideo.RemoveFromDB(streamID)
+
+        res.status(200).json({ success: "successfully removed stream video" })
+    } catch (err) {
+        res.status(400).json({ error: "failed to remove stream video" })
+    }
+}
+
+async function DeleteStreamAudio(req, res) {
+    try {
+        const { streamID, label } = req.params
+
+        await db.models.StreamAudio.RemoveFromDB(streamID, label)
+
+        res.status(200).json({ success: "successfully removed stream audio" })
+    } catch (err) {
+        res.status(400).json({ error: "failed to remove stream audio" })
+    }
+}
+
+async function DeleteStreamSubtitle(req, res) {
+    try {
+        const { streamID, label } = req.params
+
+        await db.models.StreamSubtitle.RemoveFromDB(streamID, label)
+
+        res.status(200).json({ success: "successfully removed stream subtitle" })
+    } catch (err) {
+        res.status(400).json({ error: "failed to remove stream subtitle" })
+    }
+}
+
+async function UpdateStreamVideo(req, res) {
+    try {
+        const { streamID } = req.params
+        const { tempFileID } = JSON.parse(req.body)
+
+        if (!streamID || !tempFileID) {
+            res.status(400).json({ error: "missing required data within request" })
+            return
+        }
+
+        const tempUpload = await db.models.TempUpload.GetByID(tempFileID)
+        const tempUploadFilename = db.models.TempUpload.GetFilename(tempUpload.id, db.models.TempUpload.GetExtension(tempUpload.originalFilename))
+
+        db.models.StreamVideo.UpdateInDB(streamID, uploads.temp.getTempPath(tempUploadFilename)).catch((err) => Logging.LogError(err.message))
+
+        res.status(200).json({ success: `successfully started updating stream video process for ${streamID}` })
+    } catch (err) {
+        res.status(400).json({ error: err.message })
+    }
+}
+
+async function UpdateStreamAudio(req, res) {
+    try {
+        const { streamID, label } = req.params
+        const { streamIndexAudioOnly, tempFileID, newLabel } = JSON.parse(req.body)
+
+        if (tempFileID) {
+            const tempUpload = await db.models.TempUpload.GetByID(tempFileID)
+            const tempUploadFilename = db.models.TempUpload.GetFilename(tempUpload.id, db.models.TempUpload.GetExtension(tempUpload.originalFilename))
+            const mediaPath = uploads.temp.getTempPath(tempUploadFilename)
+            db.models.StreamAudio.UpdateInDB(streamID, label, mediaPath, streamIndexAudioOnly || 0, { label: newLabel }).catch((err) => Logging.LogError(err.message))
+        } else if (newLabel) {
+            db.models.StreamAudio.UpdateInDB(streamID, label, null, 0, { label: newLabel }).catch((err) => Logging.LogError(err.message))
+        }
+
+        res.status(200).json({ success: `successfully started updating stream audio process for ${streamID} with label ${label}` })
+    } catch (err) {
+        res.status(400).json({ error: err.message })
+    }
+}
+
+async function UpdateStreamSubtitle(req, res) {
+    try {
+        const { streamID, label } = req.params
+        const { streamIndexSubtitleOnly, tempFileID, newLabel } = JSON.parse(req.body)
+
+        if (tempFileID) {
+            const tempUpload = await db.models.TempUpload.GetByID(tempFileID)
+            const tempUploadFilename = db.models.TempUpload.GetFilename(tempUpload.id, db.models.TempUpload.GetExtension(tempUpload.originalFilename))
+            const mediaPath = uploads.temp.getTempPath(tempUploadFilename)
+            db.models.StreamSubtitle.UpdateInDB(streamID, label, { mediaInputFilePath: mediaPath, streamIndex: streamIndexSubtitleOnly }, { label: newLabel }).catch((err) =>
+                Logging.LogError(err.message)
+            )
+        } else if (newLabel) {
+            db.models.StreamSubtitle.UpdateInDB(streamID, label, {}, { label: newLabel }).catch((err) => Logging.LogError(err.message))
+        }
+
+        res.status(200).json({ success: `successfully started updating stream subtitle process for ${streamID} with label ${label}` })
+    } catch (err) {
+        res.status(400).json({ error: err.message })
+    }
+}
+
+async function StreamVideoRenderInfo(req, res) {
+    try {
+        const { streamID } = req.params
+
+        const streamVideoInfo = await db.models.StreamVideo.GetByStreamID(streamID)
+
+        if (streamVideoInfo.isDownloaded) {
+            res.status(200).json({ success: `stream video for streamID ${streamID} has already been rendered and ready to be streamed` })
+        }
+
+        res.setHeader("Content-Type", "text/event-stream")
+        res.setHeader("Cache-Control", "no-cache")
+        res.setHeader("Connection", "keep-alive")
+
+        res.write(`data: ${JSON.stringify({ satus: "Connected", progress: 0 })}\n\n`)
+
+        const sendUpdate = (progress, streamVideoData) => {
+            res.write(`data: ${JSON.stringify({ progress: progress, streamVideoData: streamVideoData })}\n\n`)
+        }
+
+        events.on(db.models.StreamVideo.GetVideoUpdateProgressEventName(streamID), sendUpdate)
+
+        req.on("close", () => {
+            events.off(db.models.StreamVideo.GetVideoUpdateProgressEventName(streamID), sendUpdate)
+            res.end()
+        })
+    } catch (err) {
+        res.status(400).json({ error: `failed to retrieve vidoe render info for streamID ${streamID}` })
+    }
+}
+
+async function StreamAudioRenderInfo(req, res) {
+    try {
+        const { streamID, label } = req.params
+
+        const streamAudioInfo = await db.models.StreamAudio.GetByStreamIDAndLabel(streamID, label)
+
+        if (streamAudioInfo.isDownloaded) {
+            res.status(200).json({ success: `stream audio for streamID ${streamID} with label ${label} has already been rendered and ready to be streamed` })
+        }
+
+        res.setHeader("Content-Type", "text/event-stream")
+        res.setHeader("Cache-Control", "no-cache")
+        res.setHeader("Connection", "keep-alive")
+
+        res.write(`data: ${JSON.stringify({ satus: "Connected", progress: 0 })}\n\n`)
+
+        const sendUpdate = (progress, streamAudioData) => {
+            res.write(`data: ${JSON.stringify({ progress: progress, streamAudioData: streamAudioData })}\n\n`)
+        }
+
+        events.on(db.models.StreamAudio.GetAudioUpdateProgressEventName(streamID, label), sendUpdate)
+
+        req.on("close", () => {
+            events.off(db.models.StreamAudio.GetAudioUpdateProgressEventName(streamID, label), sendUpdate)
+            res.end()
+        })
+    } catch (err) {
+        res.status(400).json({ error: `failed to retrieve audio render info for streamID ${streamID} with label ${label}` })
+    }
+}
+
+async function StreamSubtitleRenderInfo(req, res) {
+    try {
+        const { streamID, label } = req.params
+
+        const streamSubtitleInfo = await db.models.StreamSubtitle.GetByStreamIDAndLabel(streamID, label)
+        if (streamSubtitleInfo.isDownloaded) {
+            res.status(200).json({ success: `stream subtitle for streamID ${streamID} with label ${label} has already been rendered and ready to be streamed` })
+        }
+
+        res.setHeader("Content-Type", "text/event-stream")
+        res.setHeader("Cache-Control", "no-cache")
+        res.setHeader("Connection", "keep-alive")
+
+        res.write(`data: ${JSON.stringify({ satus: "Connected", progress: 0 })}\n\n`)
+
+        const sendUpdate = (progress, streamSubtitleData) => {
+            res.write(`data: ${JSON.stringify({ progress: progress, streamSubtitleData: streamSubtitleData })}\n\n`)
+        }
+
+        events.on(db.models.StreamSubtitle.GetSubtitleUpdateProgressEventName(streamID, label), sendUpdate)
+
+        req.on("close", () => {
+            events.off(db.models.StreamSubtitle.GetSubtitleUpdateProgressEventName(streamID, label), sendUpdate)
+            res.end()
+        })
+    } catch (err) {
+        res.status(400).json({ error: `failed to retrieve subtitle render info for streamID ${streamID} with label ${label}` })
     }
 }
 
@@ -425,6 +700,20 @@ const titleController = {
     AddStream,
     UpdateStream,
     DeleteStream,
+    stream: {
+        AddStreamVideo,
+        AddStreamAudio,
+        AddStreamSubtitle,
+        DeleteStreamVideo,
+        DeleteStreamAudio,
+        DeleteStreamSubtitle,
+        UpdateStreamVideo,
+        UpdateStreamAudio,
+        UpdateStreamSubtitle,
+        StreamVideoRenderInfo,
+        StreamAudioRenderInfo,
+        StreamSubtitleRenderInfo,
+    },
     AddGenre,
     DeleteGenre,
 }

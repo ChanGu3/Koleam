@@ -15,9 +15,14 @@ const { TitleOtherTranslation } = require("./Titles/title-other-translation.cjs"
 const { TitleRating } = require("./Titles/title-rating.cjs")
 const { TitleInstallment } = require("./Titles/title-installment.cjs")
 const { TitleFavorite } = require("./Titles/title-favorite.cjs")
-const { TitleInstallmentStream } = require("./Titles/title-installment-stream.cjs")
-const { TitleInstallmentStreamLike } = require("./Titles/title-installment-stream-like.cjs")
-const { TitleInstallmentStreamWatchHistory } = require("./Titles/title-installment-stream-watch-history.cjs")
+const { TitleInstallmentStream } = require("./Titles/Streams/title-installment-stream.cjs")
+const { TitleInstallmentStreamLike } = require("./Titles/Streams/title-installment-stream-like.cjs")
+const { TitleInstallmentStreamWatchHistory } = require("./Titles/Streams/title-installment-stream-watch-history.cjs")
+const { TitleContentAdvisory } = require("./Titles/title-content-advisory.cjs")
+const { StreamVideo } = require("./Titles/Streams/stream-video.cjs")
+const { StreamSubtitle } = require("./Titles/Streams/stream-subtitle.cjs")
+const { StreamAudio } = require("./Titles/Streams/stream-audio.cjs")
+const { TempUpload } = require("./temp-upload.cjs")
 
 const sequelize = new Sequelize({
     dialect: "sqlite",
@@ -29,6 +34,7 @@ const models = {
     Member,
     Admin,
     Session,
+    TempUpload,
     Title,
     Genre,
     TitleGenre,
@@ -36,7 +42,11 @@ const models = {
     TitleRating,
     TitleInstallment,
     TitleFavorite,
+    TitleContentAdvisory,
     TitleInstallmentStream,
+    StreamVideo,
+    StreamSubtitle,
+    StreamAudio,
     TitleInstallmentStreamLike,
     TitleInstallmentStreamWatchHistory,
 }
@@ -69,6 +79,24 @@ async function Setup() {
             await DevSetup(Database)
             await env.CreateDefaultEnvFile(false)
         } else {
+            await models.Member.sync()
+            await models.Session.sync()
+            await models.TempUpload.sync()
+            await models.Title.sync()
+            await models.Genre.sync()
+            await models.TitleGenre.sync()
+            await models.TitleOtherTranslation.sync()
+            await models.TitleRating.sync()
+            await models.TitleInstallment.sync()
+            await models.TitleFavorite.sync()
+            await models.TitleInstallmentStream.sync()
+            await models.TitleInstallmentStreamLike.sync()
+            await models.TitleInstallmentStreamWatchHistory.sync()
+            await models.TitleContentAdvisory.sync()
+            await models.StreamVideo.sync()
+            await models.StreamSubtitle.sync()
+            await models.StreamAudio.sync()
+            await env.CreateDefaultEnvFile(true)
             await Genre.DefaultSetup()
         }
         await Admin.DefaultSetup()

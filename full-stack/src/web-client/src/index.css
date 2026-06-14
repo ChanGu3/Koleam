@@ -1,9 +1,23 @@
 #root {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh; /* height of device screen */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* height of device screen */
 }
 
 main {
-  flex-grow: 1; /* extends to fit height of #root */
+    flex-grow: 1; /* extends to fit height of #root */
+}
+
+/* Global CSS Variables */
+:root {
+    --color-s-white: #f8f8ff;
+    --color-s-primary: #87ceeb;
+    --color-s-secondary: #59cfff;
+    --color-s-tertiary: #429abe;
+    --color-s-dark-primary: #1a1a1a;
+    --color-s-dark-secondary: #777777;
+    --color-s-dark-tertiary: #0f0f0f;
+    --color-s-link-visited: #9333ea;
+    --color-s-error: #be185d;
+    --color-s-success: #2CFF05;
 }

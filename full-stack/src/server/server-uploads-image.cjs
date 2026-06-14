@@ -1,3 +1,5 @@
+const path = require("path")
+
 //
 // deletes title cover
 //
@@ -15,15 +17,15 @@ async function uploadTitleCover(titleID, buffer) {
 //
 // deletes title installment stream thumbnail
 //
-async function deleteTitleInstallmentStreamThumbnail(titleID, installmentID, streamID) {
-    return deleteTitleFile(path.join(titleID, installmentID, streamID), THUMBNAIL_FILENAME)
+async function deleteTitleInstallmentStreamThumbnail(titleID, installmentID, streamLabel) {
+    return deleteTitleFile(path.join(titleID, installmentID, streamLabel), THUMBNAIL_FILENAME)
 }
 
 //
 // uploads title installment stream thumbnail
 //
-async function uploadTitleInstallmentStreamThumbnail(titleID, installmentID, streamID, buffer) {
-    return uploadTitleFile(path.join(titleID, installmentID, streamID), THUMBNAIL_FILENAME, buffer)
+async function uploadTitleInstallmentStreamThumbnail(titleID, installmentID, streamLabel, buffer) {
+    return uploadTitleFile(path.join(titleID, installmentID, streamLabel), THUMBNAIL_FILENAME, buffer)
 }
 
 const uploads_image = {

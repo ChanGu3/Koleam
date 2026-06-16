@@ -61,7 +61,6 @@ function App() {
                             />
                         }
                     />
-
                     {/* Koleam Specific */}
                     <Route path={COPYRIGHT_NAME.toLowerCase()}>
                         <Route

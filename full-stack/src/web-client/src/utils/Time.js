@@ -7,6 +7,10 @@ function getTimeNowWithSecondChange(seconds) {
 }
 
 function getCalendarDateAndTime(date) {
+    if (date === undefined || date instanceof Date === false || isNaN(date.getTime())) {
+        return null
+    }
+
     const year = date.getFullYear()
     const monthAbrv = date.toLocaleString(undefined, { month: "short" })
     const day = String(date.getDate()).padStart(2, "0")

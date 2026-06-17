@@ -51,3 +51,26 @@ export async function FetchStreamByID(streamID) {
         return null
     }
 }
+
+export async function FetchSubtitleByStreamIDLabelExt(streamID, label, ext) {
+    try {
+        const response = await fetch(`/api/title/stream/${streamID}/subs/${label}.${ext}`, {
+            method: "GET",
+            credentials: "include",
+        })
+
+        if (!response.ok) {
+            return null
+        }
+
+        if (response.status !== 200) {
+            return null
+        }
+
+        const data = await response.text()
+
+        return data
+    } catch (err) {
+        return null
+    }
+}

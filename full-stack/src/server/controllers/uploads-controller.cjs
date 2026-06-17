@@ -55,11 +55,7 @@ async function GetStreamUploads(req, res) {
             const streamData = await db.models.TitleInstallmentStream.GetByID(streamID)
             let relativePath = path.join(streamData.titleID, streamData.installmentID, streamData.label)
 
-            if (extendedSubtitleExt.includes(ext)) {
-                relativePath = path.join(relativePath, "subs", filename)
-            } else {
-                relativePath = path.join(relativePath, filename)
-            }
+            relativePath = path.join(relativePath, filename)
 
             const filePath = uploads.getTitlePath(relativePath)
 

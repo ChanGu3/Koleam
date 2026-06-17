@@ -20,7 +20,7 @@ import SearchPage from "./pages/discovery/SearchPage.jsx"
 import TitleDetailsPage from "./pages/TitleDetailsPage.jsx"
 import SafeSpacePage from "./pages/member-only/SafeSpacePage.jsx"
 
-import AnimeStream from "./pages/AnimeStream.jsx"
+import TitleStream from "./pages/TitleStream.jsx"
 
 import MemberAccountPage from "./pages/member-only/MemberAccountPage/MemberAccountPage.jsx"
 import AdminAccountPage from "./pages/admin-only/AdminAccountPage/AdminAccountPage.jsx"
@@ -125,7 +125,7 @@ function App() {
                             />
                             <Route
                                 path=":streamID/:label"
-                                element={<AnimeStream />} // TODO STILL GOT TO FIX THIS WAY MORE AND TEST WITH MEMBER
+                                element={<TitleStream />} // TODO STILL GOT TO FIX THIS WAY MORE AND TEST WITH MEMBER
                             />
                         </Route>
                     </Route>

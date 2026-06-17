@@ -15,6 +15,9 @@ async function deleteVideo(titleID, installmentID, streamTitle) {
 async function getFileVideoDetails(inputPath) {
     const metadata = await uploads.media.probeMediaFileInfo(inputPath)
     const videoMetaData = metadata.streams.filter((s) => s.codec_type === "video")[0]
+    if (!videoMetaData) {
+        throw new Error(`Video stream not found in file: ${inputPath}`)
+    }
     return uploads.media.extractRequiredVideoMetadata(videoMetaData)
 }
 
@@ -36,6 +39,9 @@ async function renameAudio(titleID, installmentID, streamTitle, previousAudioNam
 async function getFileAudioDetails(inputPath, streamIndex) {
     const metadata = await uploads.media.probeMediaFileInfo(inputPath)
     const audioMetaData = metadata.streams.filter((s) => s.codec_type === "audio")[streamIndex]
+    if (!audioMetaData) {
+        throw new Error(`Audio stream at index ${streamIndex} not found in file: ${inputPath}`)
+    }
     return uploads.media.extractRequiredAudioMetadata(audioMetaData)
 }
 
@@ -57,8 +63,12 @@ async function renameSubtitle(titleID, installmentID, streamTitle, previousSubNa
 async function getFileSubtitleDetails(inputPath, streamIndex) {
     const metadata = await uploads.media.probeMediaFileInfo(inputPath)
     const subtitleMetaData = metadata.streams.filter((s) => s.codec_type === "subtitle")[streamIndex]
+    if (!subtitleMetaData) {
+        throw new Error(`Subtitle stream at index ${streamIndex} not found in file: ${inputPath}`)
+    }
     return uploads.media.extractRequiredSubtitleMetadata(subtitleMetaData)
 }
+
 function writeMasterPlaylist(videoStreams, audioStreams, subStreams, titleId, installmentID, streamTitle) {
     return uploads.media.generateMasterPlaylist(videoStreams, audioStreams, subStreams, path.join(titleId, installmentID, streamTitle))
 }

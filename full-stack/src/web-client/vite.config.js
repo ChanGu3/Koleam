@@ -8,41 +8,37 @@ const LOCAL_PORT = 5776
 
 const CURRENT_PORT_VIEW = LOCAL_PORT
 
-const jassubWorkerPathSrc = path.resolve(__dirname, "..", "node_modules", "jassub", "dist", "wasm")
-const jassubWorkerPathDst = path.join("jassub")
+const libasswasmWorkerPathSrc = path.resolve(__dirname, "..", "node_modules", "libass-wasm", "dist", "js")
+const jassubWorkerPathDst = path.join("libasswasm")
 
 // https://vite.dev/config/
 export default defineConfig({
-    plugins: [react(),
+    plugins: [
+        react(),
         viteStaticCopy({
             targets: [
                 {
-                    src: path.join(jassubWorkerPathSrc, "jassub-worker.wasm"),
+                    src: path.join(libasswasmWorkerPathSrc, "subtitles-octopus-worker.js"),
                     dest: jassubWorkerPathDst,
-                    rename: { stripBase: true }
+                    rename: { stripBase: true },
                 },
                 {
-                    src: path.join(jassubWorkerPathSrc, "jassub-worker.js"),
-                    dest: jassubWorkerPathDst, 
-                    rename: { stripBase: true }
-                },
-                {
-                    src: path.join(jassubWorkerPathSrc, "jassub-worker-modern.wasm"),
+                    src: path.join(libasswasmWorkerPathSrc, "subtitles-octopus-worker-legacy.js"),
                     dest: jassubWorkerPathDst,
-                    rename: { stripBase: true }
+                    rename: { stripBase: true },
                 },
                 {
-                    src: "TODO.md",
-                    dest: "jassub"
-                }
-
+                    src: path.join(libasswasmWorkerPathSrc, "subtitles-octopus-worker.wasm"),
+                    dest: jassubWorkerPathDst,
+                    rename: { stripBase: true },
+                },
             ],
-        })
+        }),
     ],
     server: {
         host: true, // Exposes the server to your local network
         fs: {
-            allow: [".."]
+            allow: [".."],
         },
         proxy: {
             "/api": {

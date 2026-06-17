@@ -207,7 +207,7 @@ async function uploadChuckToTempFile(filename, buffer) {
     }
 }
 
-// Currently everything needs to be generated before its able to be served
+// Currently everything needs to be generated before its able to be served properly
 // can change this in the futrue to allow lower res version available while higher res versions are still being generated later though
 const ffmpeg = require("fluent-ffmpeg")
 const ffmpegInstaller = require("@ffmpeg-installer/ffmpeg")
@@ -412,7 +412,6 @@ async function deleteAllRes(relativePath) {
     }
 }
 
-// generate aac only for now since its the most widely supported audio codec for hls, support more later
 function generateSingleAudio(inputFile, outputPlaylist, streamIndex = 0, onProgress = (progress) => {}, onComplete = () => {}) {
     return new Promise((resolve, reject) => {
         const outputDir = path.dirname(outputPlaylist)
@@ -472,15 +471,13 @@ function generateSingleSubtitle(inputFile, outputFolder, subName, streamIndex = 
                 const nativeExt = getExtensionFromSubtitleCodec(subtitleMetaData.codec_name)
 
                 const webvttPath = path.join(outputFolder, `${subName}.vtt`)
-                const nativePath = path.join(outputFolder, `${subName}.${nativeExt}`)
 
                 let command = ffmpeg(inputFile)
-                    // Output 1: Always extract a WebVTT fallback for the HLS player
                     .output(webvttPath)
                     .outputOptions(["-map", `0:s:${streamIndex}`, "-f", "webvtt"])
 
-                // Output 2: If the native format isn't WebVTT, extract it untouched!
-                if (nativeExt !== ".vtt") {
+                if (nativeExt !== "vtt" && nativeExt !== "srt") {
+                    const nativePath = path.join(outputFolder, `${subName}.${nativeExt}`)
                     command = command.output(nativePath).outputOptions(["-map", `0:s:${streamIndex}`, "-c:s", "copy"])
                 }
 
@@ -493,7 +490,7 @@ function generateSingleSubtitle(inputFile, outputFolder, subName, streamIndex = 
                         resolve(extractRequiredSubtitleMetadata(subtitleMetaData))
                     })
                     .on("error", (err) => reject(err))
-                    .run() // Use .run() instead of .save() because we have multiple outputs
+                    .run()
             })
             .catch((err) => {
                 reject(err)

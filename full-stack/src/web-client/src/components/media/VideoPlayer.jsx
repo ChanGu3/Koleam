@@ -21,6 +21,7 @@ import {
 import { VerticalScrollable } from "../Scrollable.jsx"
 import { useMediaQuery } from "react-responsive"
 import { DefaultSpinner } from "../Spinners.jsx"
+import SubtitlesOctopus from "libass-wasm"
 
 // TODO: Move Out All Parts as components so this isnt such a god function component plus resueabilits is nice
 
@@ -43,11 +44,26 @@ function formatTime(seconds) {
 }
 
 /**
+ * Note: For Subtitles To Transfer Over To Next Video must be the same --> name (Example: English, Spanish, Japanses, Korean, etc.) TODO: default settings these transfer over using the refs and the correct names so its possible as long as that is done
  * @prop src: string - the source URL of the video to play
  * @prop isAutoPlayRef: React ref object - a ref that holds a boolean value indicating whether the video should autoplay or not. This allows the parent component to control autoplay behavior across different video instances.
  * @prop endCountdown: number (optional) - if provided will show a countdown at the end of the video and call onStreamEnd when it reaches 0 (hence if its 0 it will call onStreamEnd immediately when the video ends)
+ * @porp onChangeSubtitle(subtitle) => string || null - allows outside logic to send message to video player of the url of the subtitle or null if no such ssa or ass subtitles exist
  */
-function VideoPlayer({ src, isAutoPlayRef, qualityRef, audioRef, subtitleRef, volumeRef, endCountdown = null, onStreamEnd = () => {} }) {
+function VideoPlayer({
+    src,
+    isAutoPlayRef,
+    qualityRef,
+    audioRef,
+    subtitleRef,
+    volumeRef,
+    endCountdown = null,
+    onStreamEnd = () => {},
+    onChangeSubtitle = async (currentSubtitle) => null,
+}) {
+    const workerUrl = "/libasswasm/subtitles-octopus-worker.js"
+    const workerLegacyUrl = "/libasswasm/subtitles-octopus-worker-legacy.js"
+
     const videoPlayerZ = 10
     const videoPlayerTouch = videoPlayerZ + 1
     const videoPlayerOpsZ = videoPlayerZ + 10
@@ -69,7 +85,15 @@ function VideoPlayer({ src, isAutoPlayRef, qualityRef, audioRef, subtitleRef, vo
     const [audios, setAudios] = useState([])
     const [subtitles, SetSubtitles] = useState([])
 
+    function isLoading() {
+        return isLoadingVideoData || isLoadingOctopus
+    }
+
     function OnVideoPlayToggle() {
+        if (isLoading()) {
+            return
+        }
+
         if (!isPlayingVideo) {
             videoRef.current.play()
             setIsPlayingVideo(true)
@@ -119,6 +143,10 @@ function VideoPlayer({ src, isAutoPlayRef, qualityRef, audioRef, subtitleRef, vo
     }
 
     function onVideoScreenSeekClick(e, seconds) {
+        if (isLoading()) {
+            return
+        }
+
         if (e.detail >= 2) {
             videoRef.current.currentTime += seconds
             timeChangedUIAlert(seconds)
@@ -143,7 +171,7 @@ function VideoPlayer({ src, isAutoPlayRef, qualityRef, audioRef, subtitleRef, vo
     const [isLoadingVideoData, setIsLoadingVideoData] = useState(true)
     const [isErrorLoadingVideoData, setIsErrorLoadingVideoData] = useState(false)
     const [fragmentsLoadedList, setFragmentsLoadedList] = useState([]) // true or false based on if the fragment has been loaded or not, index is the fragment index
-    const handleLevelChange = (level) => {
+    function handleLevelChange(level) {
         const levelIndex = qualities.findIndex((l) => l.height === level.height)
         SetQuality(level)
         if (hlsRef.current) {
@@ -151,7 +179,7 @@ function VideoPlayer({ src, isAutoPlayRef, qualityRef, audioRef, subtitleRef, vo
         }
     }
 
-    const handleAudioChange = (audio) => {
+    function handleAudioChange(audio) {
         const audioIndex = audios.findIndex((a) => a.name === audio.name)
         SetAudio(audio)
         if (hlsRef.current) {
@@ -159,11 +187,40 @@ function VideoPlayer({ src, isAutoPlayRef, qualityRef, audioRef, subtitleRef, vo
         }
     }
 
-    const handleSubtitleChange = (subtitle) => {
+    async function handleSubtitleChange(subtitle) {
         const subtitleIndex = subtitles.findIndex((s) => s.name === subtitle.name)
         SetSubtitle(subtitle)
         if (hlsRef.current) {
             hlsRef.current.subtitleTrack = subtitleIndex
+
+            if (isPlayingVideo) {
+                videoRef.current.pause()
+            }
+
+            SetIsLoadingOctopus(true)
+            const content = await onChangeSubtitle(subtitle)
+
+            if (content && !octopusError) {
+                if (isAdvancedSubtitleMode.current) {
+                    octopusRef.current.freeTrack()
+                } else {
+                    isAdvancedSubtitleMode.current = true
+                    octopusRef.current.canvas.style.display = "block"
+                }
+
+                octopusRef.current.setTrack(content)
+            } else {
+                if (isAdvancedSubtitleMode.current) {
+                    isAdvancedSubtitleMode.current = false
+                    octopusRef.current.freeTrack()
+                    octopusRef.current.canvas.style.display = "none"
+                }
+            }
+            SetIsLoadingOctopus(false)
+            if (isPlayingVideo) {
+                videoRef.current.play()
+            }
+
             updateUISubtitleInfo()
         }
     }
@@ -191,6 +248,7 @@ function VideoPlayer({ src, isAutoPlayRef, qualityRef, audioRef, subtitleRef, vo
                 if (isManifestError || data.fatal) {
                     setIsLoadingVideoData(false)
                     setIsErrorLoadingVideoData(true)
+                    updateUITimeInfo()
                     hls.destroy()
                     hls = null
                 }
@@ -399,10 +457,71 @@ function VideoPlayer({ src, isAutoPlayRef, qualityRef, audioRef, subtitleRef, vo
         }
     }, [currentCountdown, onStreamEnd])
 
+    /* Subtitles */
+    const isAdvancedSubtitleMode = useRef(false)
+    const octopusRef = useRef(null)
+    const [isLoadingOctopus, SetIsLoadingOctopus] = useState(true)
+    const [octopusError, SetIsOctopusError] = useState(false)
     const [activeCues, setActiveCues] = useState([])
+
+    useEffect(() => {
+        async function InitializeOctopus() {
+            const options = {
+                video: videoRef.current,
+                workerUrl: workerUrl,
+                legacyWorkerUrl: workerLegacyUrl,
+                subContent: "[Script Info]\nScriptType: v4.00+",
+                onReady: () => {
+                    SetIsLoadingOctopus(false)
+                },
+                fallbackFont: "/fonts/OpenSans-Regular-webfont.woff2",
+                fonts: [
+                    "/fonts/GandhiSans-Regular.otf",
+                    "/fonts/GandhiSans-Bold.otf",
+                    "/fonts/GandhiSans-Italic.otf",
+                    "/fonts/GandhiSans-BoldItalic.otf",
+                    "/fonts/Noto-Sans-regular.woff2",
+                    "/fonts/NotoColorEmoji.woff2",
+                    "/fonts/Roboto-Regular.woff2",
+                    "/fonts/Trebuchet-MS.ttf",
+                ],
+            }
+            const instance = new SubtitlesOctopus(options)
+
+            instance.canvas.style.display = "none"
+
+            return instance
+        }
+
+        InitializeOctopus()
+            .then((instance) => {
+                octopusRef.current = instance
+            })
+            .catch(() => {
+                SetIsLoadingOctopus(false)
+                octopusRef.current = null
+                SetIsOctopusError(true)
+                console.error("Failed to initialize Octopus")
+            })
+
+        return () => {
+            if (octopusRef.current) {
+                octopusRef.current.dispose()
+                octopusRef.current = null
+            }
+        }
+    }, [])
 
     function updateUISubtitleInfo() {
         if (videoRef.current) {
+            if (isAdvancedSubtitleMode.current) {
+                if (hlsRef.current.subtitleTrack !== -1) {
+                    hlsRef.current.subtitleTrack = -1
+                    setActiveCues([])
+                }
+                return
+            }
+
             let currentTexts = []
             for (let i = 0; i < videoRef.current.textTracks.length; i++) {
                 const track = videoRef.current.textTracks[i]
@@ -536,6 +655,10 @@ function VideoPlayer({ src, isAutoPlayRef, qualityRef, audioRef, subtitleRef, vo
     }
 
     function handleTimelineDown(e) {
+        if (isLoading()) {
+            return
+        }
+
         if (videoRef.current && videoRef.current.duration > 0 && timeline.current && timelinePlay.current) {
             const rect = timeline.current.getBoundingClientRect()
 
@@ -589,7 +712,6 @@ function VideoPlayer({ src, isAutoPlayRef, qualityRef, audioRef, subtitleRef, vo
     const [isShowingOptions, setIsShowingOptions] = useState(false)
 
     /* Showing UI */
-
     const [mouseMovingOnVideo, setMouseMovingOnVideo] = useState(false)
     const mouseMovingOnVideoTimerRef = useRef(null)
     const [hoverUIFirstAppear, setHoverUIFirstAppear] = useState(true)
@@ -675,7 +797,7 @@ function VideoPlayer({ src, isAutoPlayRef, qualityRef, audioRef, subtitleRef, vo
                     onClick={onVideoMiddleOptionsScreenClick}
                     className="w-full h-full flex items-center justify-center touch-manipulation"
                 >
-                    {isLoadingVideoData ? (
+                    {isLoadingVideoData || isLoadingOctopus ? (
                         <div className="group/middleplay p-3 md:p-4 rounded-full cursor-pointer">
                             <DefaultSpinner
                                 className="group-hover/middleplay:text-s-white"
@@ -728,17 +850,19 @@ function VideoPlayer({ src, isAutoPlayRef, qualityRef, audioRef, subtitleRef, vo
                 ></div>
             </div>
 
-            {/* Video Element */}
-            <video
-                ref={videoRef}
-                controls={false}
-                loop={false}
-                onTimeUpdate={handleVideoOnTimeUpdate}
-                onLoadedMetadata={handleLoadedMetadata}
-                onPlay={() => OnVideoPlayToggle}
-                onPause={() => OnVideoPlayToggle}
-                className="w-full h-full object-contain"
-            />
+            {/* Video & Subtitles Wrapper */}
+            <div className="absolute top-0 left-0 w-full h-full">
+                <video
+                    ref={videoRef}
+                    controls={false}
+                    loop={false}
+                    onTimeUpdate={handleVideoOnTimeUpdate}
+                    onLoadedMetadata={handleLoadedMetadata}
+                    onPlay={() => OnVideoPlayToggle}
+                    onPause={() => OnVideoPlayToggle}
+                    className="w-full h-full object-contain"
+                />
+            </div>
 
             {/* Custom Subtitle Renderer */}
             <div
@@ -757,7 +881,7 @@ function VideoPlayer({ src, isAutoPlayRef, qualityRef, audioRef, subtitleRef, vo
             {/* Complete At Text */}
             <div
                 style={{ zIndex: videoPlayerOpsZ }}
-                className={`absolute top-2 select-none w-full flex justify-end ${isPlayingVideo && !hoverUILastAppear ? "opacity-0" : "opacity-100"} transition-opacity duration-300 ease-in-out`}
+                className={`absolute top-2 select-none w-full flex justify-end ${(isPlayingVideo && !hoverUILastAppear) || (timeEnding.current && timeEnding.current.innerText.length === 0) ? "opacity-0" : "opacity-100"} transition-opacity duration-300 ease-in-out`}
             >
                 <div className="px-1 py-0.5 mx-2 rounded-xs bg-black/80 group-hover:bg-black">
                     <p className="text-s-white text-[8px] md:text-xs font-medium">
@@ -765,9 +889,7 @@ function VideoPlayer({ src, isAutoPlayRef, qualityRef, audioRef, subtitleRef, vo
                         <span
                             className="text-s-secondary"
                             ref={timeEnding}
-                        >
-                            {getCalendarDateAndTime(getTimeNowWithSecondChange(0))}
-                        </span>
+                        ></span>
                     </p>
                 </div>
             </div>
@@ -803,6 +925,9 @@ function VideoPlayer({ src, isAutoPlayRef, qualityRef, audioRef, subtitleRef, vo
                         <button
                             onClick={(e) => {
                                 e.stopPropagation()
+                                if (isLoading()) {
+                                    return
+                                }
                                 setIsShowingOptions((prev) => !prev)
                             }}
                             className={`p-1.5 ${isShowingOptions ? "bg-s-primary rounded-xs" : "hover:bg-s-tertiary/40 bg-black/60 rounded-full hover:rounded-xs"} cursor-pointer`}
@@ -889,7 +1014,9 @@ function VideoPlayer({ src, isAutoPlayRef, qualityRef, audioRef, subtitleRef, vo
                         SetAudio={handleAudioChange}
                         audio={audio}
                         subtitles={subtitles}
-                        SetSubtitle={handleSubtitleChange}
+                        SetSubtitle={async (sub) => {
+                            await handleSubtitleChange(sub)
+                        }}
                         subtitle={subtitle}
                         speed={speed}
                         SetSpeed={SetSpeed}

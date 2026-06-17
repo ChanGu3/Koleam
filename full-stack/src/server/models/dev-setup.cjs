@@ -68,6 +68,10 @@ async function TestUsingMKV(models, animeCloudsSeason1ep1) {
     await models.StreamSubtitle.AddToDB("./dev/media/test5.mkv", 2, { streamID: animeCloudsSeason1ep1.id, label: "HELLO", isCC: true }, null, (progress) => {
         Logging.LogDev(`Loading Test Subtitle: ${progress.percent}%`)
     })
+
+    await models.StreamSubtitle.AddToDB("./dev/media/basic-dialogue.ass", 0, { streamID: animeCloudsSeason1ep1.id, label: "ASS", isCC: false }, null, (progress) => {
+        Logging.LogDev(`Loading Test Subtitle ASS: ${progress.timemark}%`)
+    })
 }
 
 async function DevSetup({ sequelize, models }) {

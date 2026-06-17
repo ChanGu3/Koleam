@@ -16,7 +16,7 @@
     "@tanstack/react-virtual": "^3.13.24",
     "autoprefixer": "^10.4.21",
     "hls.js": "^1.6.16",
-    "jassub": "^2.5.6",
+    "libass-wasm": "^4.1.0",
     "lucide-react": "^1.16.0",
     "postcss": "^8.5.6",
     "react": "^19.1.0",

@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import FavoriteButton from "../components/FavoriteButton.jsx"
 import LikeButton from "../components/LikeButton.jsx"
 import StreamModule2 from "../components/modules/StreamModule2.jsx"
-import { FetchLogStreamStarted, FetchSubtitleByStreamIDLabelExt } from "../services/Titles/FetchStream.js"
+import { UpdateLogStream, FetchLogStream, FetchSubtitleByStreamIDLabelExt } from "../services/Titles/FetchStream.js"
 import { useGetIntallmentsByTitleID } from "../hooks/useInstallment.jsx"
 import { useGetStreamByID } from "../hooks/useStream.jsx"
 import ImageUI from "../components/ImageUI.jsx"
@@ -14,7 +14,9 @@ import { DefaultSpinner } from "../components/Spinners.jsx"
 import { Link } from "react-router-dom"
 import { FILLED_ROUTES, FULL_ROUTES } from "../constants.js"
 import VideoPlayer from "../components/media/VideoPlayer.jsx"
-import { useLocation } from "react-router-dom"
+import useLocalStorage from "../hooks/useLocalStorage.jsx"
+import useUIConfig from "../hooks/useUIConfig.jsx"
+import { ACCESS_TYPE } from "../constants.js"
 
 function getExtensionFromSubtitleCodec(codecName) {
     switch (codecName.toLowerCase()) {
@@ -31,15 +33,18 @@ function getExtensionFromSubtitleCodec(codecName) {
 }
 
 function TitleStream() {
+    const { CURRENT_ACCESS_TYPE } = useUIConfig()
     const { streamID, label } = useParams()
     const navigate = useNavigate()
-    const { state } = useLocation()
-    console.log(state)
-    const isAutoPlay = useRef(state && state.isAutoPlay ? state.isAutoPlay : false)
-    const quality = useRef(state && state.quality ? state.quality : { height: "auto" })
-    const audio = useRef(state && state.audio ? state.audio : null)
-    const subtitle = useRef(state && state.subtitle ? state.subtitle : { name: "none" })
-    const volume = useRef(state && state.volume ? state.volume : 0.45)
+    const {
+        video: { isAutoPlay, quality, audio, subtitle, volume, muted, SetIsAutoPlay, SetQuality, SetAudio, SetSubtitle, SetVolume, SetMuted },
+    } = useLocalStorage()
+    const isAutoPlayRef = useRef(isAutoPlay)
+    const qualityRef = useRef(quality)
+    const audioRef = useRef(audio)
+    const subtitleRef = useRef(subtitle)
+    const volumeRef = useRef(volume)
+    const mutedRef = useRef(muted)
 
     const [isShowingDetails, SetIsShowingDetails] = useState(false)
     const [installment, SetInstallment] = useState(null)
@@ -51,23 +56,19 @@ function TitleStream() {
     const firstDetailRef = useRef()
     const [isDetailsOverflowing, SetIsDetailsOverflowing] = useState()
 
-    function ClickedPlay() {
-        FetchLogStreamStarted(streamID).then()
-    }
+    const [startTime, SetStartTime] = useState(0)
 
-    function onStreamEnd(streamID) {
-        navigate(FILLED_ROUTES.STREAM_PAGE(streamID, label), {
-            state: { isAutoPlay: isAutoPlay.current, quality: quality.current, audio: audio.current, subtitle: subtitle.current, volume: volume.current },
-        })
-    }
-
-    useEffect(() => {
-        return () => {
-            if (isAutoPlay.current) {
-                isAutoPlay.current = false
-            }
+    //TODO: TIME
+    async function UploadTimeStamp(totalTimeElapsedInSeconds) {
+        if (ACCESS_TYPE.PUBLIC === CURRENT_ACCESS_TYPE) {
+            await UpdateLogStream(streamID, totalTimeElapsedInSeconds)
         }
-    }, [])
+    }
+
+    function onStreamEnd(streamID, totalTimeElapsedInSeconds) {
+        UploadTimeStamp(totalTimeElapsedInSeconds)
+        navigate(FILLED_ROUTES.STREAM_PAGE(streamID, label))
+    }
 
     const { data: stream, error: isErrorStream, isLoading: isLoadingStreamData } = useGetStreamByID(streamID)
 
@@ -125,6 +126,16 @@ function TitleStream() {
         }
     }, [installments, streamID])
 
+    useEffect(() => {
+        if (ACCESS_TYPE.PUBLIC === CURRENT_ACCESS_TYPE) {
+            FetchLogStream(streamID).then((data) => {
+                if (data && data.lastTimeStampInSeconds) {
+                    SetStartTime(data.lastTimeStampInSeconds)
+                }
+            })
+        }
+    }, [])
+
     if (isErrorStream || (!stream && !isLoadingStreamData)) {
         navigate(FULL_ROUTES.NOT_FOUND)
     }
@@ -158,13 +169,20 @@ function TitleStream() {
                         <div className="absolute top-0 left-0 flex flex-col justify-center items-center w-[100%] h-[100%]">
                             <VideoPlayer
                                 src={`/api/title/stream/${stream.id}/master.m3u8`}
-                                isAutoPlayRef={isAutoPlay}
-                                qualityRef={quality}
-                                audioRef={audio}
-                                subtitleRef={subtitle}
-                                volumeRef={volume}
+                                AutoPlay={{ firstRenderValue: isAutoPlayRef.current, OnValueChange: SetIsAutoPlay }}
+                                Quality={{ firstRenderValue: qualityRef.current, OnValueChange: SetQuality }}
+                                Audio={{ firstRenderValue: audioRef.current, OnValueChange: SetAudio }}
+                                Subtitle={{ firstRenderValue: subtitleRef.current, OnValueChange: SetSubtitle }}
+                                Volume={{ firstRenderValue: volumeRef.current, OnValueChange: SetVolume }}
+                                Speed={{ firstRenderValue: 1, OnValueChange: () => {} }}
+                                Muted={{ firstRenderValue: mutedRef.current, OnValueChange: SetMuted }}
                                 endCountdown={5}
                                 onStreamEnd={() => onStreamEnd(nextStream ? nextStream.id : stream.id)}
+                                startTime={startTime}
+                                periodicTimeUpdateInterval={5}
+                                onPeriodicTimeUpdateInterval={(lastTimeElapsed) => {
+                                    UploadTimeStamp(lastTimeElapsed)
+                                }}
                                 onChangeSubtitle={async (currentSubtitle) => {
                                     if (!currentSubtitle) {
                                         return null
@@ -260,13 +278,6 @@ function TitleStream() {
                                         href={FILLED_ROUTES.STREAM_PAGE(prevStream.id, prevStream.label)}
                                         episodeNum={prevStream.streamNumber}
                                         flipBottomText={true}
-                                        state={{
-                                            isAutoPlay: isAutoPlay.current,
-                                            quality: quality.current,
-                                            audio: audio.current,
-                                            subtitle: subtitle.current,
-                                            volume: volume.current,
-                                        }}
                                     />
                                 ) : (
                                     ""
@@ -287,13 +298,6 @@ function TitleStream() {
                                         dateReleased={new Date(nextStream.releaseDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                                         href={FILLED_ROUTES.STREAM_PAGE(nextStream.id, nextStream.label)}
                                         episodeNum={nextStream.streamNumber}
-                                        state={{
-                                            isAutoPlay: isAutoPlay.current,
-                                            quality: quality.current,
-                                            audio: audio.current,
-                                            subtitle: subtitle.current,
-                                            volume: volume.current,
-                                        }}
                                     />
                                 ) : (
                                     ""

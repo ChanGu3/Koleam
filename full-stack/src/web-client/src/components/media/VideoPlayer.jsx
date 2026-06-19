@@ -9,14 +9,13 @@ import {
     Play,
     Rewind,
     Settings,
-    Volume,
+    Volume as Volume0,
     Volume1,
     Volume2,
     VolumeX,
     SquareChevronLeft,
     SquareChevronRight,
     CircleX,
-    SubtitlesIcon,
 } from "lucide-react"
 import { VerticalScrollable } from "../Scrollable.jsx"
 import { useMediaQuery } from "react-responsive"
@@ -46,17 +45,28 @@ function formatTime(seconds) {
 /**
  * Note: For Subtitles To Transfer Over To Next Video must be the same --> name (Example: English, Spanish, Japanses, Korean, etc.) TODO: default settings these transfer over using the refs and the correct names so its possible as long as that is done
  * @prop src: string - the source URL of the video to play
+ * @prop AutoPlay: { firstRenderValue : boolean, OnValueChange: function } - on value change contains as a input new value
+ * @prop Quality: { firstRenderValue : { height: number }, OnValueChange: function } - on value change contains as a input new value
+ * @prop Audio: { firstRenderValue : { name: string }, OnValueChange: function } - on value change contains as a input new value
+ * @prop Volume: { firstRenderValue : number, OnValueChange: function } - on value change contains as a input new value
+ * @prop Muted: { firstRenderValue : boolean, OnValueChange: function } - on value change contains as a input new value
+ * @prop Speed: { firstRenderValue : number, OnValueChange: function } - on value change contains as a input new value
  * @prop isAutoPlayRef: React ref object - a ref that holds a boolean value indicating whether the video should autoplay or not. This allows the parent component to control autoplay behavior across different video instances.
  * @prop endCountdown: number (optional) - if provided will show a countdown at the end of the video and call onStreamEnd when it reaches 0 (hence if its 0 it will call onStreamEnd immediately when the video ends)
  * @porp onChangeSubtitle(subtitle) => string || null - allows outside logic to send message to video player of the url of the subtitle or null if no such ssa or ass subtitles exist
  */
 function VideoPlayer({
     src,
-    isAutoPlayRef,
-    qualityRef,
-    audioRef,
-    subtitleRef,
-    volumeRef,
+    AutoPlay,
+    Quality,
+    Audio,
+    Subtitle,
+    Volume,
+    Muted,
+    Speed,
+    startTime = null,
+    periodicTimeUpdateInterval = null,
+    onPeriodicTimeUpdateInterval = async (totalTimeElapsedInSeconds) => {},
     endCountdown = null,
     onStreamEnd = () => {},
     onChangeSubtitle = async (currentSubtitle) => null,
@@ -71,11 +81,29 @@ function VideoPlayer({
     const videoRef = useRef(null)
     const hlsRef = useRef(null)
 
-    const [autoPlay, SetAutoPlay] = useState(isAutoPlayRef.current)
-    const [quality, SetQuality] = useState(qualityRef.current)
-    const [audio, SetAudio] = useState(audioRef.current)
-    const [subtitle, SetSubtitle] = useState(subtitleRef.current)
-    const [speed, SetSpeed] = useState(1)
+    const timeElapsedFromPlay = useRef(0)
+    const lastCurrentTime = useRef(startTime ? startTime : 0)
+
+    const [autoPlay, SetAutoPlay] = useState(AutoPlay.firstRenderValue)
+    useEffect(() => {
+        AutoPlay.OnValueChange(autoPlay)
+    }, [autoPlay])
+    const [quality, SetQuality] = useState(Quality.firstRenderValue)
+    useEffect(() => {
+        Quality.OnValueChange(quality)
+    }, [quality])
+    const [audio, SetAudio] = useState(Audio.firstRenderValue)
+    useEffect(() => {
+        Audio.OnValueChange(audio)
+    }, [audio])
+    const [subtitle, SetSubtitle] = useState(Subtitle.firstRenderValue)
+    useEffect(() => {
+        Subtitle.OnValueChange(subtitle)
+    }, [subtitle])
+    const [speed, SetSpeed] = useState(Speed.firstRenderValue)
+    useEffect(() => {
+        Speed.OnValueChange(speed)
+    }, [speed])
 
     const [isPlayingVideo, setIsPlayingVideo] = useState(false)
 
@@ -89,8 +117,14 @@ function VideoPlayer({
         return isLoadingVideoData || isLoadingOctopus
     }
 
-    function OnVideoPlayToggle() {
+    function OnVideoPlayToggle(play = null) {
         if (isLoading()) {
+            return
+        }
+
+        if (play !== null) {
+            play ? videoRef.current.play() : videoRef.current.pause()
+            setIsPlayingVideo(play)
             return
         }
 
@@ -166,296 +200,6 @@ function VideoPlayer({
             setTimeChangedAlertAmount(0)
         }, 500)
     }
-
-    // HLS video setup
-    const [isLoadingVideoData, setIsLoadingVideoData] = useState(true)
-    const [isErrorLoadingVideoData, setIsErrorLoadingVideoData] = useState(false)
-    const [fragmentsLoadedList, setFragmentsLoadedList] = useState([]) // true or false based on if the fragment has been loaded or not, index is the fragment index
-    function handleLevelChange(level) {
-        const levelIndex = qualities.findIndex((l) => l.height === level.height)
-        SetQuality(level)
-        if (hlsRef.current) {
-            hlsRef.current.currentLevel = levelIndex
-        }
-    }
-
-    function handleAudioChange(audio) {
-        const audioIndex = audios.findIndex((a) => a.name === audio.name)
-        SetAudio(audio)
-        if (hlsRef.current) {
-            hlsRef.current.audioTrack = audioIndex
-        }
-    }
-
-    async function handleSubtitleChange(subtitle) {
-        const subtitleIndex = subtitles.findIndex((s) => s.name === subtitle.name)
-        SetSubtitle(subtitle)
-        if (hlsRef.current) {
-            hlsRef.current.subtitleTrack = subtitleIndex
-
-            if (isPlayingVideo) {
-                videoRef.current.pause()
-            }
-
-            SetIsLoadingOctopus(true)
-            const content = await onChangeSubtitle(subtitle)
-
-            if (content && !octopusError) {
-                if (isAdvancedSubtitleMode.current) {
-                    octopusRef.current.freeTrack()
-                } else {
-                    isAdvancedSubtitleMode.current = true
-                    octopusRef.current.canvas.style.display = "block"
-                }
-
-                octopusRef.current.setTrack(content)
-            } else {
-                if (isAdvancedSubtitleMode.current) {
-                    isAdvancedSubtitleMode.current = false
-                    octopusRef.current.freeTrack()
-                    octopusRef.current.canvas.style.display = "none"
-                }
-            }
-            SetIsLoadingOctopus(false)
-            if (isPlayingVideo) {
-                videoRef.current.play()
-            }
-
-            updateUISubtitleInfo()
-        }
-    }
-
-    useEffect(() => {
-        const video = videoRef.current
-        if (!video) return
-
-        setVolume(volumeRef.current)
-
-        let hls
-
-        if (Hls.isSupported()) {
-            setIsLoadingVideoData(true)
-            // Initialize hls.js for browsers that don't support HLS natively
-            hls = new Hls()
-            hlsRef.current = hls
-            hls.loadSource(src)
-            hls.attachMedia(video)
-
-            hls.on(Hls.Events.ERROR, (event, data) => {
-                const isManifestError =
-                    data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR || data.details === Hls.ErrorDetails.MANIFEST_LOAD_TIMEOUT || data.type === Hls.ErrorTypes.NETWORK_ERROR
-
-                if (isManifestError || data.fatal) {
-                    setIsLoadingVideoData(false)
-                    setIsErrorLoadingVideoData(true)
-                    updateUITimeInfo()
-                    hls.destroy()
-                    hls = null
-                }
-
-                console.error("HLS.js error:", event, data)
-            })
-
-            hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-                setQualities(hls.levels || [])
-
-                setIsErrorLoadingVideoData(false)
-                setIsLoadingVideoData(false)
-
-                if (isAutoPlayRef.current) {
-                    OnVideoPlayToggle()
-                }
-
-                setFragmentsLoadedList([])
-            })
-
-            hls.on(Hls.Events.FRAG_BUFFERED, (event, data) => {
-                setFragmentsLoadedList((prev) => {
-                    const newList = [...prev]
-                    newList[data.fragmentIndex] = true
-                    return newList
-                })
-                setIsLoadingVideoData(false)
-            })
-
-            hls.on(Hls.Events.BUFFER_STALLED, () => {
-                setIsLoadingVideoData(true)
-            })
-
-            hls.on(Hls.Events.LEVEL_UPDATED, (event, data) => {
-                const newList = new Array(data.details.fragments.length).fill(false)
-                setFragmentsLoadedList(newList)
-            })
-
-            hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (event, data) => {
-                setAudios(data.audioTracks || [])
-            })
-
-            hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, (event, data) => {
-                SetSubtitles(data.subtitleTracks || [])
-            })
-
-            hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
-                if (quality.height !== "auto" && hls.levels[data.level] !== quality) {
-                    SetQuality(hls.levels[data.level])
-                } else if (data.level === -1) {
-                    SetQuality({ height: "auto" })
-                }
-            })
-            hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, (event, data) => {
-                if (hls.audioTracks[data.id] !== audio) {
-                    SetAudio(hls.audioTracks[data.id])
-                }
-            })
-            hls.on(Hls.Events.SUBTITLE_TRACK_SWITCHED, (event, data) => {
-                if (subtitle.name !== "none" && hls.subtitleTracks[data.id] !== subtitle) {
-                    SetSubtitle(hls.subtitleTracks[data.id])
-                } else if (data.id === -1) {
-                    SetSubtitle({ name: "none" })
-                }
-            })
-        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-            // Fallback for browsers with native HLS support (like Safari)
-            video.src = src
-            if (isAutoPlayRef.current) {
-                video.addEventListener("loadedmetadata", () => {
-                    OnVideoPlayToggle()
-                })
-            }
-        }
-
-        function onVideoWaiting() {
-            setIsLoadingVideoData(true)
-        }
-
-        function onVideoPlaying() {
-            setIsLoadingVideoData(false)
-        }
-
-        video.addEventListener("waiting", onVideoWaiting)
-
-        video.addEventListener("playing", onVideoPlaying)
-
-        return () => {
-            if (hls) {
-                hls.destroy()
-            }
-            if (video) {
-                video.removeEventListener("waiting", onVideoWaiting)
-                video.removeEventListener("playing", onVideoPlaying)
-            }
-        }
-    }, [src])
-
-    // Focusing Video && KeyDown Events
-    const [isVideoFocused, setIsVideoFocused] = useState(true)
-    function onVideoScreenClick(e) {
-        setIsVideoFocused(true)
-
-        if (endCountdownRef.current) {
-            CancelEndCountdown()
-        }
-    }
-
-    useEffect(() => {
-        function onVideoClickOutside(e) {
-            if (videoContainerRef.current && !videoContainerRef.current.contains(e.target)) {
-                setIsVideoFocused(false)
-            }
-        }
-
-        document.addEventListener("click", onVideoClickOutside)
-
-        function handleKeyDown(e) {
-            if (isVideoFocused) {
-                if (e.code === "Space") {
-                    e.preventDefault()
-                    CancelEndCountdown()
-                    OnVideoPlayToggle()
-                } else if (e.code === "ArrowRight") {
-                    e.preventDefault()
-                    CancelEndCountdown()
-                    videoRef.current.currentTime += 5
-                    timeChangedUIAlert(5)
-                } else if (e.code === "ArrowLeft") {
-                    e.preventDefault()
-                    CancelEndCountdown()
-                    videoRef.current.currentTime -= 5
-                    timeChangedUIAlert(-5)
-                } else if (e.code === "KeyF") {
-                    e.preventDefault()
-                    handleVideoOnFullScreen()
-                }
-            }
-        }
-
-        document.addEventListener("keydown", handleKeyDown)
-
-        return () => {
-            document.removeEventListener("keydown", handleKeyDown)
-            document.removeEventListener("click", onVideoClickOutside)
-        }
-    }, [isVideoFocused, videoContainerRef.current, OnVideoPlayToggle])
-
-    // Speed of video
-    useEffect(() => {
-        if (videoRef.current) {
-            videoRef.current.playbackRate = speed
-        }
-    }, [speed])
-
-    // Autoplay video on load
-    useEffect(() => {
-        isAutoPlayRef.current = autoPlay
-    }, [autoPlay])
-
-    // EndCountdown Setup
-    const endCountdownRef = useRef(null)
-    const [currentCountdown, setCurrentCountdown] = useState(null)
-
-    function CancelEndCountdown() {
-        if (endCountdownRef.current) {
-            clearTimeout(endCountdownRef.current)
-            endCountdownRef.current = null
-        }
-        setCurrentCountdown(null)
-    }
-
-    useEffect(() => {
-        function handleVideoEnded() {
-            setIsPlayingVideo(false)
-            if (autoPlay) {
-                setCurrentCountdown(endCountdown)
-            }
-        }
-
-        if (videoRef.current) {
-            videoRef.current.addEventListener("ended", handleVideoEnded)
-        }
-
-        return () => {
-            if (videoRef.current) {
-                videoRef.current.removeEventListener("ended", handleVideoEnded)
-            }
-        }
-    }, [videoRef, endCountdown, autoPlay])
-
-    useEffect(() => {
-        if (currentCountdown === null) {
-            return
-        } else if (currentCountdown <= 0) {
-            onStreamEnd()
-            return
-        } else {
-            endCountdownRef.current = setTimeout(() => {
-                setCurrentCountdown((prev) => prev - 1)
-            }, 1000)
-        }
-
-        return () => {
-            clearTimeout(endCountdownRef.current)
-        }
-    }, [currentCountdown, onStreamEnd])
 
     /* Subtitles */
     const isAdvancedSubtitleMode = useRef(false)
@@ -544,6 +288,335 @@ function VideoPlayer({
         }
     }
 
+    // HLS video setup
+    const [isLoadingVideoData, setIsLoadingVideoData] = useState(true)
+    const [isErrorLoadingVideoData, setIsErrorLoadingVideoData] = useState(false)
+    const [fragmentsLoadedList, setFragmentsLoadedList] = useState([])
+    const isNonAutoLevelSwitch = useRef(false)
+    function handleLevelChange(newLevel) {
+        const levelIndex = hlsRef.current.levels.findIndex((l) => l.height === newLevel.height)
+        if (hlsRef.current) {
+            if (levelIndex === -1) {
+                SetQuality({ height: "auto" })
+            } else {
+                isNonAutoLevelSwitch.current = true
+            }
+
+            if (hlsRef.current.currentLevel !== levelIndex) {
+                hlsRef.current.currentLevel = levelIndex
+            } else {
+                SetQuality({ height: newLevel.height })
+            }
+        }
+    }
+
+    function handleAudioChange(newAudio) {
+        const audioIndex = hlsRef.current.audioTracks.findIndex((a) => a.name === newAudio.name)
+        if (hlsRef.current) {
+            hlsRef.current.audioTrack = audioIndex
+        }
+    }
+
+    async function handleSubtitleChange(newSubtitle) {
+        const subtitleIndex = hlsRef.current.subtitleTracks.findIndex((s) => s.name === newSubtitle.name)
+        if (hlsRef.current) {
+            hlsRef.current.subtitleTrack = subtitleIndex
+
+            if (isPlayingVideo) {
+                videoRef.current.pause()
+            }
+
+            SetIsLoadingOctopus(true)
+            const content = await onChangeSubtitle(newSubtitle)
+
+            if (content && !octopusError) {
+                if (isAdvancedSubtitleMode.current) {
+                    octopusRef.current.freeTrack()
+                } else {
+                    isAdvancedSubtitleMode.current = true
+                    octopusRef.current.canvas.style.display = "block"
+                }
+
+                octopusRef.current.setTrack(content)
+            } else {
+                if (isAdvancedSubtitleMode.current) {
+                    isAdvancedSubtitleMode.current = false
+                    octopusRef.current.freeTrack()
+                    octopusRef.current.canvas.style.display = "none"
+                }
+            }
+            SetIsLoadingOctopus(false)
+            if (isPlayingVideo) {
+                videoRef.current.play()
+            }
+
+            updateUISubtitleInfo()
+        }
+    }
+
+    useEffect(() => {
+        const video = videoRef.current
+        if (!video) return
+
+        if (periodicTimeUpdateInterval && onPeriodicTimeUpdateInterval) {
+            video.addEventListener("timeupdate", () => {
+                timeElapsedFromPlay.current += video.currentTime - lastCurrentTime.current
+                lastCurrentTime.current = video.currentTime
+
+                if (timeElapsedFromPlay.current >= periodicTimeUpdateInterval) {
+                    onPeriodicTimeUpdateInterval(lastCurrentTime.current)
+                    timeElapsedFromPlay.current = 0
+                }
+            })
+        }
+
+        setVolume(Volume.firstRenderValue)
+        handleMuteToggle(Muted.firstRenderValue)
+
+        let hls
+
+        if (Hls.isSupported()) {
+            setIsLoadingVideoData(true)
+
+            hls = new Hls()
+            hlsRef.current = hls
+            hls.loadSource(src)
+            hls.attachMedia(video)
+
+            hls.on(Hls.Events.ERROR, (event, data) => {
+                const isManifestError =
+                    data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR || data.details === Hls.ErrorDetails.MANIFEST_LOAD_TIMEOUT || data.type === Hls.ErrorTypes.NETWORK_ERROR
+
+                if (isManifestError || data.fatal) {
+                    setIsLoadingVideoData(false)
+                    setIsErrorLoadingVideoData(true)
+                    updateUITimeInfo()
+                    hls.destroy()
+                    hls = null
+                }
+
+                if (octopusRef.current) {
+                    octopusRef.current.freeTrack()
+                }
+
+                console.error("HLS.js error:", event, data)
+            })
+
+            hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+                setIsErrorLoadingVideoData(false)
+                setIsLoadingVideoData(false)
+                setFragmentsLoadedList([])
+                setQualities(hls.levels || [])
+                if (octopusRef.current) {
+                    octopusRef.current.freeTrack()
+                }
+
+                // AUTO SLECTING VALUES BASSED ON LAST VALUE GOING BACK TO DEFAULT VALUES IF THEY DO NOT WORK WITH NEW SET OF VALUES OTHERWISE KEEP THEM THE SAME FOR NEXT VIDEO (keep audio local storage as default but the actual value to what its suppose to be during default)
+                if (autoPlay) {
+                    OnVideoPlayToggle(true)
+                }
+
+                handleLevelChange(quality)
+                handleAudioChange(audio)
+                handleSubtitleChange(subtitle)
+            })
+
+            hls.on(Hls.Events.FRAG_BUFFERED, (event, data) => {
+                setFragmentsLoadedList((prev) => {
+                    const newList = [...prev]
+                    newList[data.fragmentIndex] = true
+                    return newList
+                })
+                setIsLoadingVideoData(false)
+                if (lastCurrentTime) {
+                    video.currentTime = lastCurrentTime.current
+                }
+            })
+
+            hls.on(Hls.Events.BUFFER_STALLED, () => {
+                setIsLoadingVideoData(true)
+            })
+
+            hls.on(Hls.Events.LEVEL_UPDATED, (event, data) => {
+                const newList = new Array(data.details.fragments.length).fill(false)
+                setFragmentsLoadedList(newList)
+            })
+
+            hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (event, data) => {
+                setAudios(data.audioTracks || [])
+            })
+
+            hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, (event, data) => {
+                SetSubtitles(data.subtitleTracks || [])
+            })
+
+            hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
+                if (isNonAutoLevelSwitch.current) {
+                    if (hls.levels[data.level] !== quality) {
+                        const { height, ...rest } = hls.levels[data.level]
+                        SetQuality({ height: height })
+                    }
+                    isNonAutoLevelSwitch.current = false
+                }
+            })
+
+            hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, (event, data) => {
+                if (hls.audioTracks[data.id] !== audio) {
+                    const { name, ...rest } = hls.audioTracks[data.id]
+                    SetAudio({ name: name })
+                }
+            })
+
+            hls.on(Hls.Events.SUBTITLE_TRACK_SWITCH, (event, data) => {
+                if (data.id === -1) {
+                    if (isAdvancedSubtitleMode.current) {
+                        return
+                    }
+                    SetSubtitle({ name: "none" })
+                } else if (hls.subtitleTracks[data.id] !== subtitle) {
+                    const { name, ...rest } = hls.subtitleTracks[data.id]
+                    SetSubtitle({ name: name })
+                }
+            })
+        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+            video.src = src
+            if (autoPlay) {
+                video.addEventListener("loadedmetadata", () => {
+                    if (autoPlay) {
+                        OnVideoPlayToggle(true)
+                    }
+                })
+            }
+        }
+
+        function onVideoWaiting() {
+            setIsLoadingVideoData(true)
+        }
+
+        function onVideoPlaying() {
+            setIsLoadingVideoData(false)
+        }
+
+        video.addEventListener("waiting", onVideoWaiting)
+
+        video.addEventListener("playing", onVideoPlaying)
+
+        return () => {
+            if (hls) {
+                hls.destroy()
+            }
+            if (video) {
+                video.removeEventListener("waiting", onVideoWaiting)
+                video.removeEventListener("playing", onVideoPlaying)
+            }
+        }
+    }, [src])
+
+    // Focusing Video && KeyDown Events
+    const [isVideoFocused, setIsVideoFocused] = useState(true)
+    function onVideoScreenClick(e) {
+        setIsVideoFocused(true)
+
+        if (endCountdownRef.current) {
+            CancelEndCountdown()
+        }
+    }
+
+    useEffect(() => {
+        function onVideoClickOutside(e) {
+            if (videoContainerRef.current && !videoContainerRef.current.contains(e.target)) {
+                setIsVideoFocused(false)
+            }
+        }
+
+        document.addEventListener("click", onVideoClickOutside)
+
+        function handleKeyDown(e) {
+            if (isVideoFocused) {
+                if (e.code === "Space") {
+                    e.preventDefault()
+                    CancelEndCountdown()
+                    OnVideoPlayToggle()
+                } else if (e.code === "ArrowRight") {
+                    e.preventDefault()
+                    CancelEndCountdown()
+                    videoRef.current.currentTime += 5
+                    timeChangedUIAlert(5)
+                } else if (e.code === "ArrowLeft") {
+                    e.preventDefault()
+                    CancelEndCountdown()
+                    videoRef.current.currentTime -= 5
+                    timeChangedUIAlert(-5)
+                } else if (e.code === "KeyF") {
+                    e.preventDefault()
+                    handleVideoOnFullScreen()
+                }
+            }
+        }
+
+        document.addEventListener("keydown", handleKeyDown)
+
+        return () => {
+            document.removeEventListener("keydown", handleKeyDown)
+            document.removeEventListener("click", onVideoClickOutside)
+        }
+    }, [isVideoFocused, videoContainerRef.current, OnVideoPlayToggle])
+
+    // Speed of video
+    useEffect(() => {
+        if (videoRef.current) {
+            videoRef.current.playbackRate = speed
+        }
+    }, [speed])
+
+    // EndCountdown Setup
+    const endCountdownRef = useRef(null)
+    const [currentCountdown, setCurrentCountdown] = useState(null)
+
+    function CancelEndCountdown() {
+        if (endCountdownRef.current) {
+            clearTimeout(endCountdownRef.current)
+            endCountdownRef.current = null
+        }
+        setCurrentCountdown(null)
+    }
+
+    useEffect(() => {
+        function handleVideoEnded() {
+            setIsPlayingVideo(false)
+            if (autoPlay) {
+                setCurrentCountdown(endCountdown)
+            }
+        }
+
+        if (videoRef.current) {
+            videoRef.current.addEventListener("ended", handleVideoEnded)
+        }
+
+        return () => {
+            if (videoRef.current) {
+                videoRef.current.removeEventListener("ended", handleVideoEnded)
+            }
+        }
+    }, [videoRef, endCountdown, autoPlay])
+
+    useEffect(() => {
+        if (currentCountdown === null) {
+            return
+        } else if (currentCountdown <= 0) {
+            onStreamEnd()
+            return
+        } else {
+            endCountdownRef.current = setTimeout(() => {
+                setCurrentCountdown((prev) => prev - 1)
+            }, 1000)
+        }
+
+        return () => {
+            clearTimeout(endCountdownRef.current)
+        }
+    }, [currentCountdown, onStreamEnd])
+
     function handleVideoOnTimeUpdate() {
         updateUITimeInfo()
         updateUISubtitleInfo()
@@ -569,8 +642,14 @@ function VideoPlayer({
     /*          */
     const volumeBarRef = useRef(null)
     const volumeBarAmountRef = useRef(0)
-    const [volumePercentage, setVolumePercentage] = useState(volumeRef.current)
-    const [isMuted, setIsMuted] = useState(false)
+    const [volumePercentage, setVolumePercentage] = useState(Volume.firstRenderValue)
+    useEffect(() => {
+        Volume.OnValueChange(volumePercentage)
+    }, [volumePercentage])
+    const [isMuted, setIsMuted] = useState(Muted.firstRenderValue)
+    useEffect(() => {
+        Muted.OnValueChange(isMuted)
+    }, [isMuted])
 
     function setVolume(percentage) {
         if (videoRef.current && volumeBarAmountRef.current) {
@@ -585,10 +664,6 @@ function VideoPlayer({
             videoRef.current.volume = percentage
             volumeBarAmountRef.current.style.width = `${videoRef.current.volume * 100}%`
             setVolumePercentage(videoRef.current.volume)
-
-            if (volumeRef) {
-                volumeRef.current = percentage
-            }
         }
     }
 
@@ -624,9 +699,13 @@ function VideoPlayer({
         }
     }
 
-    function handleMuteToggle() {
+    function handleMuteToggle(mute = null) {
         if (videoRef.current && volumeBarAmountRef.current) {
-            videoRef.current.muted = !videoRef.current.muted
+            if (mute !== null) {
+                videoRef.current.muted = mute
+            } else {
+                videoRef.current.muted = !videoRef.current.muted
+            }
             setIsMuted(videoRef.current.muted)
 
             if (!videoRef.current.muted && videoRef.current.volume === 0) {
@@ -710,6 +789,17 @@ function VideoPlayer({
     /* Options */
     /*         */
     const [isShowingOptions, setIsShowingOptions] = useState(false)
+    function ToggleGearOptions(show = null) {
+        if (isErrorLoadingVideoData) {
+            return
+        }
+
+        if (show !== null) {
+            setIsShowingOptions(show)
+        } else {
+            setIsShowingOptions((prev) => !prev)
+        }
+    }
 
     /* Showing UI */
     const [mouseMovingOnVideo, setMouseMovingOnVideo] = useState(false)
@@ -737,7 +827,9 @@ function VideoPlayer({
             setHoverUIFirstAppear(false)
             clearTimeout(hoverUIFirstAppearTimerRef.current)
             hoverUIFirstAppearTimerRef.current = null
-            setIsShowingOptions(false)
+            if (isPlayingVideo) {
+                ToggleGearOptions(false)
+            }
         }
 
         function onHoverUILastAppearDisappear() {
@@ -858,8 +950,8 @@ function VideoPlayer({
                     loop={false}
                     onTimeUpdate={handleVideoOnTimeUpdate}
                     onLoadedMetadata={handleLoadedMetadata}
-                    onPlay={() => OnVideoPlayToggle}
-                    onPause={() => OnVideoPlayToggle}
+                    onPlay={() => OnVideoPlayToggle(true)}
+                    onPause={() => OnVideoPlayToggle(false)}
                     className="w-full h-full object-contain"
                 />
             </div>
@@ -900,7 +992,7 @@ function VideoPlayer({
                 className={`absolute bottom-6.5 md:bottom-10 left-0 w-full h-8 flex flex-row items-center justify-between px-4 ${isPlayingVideo && !hoverUIFirstAppear ? "opacity-0" : "opacity-100"} transition-opacity duration-300 ease-in-out`}
             >
                 <div className="flex flex-row items-center gap-2">
-                    {/* Play */}
+                    {/* Play/Pause */}
                     <button
                         onClick={() => {
                             OnVideoPlayToggle()
@@ -928,7 +1020,7 @@ function VideoPlayer({
                                 if (isLoading()) {
                                     return
                                 }
-                                setIsShowingOptions((prev) => !prev)
+                                ToggleGearOptions()
                             }}
                             className={`p-1.5 ${isShowingOptions ? "bg-s-primary rounded-xs" : "hover:bg-s-tertiary/40 bg-black/60 rounded-full hover:rounded-xs"} cursor-pointer`}
                         >
@@ -951,7 +1043,7 @@ function VideoPlayer({
                                     className="w-4 h-4 md:h-7 md:w-7 text-s-white"
                                 />
                             ) : volumePercentage < 0.2 ? (
-                                <Volume
+                                <Volume0
                                     fill="black"
                                     className="w-4 h-4 md:h-7 md:w-7 text-s-white"
                                 />
@@ -1027,7 +1119,7 @@ function VideoPlayer({
                 </div>
                 <div
                     style={{ zIndex: videoPlayerTouch - 1 }}
-                    onClick={() => setIsShowingOptions(false)}
+                    onClick={() => ToggleGearOptions()}
                     className={`fixed inset-0 ${isShowingOptions ? "" : "hidden"}`}
                 ></div>
                 <div

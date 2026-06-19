@@ -1,1 +1,1 @@
-# Contains the jassub wasm & js worker files for advanced subtitles
+# Contains the libasswasm files for advanced subtitles

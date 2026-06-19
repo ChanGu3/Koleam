@@ -1,7 +1,38 @@
-export async function FetchLogStreamStarted(streamID) {
+export async function UpdateLogStream(streamID, lastTimeStampInSeconds) {
     try {
         const response = await fetch(`/api/title/member/stream/lastwatched/${streamID}`, {
             method: "PUT",
+            credentials: "include",
+            data: JSON.stringify({ lastTimeStampInSeconds: lastTimeStampInSeconds }),
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+
+        if (!response.ok) {
+            return null
+        }
+
+        if (response.status !== 200) {
+            return null
+        }
+
+        const data = await response.json()
+
+        if (data.error) {
+            return null
+        }
+
+        return data
+    } catch (err) {
+        return null
+    }
+}
+
+export async function FetchLogStream(streamID) {
+    try {
+        const response = await fetch(`/api/title/member/stream/lastwatched/${streamID}`, {
+            method: "GET",
             credentials: "include",
         })
 

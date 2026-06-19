@@ -1,5 +1,5 @@
 import "../tailwind.css"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import FavoriteButton from "../components/FavoriteButton.jsx"
 import LikeButton from "../components/LikeButton.jsx"
@@ -53,8 +53,26 @@ function TitleStream() {
     const [nextStream, SetNextStream] = useState(null)
     const [nextStreamInstallment, SetNextStreamInstallment] = useState(null)
 
-    const firstDetailRef = useRef()
     const [isDetailsOverflowing, SetIsDetailsOverflowing] = useState()
+    const observerRef = useRef(null)
+    const detailsRef = useCallback((node) => {
+        if (observerRef.current) {
+            observerRef.current.disconnect()
+        }
+
+        if (node) {
+            observerRef.current = new ResizeObserver((entries) => {
+                window.requestAnimationFrame(() => {
+                    for (let entry of entries) {
+                        const isOverflowing = entry.target.scrollHeight > entry.target.clientHeight + 2
+                        SetIsDetailsOverflowing(isOverflowing)
+                    }
+                })
+            })
+
+            observerRef.current.observe(node)
+        }
+    }, []) // Empty dependency array ensures this only initializes once
 
     const [startTime, SetStartTime] = useState(0)
 
@@ -83,12 +101,6 @@ function TitleStream() {
             navigate(FULL_ROUTES.NOT_FOUND)
         }
     }, [stream, label])
-
-    useEffect(() => {
-        if (firstDetailRef.current) {
-            SetIsDetailsOverflowing(firstDetailRef.current.scrollHeight > firstDetailRef.current.clientHeight)
-        }
-    }, [firstDetailRef, isDetailsOverflowing, streamID])
 
     // setting next and previous streams/installments
     useEffect(() => {
@@ -127,6 +139,7 @@ function TitleStream() {
     }, [installments, streamID])
 
     useEffect(() => {
+        // loggin time for watched streams
         if (ACCESS_TYPE.PUBLIC === CURRENT_ACCESS_TYPE) {
             FetchLogStream(streamID).then((data) => {
                 if (data && data.lastTimeStampInSeconds) {
@@ -134,7 +147,7 @@ function TitleStream() {
                 }
             })
         }
-    }, [])
+    }, [streamID, CURRENT_ACCESS_TYPE])
 
     if (isErrorStream || (!stream && !isLoadingStreamData)) {
         navigate(FULL_ROUTES.NOT_FOUND)
@@ -238,16 +251,17 @@ function TitleStream() {
                     <div className="flex flex-col w-[100%]">
                         <p className="text-s-secondary text-sm font-semibold py-2 underline underline-offset-4">Synopsis:</p>
                         <p
-                            ref={firstDetailRef}
+                            ref={detailsRef}
                             className={`whitespace-pre-wrap text-s-white text-xs w-[100%] ${isShowingDetails ? "" : "line-clamp-4"}`}
-                        >
-                            {`${stream.synopsis}`}{" "}
-                            ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
-                        </p>
+                        >{`${stream.synopsis}`}</p>
+
+                        {/* DIVIDER */}
+
+                        <div className={`border-2 border-s-dark-secondary w-45 self-center my-8 ${isShowingDetails ? "" : "hidden"}`}></div>
 
                         <div className="mt-4 border border-s-dark-secondary w-[100%]"></div>
 
-                        {isDetailsOverflowing && (
+                        {(isDetailsOverflowing || isShowingDetails) && (
                             <div className="w-full my-2 flex flex-row justify-start">
                                 <button
                                     onClick={() => {

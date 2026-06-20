@@ -1,5 +1,6 @@
 const { Logging } = require("../server-logging.cjs")
 const { uploadsDev, uploads } = require("../server-uploads.cjs")
+const { FILM_RATING } = require("../../shared/title-constants.cjs")
 
 const lorem =
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
@@ -115,12 +116,15 @@ async function DevSetup({ sequelize, models }) {
         // CLEAN AN SETUP DEFAULT Titles
         await uploadsDev.clearEntireTitlesFolder()
 
-        const animeClouds = await models.Title.AddToDB("clouds", lorem, "clouds.inc", "Japanese")
+        const animeClouds = await models.Title.AddToDB("clouds", lorem, "clouds.inc", "Japanese", FILM_RATING.PG, 13)
 
         models.TitleOtherTranslation.AddToDB(animeClouds.id, "English")
-        models.TitleOtherTranslation.AddToDB(animeClouds.id, "English2")
-        models.TitleOtherTranslation.AddToDB(animeClouds.id, "English3")
+        models.TitleOtherTranslation.AddToDB(animeClouds.id, "Korean")
+        models.TitleOtherTranslation.AddToDB(animeClouds.id, "French")
         models.TitleOtherTranslation.AddToDB(animeClouds.id, "Spanish")
+
+        models.TitleContentAdvisory.AddToDB(animeClouds.id, "Smoking")
+        models.TitleContentAdvisory.AddToDB(animeClouds.id, "Alcohol Use")
 
         await uploadsDev.copyImageFileToTitlePath("clouds.jpg", `${animeClouds.id}/${uploads.COVER_FILENAME}`)
         const animeCloudsGenre1 = await models.TitleGenre.AddToDB(animeClouds.id, "Action")
@@ -201,7 +205,7 @@ async function DevSetup({ sequelize, models }) {
             `${animeClouds.id}/${animeCloudsMovie1.id}/${animeCloudsMovie1part1.label}/${uploads.THUMBNAIL_FILENAME}`
         )
 
-        const anime1 = await models.Title.AddToDB("StarlitHorizon", lorem, "starlit.inc", "Japanese")
+        const anime1 = await models.Title.AddToDB("StarlitHorizon", lorem, "starlit.inc", "Japanese", FILM_RATING.PG, 13)
         await uploadsDev.copyImageFileToTitlePath("starhorizon.jpg", `${anime1.id}/${uploads.COVER_FILENAME}`)
         const anime1Genre1 = await models.TitleGenre.AddToDB(anime1.id, "Action")
 
@@ -209,26 +213,26 @@ async function DevSetup({ sequelize, models }) {
         const anime1Season1ep1 = await models.TitleInstallmentStream.AddToDB(anime1.id, anime1Season1.id, "The New Horizon 1", 1, lorem, new Date(1990, 0, 1, 0, 0, 0))
         await uploadsDev.copyImageFileToTitlePath("starlithorizonep1.jpg", `${anime1.id}/${anime1Season1.id}/${anime1Season1ep1.label}/${uploads.THUMBNAIL_FILENAME}`)
 
-        const anime2 = await models.Title.AddToDB("MoonlitSakura", lorem, "sakura.inc", "Japanese")
+        const anime2 = await models.Title.AddToDB("MoonlitSakura", lorem, "sakura.inc", "Japanese", FILM_RATING.PG, 13)
         await uploadsDev.copyImageFileToTitlePath("moonsakura.jpg", `${anime2.id}/${uploads.COVER_FILENAME}`)
         const anime2Genre1 = await models.TitleGenre.AddToDB(anime2.id, "Action")
 
-        const anime3 = await models.Title.AddToDB("CrimsonWave", lorem, "crimson.inc", "Japanese")
+        const anime3 = await models.Title.AddToDB("CrimsonWave", lorem, "crimson.inc", "Japanese", FILM_RATING.PG, 13)
         await uploadsDev.copyImageFileToTitlePath("crimsonwave.jpg", `${anime3.id}/${uploads.COVER_FILENAME}`)
 
-        const anime4 = await models.Title.AddToDB("TwilightNinja", lorem, "ninja.inc", "Japanese")
+        const anime4 = await models.Title.AddToDB("TwilightNinja", lorem, "ninja.inc", "Japanese", FILM_RATING.PG, 13)
         await uploadsDev.copyImageFileToTitlePath("twilightninja.jpg", `${anime4.id}/${uploads.COVER_FILENAME}`)
 
-        const anime5 = await models.Title.AddToDB("AzureDragon", lorem, "azure.inc", "Japanese")
+        const anime5 = await models.Title.AddToDB("AzureDragon", lorem, "azure.inc", "Japanese", FILM_RATING.PG, 13)
         await uploadsDev.copyImageFileToTitlePath("azuredragon.jpg", `${anime5.id}/${uploads.COVER_FILENAME}`)
 
-        const anime6 = await models.Title.AddToDB("ShadowBlossom", lorem, "blossom.inc", "Japanese")
+        const anime6 = await models.Title.AddToDB("ShadowBlossom", lorem, "blossom.inc", "Japanese", FILM_RATING.PG, 13)
         await uploadsDev.copyImageFileToTitlePath("shadowblossom.jpg", `${anime6.id}/${uploads.COVER_FILENAME}`)
 
-        const anime7 = await models.Title.AddToDB("EclipseVoyage", lorem, "eclipse.inc", "Japanese")
+        const anime7 = await models.Title.AddToDB("EclipseVoyage", lorem, "eclipse.inc", "Japanese", FILM_RATING.PG, 13)
         await uploadsDev.copyImageFileToTitlePath("eclipsevoyage.jpg", `${anime7.id}/${uploads.COVER_FILENAME}`)
 
-        const anime8 = await models.Title.AddToDB("RadiantKoi", lorem, "koi.inc", "Japanese")
+        const anime8 = await models.Title.AddToDB("RadiantKoi", lorem, "koi.inc", "Japanese", FILM_RATING.PG, 13)
         await uploadsDev.copyImageFileToTitlePath("radiantkoi.jpg", `${anime8.id}/${uploads.COVER_FILENAME}`)
 
         // Favorite

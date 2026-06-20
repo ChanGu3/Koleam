@@ -155,7 +155,8 @@ function TitleDetailsPage() {
                                 id="othertranslation"
                                 className={`text-s-dark-secondary text-xs break-words whitespace-normal`}
                             >
-                                <span className="text-s-white">Other Translation:</span>{" "}
+                                <span className="text-s-white">Other Translation:</span>
+                                {" ["}
                                 {title && title.all_other_translations.length > 0
                                     ? title.all_other_translations.map((el, index) => {
                                           return (
@@ -163,15 +164,14 @@ function TitleDetailsPage() {
                                                   className="mx-0.25"
                                                   key={index}
                                               >
-                                                  {" "}
-                                                  {el}{" "}
+                                                  {el}
+                                                  {index !== title.all_other_translations.length - 1 ? ", " : ""}
                                               </span>
                                           )
                                       })
                                     : "None"}
+                                {"]"}
                             </p>
-                            {/*<p id="subtitles" className="text-os-dark-secondary text-xs  break-words whitespace-normal"><span className="text-os-white">Subtitles:</span> Japanese, English, Español, Korean (Hangugeo), Mandarin</p>*/}
-                            {/*<p id="contentadvisory" className="text-os-dark-secondary text-xs  break-words whitespace-normal"><span className="text-os-white">Content Advisory:</span> 13+, None</p>*/}
                             <p
                                 id="categories"
                                 className="text-s-dark-secondary text-xs break-words whitespace-normal"
@@ -190,6 +190,33 @@ function TitleDetailsPage() {
                                           )
                                       })
                                     : "None"}
+                            </p>
+                            <p
+                                id="othertranslation"
+                                className={`text-s-dark-secondary text-xs break-words whitespace-normal`}
+                            >
+                                <span className="text-red-300">Content Advisories:</span>
+                                {" ["}
+                                {title && title.all_content_advisories.length > 0
+                                    ? title.all_content_advisories.map((el, index) => {
+                                          return (
+                                              <span
+                                                  className="mx-0.25"
+                                                  key={index}
+                                              >
+                                                  {el}
+                                                  {index !== title.all_content_advisories.length - 1 ? ", " : ""}
+                                              </span>
+                                          )
+                                      })
+                                    : "None"}
+                                {"]"}
+                            </p>
+                            <p
+                                id="sutability"
+                                className="text-s-dark-secondary text-xs  break-words whitespace-normal"
+                            >
+                                <span className="text-red-300">Content Advisory:</span> {`(${title.filmSuitability}, +${title.filmAgeMin})`}
                             </p>
                             <p
                                 id="seriescopyright"

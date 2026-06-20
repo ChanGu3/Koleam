@@ -2,16 +2,10 @@ const { DataTypes, Op, fn, col, literal } = require("sequelize")
 const { Logging, errormsg } = require("../../server-logging.cjs")
 const { uploads } = require("../../server-uploads.cjs")
 const { ModelExtension } = require("../model-extension.cjs")
+const { FILM_RATING } = require("../../../shared/title-constants.cjs")
 
 class Title extends ModelExtension {
     static #models = null
-
-    static FILM_RATING = Object.freeze({
-        G: "G",
-        PG: "PG",
-        PG13: "PG13",
-        R: "R",
-    })
 
     /**
      * @override
@@ -41,9 +35,9 @@ class Title extends ModelExtension {
                     type: DataTypes.STRING,
                     allowNull: false,
                 },
-                filmSuitablilty: {
+                filmSuitability: {
                     type: DataTypes.ENUM,
-                    values: Object.values(Title.FILM_RATING),
+                    values: Object.values(FILM_RATING),
                     allowNull: true,
                     defaultValue: null,
                 },
@@ -142,7 +136,7 @@ class Title extends ModelExtension {
         })
     }
 
-    static AddToDB(label, description, copyright, originalTranslation, transaction = null) {
+    static AddToDB(label, description, copyright, originalTranslation, filmSuitability, filmAgeMin, transaction = null) {
         return new Promise(async (resolve, reject) => {
             try {
                 const title = await Title.build(
@@ -151,6 +145,8 @@ class Title extends ModelExtension {
                         description: description,
                         copyright: copyright,
                         originalTranslation: originalTranslation,
+                        filmSuitability: filmSuitability,
+                        filmAgeMin: filmAgeMin,
                     },
                     { transaction: transaction }
                 )
@@ -168,7 +164,11 @@ class Title extends ModelExtension {
         })
     }
 
-    static UpdateInDB(id, { label = undefined, description = undefined, copyright = undefined, originalTranslation = undefined } = {}, transaction = null) {
+    static UpdateInDB(
+        id,
+        { label = undefined, description = undefined, copyright = undefined, originalTranslation = undefined, filmSuitability = undefined, filmAgeMin = undefined } = {},
+        transaction = null
+    ) {
         return new Promise(async (resolve, reject) => {
             try {
                 const title = await Title.GetByID(id)
@@ -189,6 +189,13 @@ class Title extends ModelExtension {
                 }
                 if (originalTranslation) {
                     updateValues.originalTranslation = originalTranslation
+                }
+                if (filmAgeMin) {
+                    updateValues.filmAgeMin = filmAgeMin
+                }
+
+                if (filmSuitability) {
+                    updateValues.filmSuitability = filmSuitability
                 }
 
                 const query = {}
@@ -420,11 +427,12 @@ class Title extends ModelExtension {
                         group: default_query.group,
                     })
 
-                    const { createdAt: c1, updatedAt: u1, all_other_translations, all_genres, ...rest1 } = original_title_data.toJSON()
+                    const { createdAt: c1, updatedAt: u1, all_other_translations, all_genres, all_content_advisories, ...rest1 } = original_title_data.toJSON()
                     const all_title_data = {
                         ...rest1,
                         all_other_translations: all_other_translations ? all_other_translations.split(",") : [],
                         all_genres: all_genres ? all_genres.split(",") : [],
+                        all_content_advisories: all_content_advisories ? all_content_advisories.split(",") : [],
                     }
 
                     resolve(all_title_data)

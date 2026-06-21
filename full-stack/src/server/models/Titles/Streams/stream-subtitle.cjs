@@ -138,10 +138,11 @@ class StreamSubtitle extends ModelExtension {
 
                 await streamSubtitle.validate()
 
-                await streamSubtitle.save()
+                const subtitle = await streamSubtitle.save()
 
                 try {
                     await uploads_video.writeSubtitle(
+                        label,
                         mediaInputFilePath,
                         stream.titleID,
                         stream.installmentID,
@@ -230,6 +231,7 @@ class StreamSubtitle extends ModelExtension {
                 })
                 if (mediaInputFilePath && streamIndex) {
                     await uploads_video.writeSubtitle(
+                        label ? label : current_label,
                         mediaInputFilePath,
                         stream.titleID,
                         stream.installmentID,
@@ -264,7 +266,7 @@ class StreamSubtitle extends ModelExtension {
                 if (await StreamSubtitle.#Exists(streamID, label)) {
                     const stream = await StreamSubtitle.#models.TitleInstallmentStream.GetByID(streamID)
                     const subData = await StreamSubtitle.GetByStreamIDAndLabel(streamID, label)
-                    await uploads_video.deleteSubtitle(stream.titleID, stream.installmentID, stream.label, label, subData.codec_name)
+                    await uploads_video.deleteSubtitle(label, stream.titleID, stream.installmentID, stream.label, label, subData.codec_name)
 
                     await StreamSubtitle.destroy({
                         where: {

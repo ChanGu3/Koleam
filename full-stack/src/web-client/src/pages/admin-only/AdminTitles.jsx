@@ -706,7 +706,7 @@ function AdminTitle() {
     }
 
     useEffect(() => {
-        document.title = "Anime [Upload & Edit & Delete] - OtakuStream"
+        document.title = "Administration - Manage Titles"
         document.body.classList.remove("bg-os-dark-primary")
         document.body.classList.add("bg-[#181a1b]")
     }, [])

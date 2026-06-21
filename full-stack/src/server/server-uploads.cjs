@@ -216,6 +216,10 @@ const ffprobeInstaller = require("@ffprobe-installer/ffprobe")
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 ffmpeg.setFfprobePath(ffprobeInstaller.path)
 
+const VIDEO_RENDERS = new Map()
+const AUDIO_RENDERS = new Map()
+const SUBTITLE_RENDERS = new Map()
+
 const globalSegmentSeconds = 2
 const videoResolutionsHeight = [144, 240, 360, 480, 720, 1080, 1440, 2160]
 const videoResolutionsWidth = [256, 432, 640, 854, 1280, 1920, 2560, 3840]
@@ -312,7 +316,7 @@ function getExtensionFromSubtitleCodec(codecName) {
     }
 }
 
-function generateSingleVideo(inputFile, outputPlaylist, videoIndex = 0, videoResolution = 1080, onProgress = (progress) => {}, onComplete = () => {}) {
+function generateSingleVideo(video_id, inputFile, outputPlaylist, videoIndex = 0, videoResolution = 1080, onProgress = (progress) => {}, onComplete = () => {}) {
     return new Promise((resolve, reject) => {
         const outputDir = path.dirname(outputPlaylist)
         const segmentFilename = path.join(outputDir, `segment_video_${videoResolution}_%06d.ts`).replace(/\\/g, "/")
@@ -320,7 +324,7 @@ function generateSingleVideo(inputFile, outputPlaylist, videoIndex = 0, videoRes
 
         probeMediaFileInfo(inputFile)
             .then((metadata) => {
-                ffmpeg(inputFile)
+                const command = ffmpeg(inputFile)
                     .outputOptions([
                         "-map",
                         `0:v:${videoIndex}`,
@@ -347,8 +351,13 @@ function generateSingleVideo(inputFile, outputPlaylist, videoIndex = 0, videoRes
                         onComplete()
                         resolve(extractRequiredVideoMetadata(metadata.streams.filter((s) => s.codec_type === "video")[videoIndex]))
                     })
-                    .on("error", (err) => reject(err))
+                    .on("error", (err) => {
+                        VIDEO_RENDERS.delete(video_id)
+                        reject(err)
+                    })
                     .save(outputPlaylist)
+
+                VIDEO_RENDERS.set(video_id, command)
             })
             .catch((err) => {
                 reject(err)
@@ -356,7 +365,7 @@ function generateSingleVideo(inputFile, outputPlaylist, videoIndex = 0, videoRes
     })
 }
 
-async function generateAllResFromCap(inputFile, relativePath, onProgress = (progress) => {}, onComplete = () => {}) {
+async function generateAllResFromCap(video_id, inputFile, relativePath, onProgress = (progress) => {}, onComplete = () => {}) {
     const metadata = await probeMediaFileInfo(inputFile)
     const streamVideoData = metadata.streams.filter((s) => s.codec_type === "video")[0]
     if (!streamVideoData || !streamVideoData.height) {
@@ -381,7 +390,7 @@ async function generateAllResFromCap(inputFile, relativePath, onProgress = (prog
             const indexOverallProgress = progress.percent / videosToGenerateCount
             const indexPreviousOverallProgress = ((indexRes - i) * 100) / videosToGenerateCount
             const overallProgress = indexOverallProgress + indexPreviousOverallProgress
-            onProgress(overallProgress)
+            onProgress({ ...progress, percentAllRes: overallProgress })
         }
         const pathVideoPlaylistDirRelativeComplete = path.join(relativePath, "video", `${videoResolutionsHeight[i]}`)
         const pathVideoPlaylistDir = path.join(pathTitles, pathVideoPlaylistDirRelativeComplete)
@@ -390,7 +399,7 @@ async function generateAllResFromCap(inputFile, relativePath, onProgress = (prog
                 await recursiveDirDeleteInTitles(pathVideoPlaylistDirRelativeComplete)
             }
             await mkDir(pathVideoPlaylistDirRelativeComplete)
-            await generateSingleVideo(inputFile, path.join(pathVideoPlaylistDir, "video_playlist.m3u8"), 0, videoResolutionsHeight[i], onSingleVideoProgress, () => {
+            await generateSingleVideo(video_id, inputFile, path.join(pathVideoPlaylistDir, "video_playlist.m3u8"), 0, videoResolutionsHeight[i], onSingleVideoProgress, () => {
                 videoResCompleted++
                 if (videoResCompleted === videosToGenerateCount) {
                     onComplete()
@@ -401,6 +410,7 @@ async function generateAllResFromCap(inputFile, relativePath, onProgress = (prog
             throw new Error(`${err}`)
         }
     }
+    VIDEO_RENDERS.delete(video_id)
     return extractRequiredVideoMetadata(streamVideoData)
 }
 
@@ -412,24 +422,30 @@ async function deleteAllRes(relativePath) {
     }
 }
 
-function generateSingleAudio(inputFile, outputPlaylist, streamIndex = 0, onProgress = (progress) => {}, onComplete = () => {}) {
+function generateSingleAudio(audio_id, inputFile, outputPlaylist, streamIndex = 0, onProgress = (progress) => {}, onComplete = () => {}) {
     return new Promise((resolve, reject) => {
         const outputDir = path.dirname(outputPlaylist)
         const segmentFilename = path.join(outputDir, `segment_audio_${streamIndex}_%06d.ts`).replace(/\\/g, "/")
 
         probeMediaFileInfo(inputFile)
             .then((metadata) => {
-                ffmpeg(inputFile)
+                const command = ffmpeg(inputFile)
                     .outputOptions(["-map", `0:a:${streamIndex}`, "-vn", "-sn", "-hls_time", "2", "-hls_list_size", "0", "-hls_segment_filename", segmentFilename])
                     .audioCodec("aac")
                     .format("hls")
                     .on("progress", (progress) => onProgress(progress))
                     .on("end", () => {
                         onComplete()
+                        AUDIO_RENDERS.delete(audio_id)
                         resolve(extractRequiredAudioMetadata(metadata.streams.filter((s) => s.codec_type === "audio")[streamIndex]))
                     })
-                    .on("error", (err) => reject(err))
+                    .on("error", (err) => {
+                        AUDIO_RENDERS.delete(audio_id)
+                        reject(err)
+                    })
                     .save(outputPlaylist)
+
+                AUDIO_RENDERS.set(audio_id, command)
             })
             .catch((err) => {
                 reject(err)
@@ -437,7 +453,7 @@ function generateSingleAudio(inputFile, outputPlaylist, streamIndex = 0, onProgr
     })
 }
 
-async function generateAudio(inputFile, relativePath, streamIndex, audioName, onProgress = (progress) => {}, onComplete = () => {}) {
+async function generateAudio(audio_id, inputFile, relativePath, streamIndex, audioName, onProgress = (progress) => {}, onComplete = () => {}) {
     const relativePathDirComplete = path.join(relativePath, "audio", audioName)
     if (await doesTitlesPathExist(relativePathDirComplete)) {
         await recursiveDirDeleteInTitles(relativePathDirComplete)
@@ -445,7 +461,7 @@ async function generateAudio(inputFile, relativePath, streamIndex, audioName, on
 
     const pathAudioPlaylistDir = path.join(pathTitles, relativePathDirComplete)
     await mkDir(relativePathDirComplete)
-    return await generateSingleAudio(inputFile, path.join(pathAudioPlaylistDir, "audio_playlist.m3u8"), streamIndex, onProgress, onComplete)
+    return await generateSingleAudio(audio_id, inputFile, path.join(pathAudioPlaylistDir, "audio_playlist.m3u8"), streamIndex, onProgress, onComplete)
 }
 
 async function deleteAudio(relativePath, audioName) {
@@ -463,7 +479,7 @@ async function renameAudio(relativePath, previousAudioName, audioName) {
     }
 }
 
-function generateSingleSubtitle(inputFile, outputFolder, subName, streamIndex = 0, onProgress = (progress) => {}, onComplete = () => {}) {
+function generateSingleSubtitle(subtitle_id, inputFile, outputFolder, subName, streamIndex = 0, onProgress = (progress) => {}, onComplete = () => {}) {
     return new Promise((resolve, reject) => {
         probeMediaFileInfo(inputFile)
             .then((metadata) => {
@@ -487,10 +503,16 @@ function generateSingleSubtitle(inputFile, outputFolder, subName, streamIndex = 
                     })
                     .on("end", () => {
                         onComplete()
+                        SUBTITLE_RENDERS.delete(subtitle_id)
                         resolve(extractRequiredSubtitleMetadata(subtitleMetaData))
                     })
-                    .on("error", (err) => reject(err))
+                    .on("error", (err) => {
+                        SUBTITLE_RENDERS.delete(subtitle_id)
+                        reject(err)
+                    })
                     .run()
+
+                SUBTITLE_RENDERS.set(subtitle_id, command)
             })
             .catch((err) => {
                 reject(err)
@@ -498,7 +520,7 @@ function generateSingleSubtitle(inputFile, outputFolder, subName, streamIndex = 
     })
 }
 
-async function generateSubtitle(inputFile, relativePath, streamIndex, subName, onProgress = (progress) => {}, onComplete = () => {}) {
+async function generateSubtitle(subtitle_id, inputFile, relativePath, streamIndex, subName, onProgress = (progress) => {}, onComplete = () => {}) {
     const relativePathDirComplete = path.join(relativePath, "subs")
     const relativePlaylistComplete = path.join(relativePathDirComplete, `${subName}.m3u8`)
 
@@ -509,7 +531,7 @@ async function generateSubtitle(inputFile, relativePath, streamIndex, subName, o
     await mkDir(relativePathDirComplete)
     const pathSubDir = path.join(pathTitles, relativePathDirComplete)
     const webvttPath = path.join(pathSubDir, `${subName}.vtt`)
-    const metadataSubtitle = await generateSingleSubtitle(inputFile, pathSubDir, subName, streamIndex, onProgress, onComplete)
+    const metadataSubtitle = await generateSingleSubtitle(subtitle_id, inputFile, pathSubDir, subName, streamIndex, onProgress, onComplete)
 
     let exactDuration = 86400
 
@@ -657,6 +679,9 @@ const uploads = {
         extractRequiredVideoMetadata,
         extractRequiredAudioMetadata,
         extractRequiredSubtitleMetadata,
+        VIDEO_RENDERS,
+        AUDIO_RENDERS,
+        SUBTITLE_RENDERS,
     },
 }
 

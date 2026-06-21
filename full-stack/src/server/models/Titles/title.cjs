@@ -136,7 +136,7 @@ class Title extends ModelExtension {
         })
     }
 
-    static AddToDB(label, description, copyright, originalTranslation, filmSuitability, filmAgeMin, transaction = null) {
+    static AddToDB(label, description = null, copyright = null, originalTranslation, filmSuitability = null, filmAgeMin = null, transaction = null) {
         return new Promise(async (resolve, reject) => {
             try {
                 const title = await Title.build(

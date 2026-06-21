@@ -1,13 +1,75 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { FetchTitleByID } from "../services/Titles/FetchTitle.js"
+import { FetchTitleBySearchQuery, FetchTitleByID, DeleteTitleByID, AddTitle, UpdateTitle } from "../services/Titles/FetchTitle.js"
 import { FetchMemberRatingOfTitle, MemberUpdateRatingOfTitle, FetchMemberFavoriteOfTitle, MemberUpdateFavoriteOfTitle } from "../services/account/member.js"
 
 export function useGetTitleByID(titleID) {
     return useQuery({
-        queryKey: ["TITLE", "BY_ID", titleID],
+        queryKey: ["TITLE", titleID],
         queryFn: async () => await FetchTitleByID(titleID),
 
         enabled: !!titleID,
+    })
+}
+
+export function useGetTitles(searchGetLimit, newSearchQuery) {
+    return useInfiniteQuery({
+        queryKey: ["TITLE", "ALL", searchGetLimit, newSearchQuery],
+        queryFn: async ({ pageParam = 0 }) => await FetchTitleBySearchQuery(newSearchQuery, searchGetLimit, pageParam),
+        getNextageParam: (lastPage, allPages) => (lastPage && lastPage.length === searchGetLimit ? allPages.length * searchGetLimit : undefined),
+    })
+}
+
+export function useDeleteTitle() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationKey: ["TITLE", "DELETE"],
+        mutationFn: async ({ titleID }) => await DeleteTitleByID(titleID),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["TITLE", "ALL"] })
+        },
+    })
+}
+
+export function useAddTitle() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationKey: ["TITLE", "ADD"],
+        mutationFn: async ({ label, originalTranslation, description, copyright, filmSuitability, filmAgeMin, genres, otherTranslations, contentAdvisories, titleCover }) =>
+            await AddTitle({ label, originalTranslation, description, copyright, filmSuitability, filmAgeMin, genres, otherTranslations, contentAdvisories, titleCover }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["TITLE", "ALL"] })
+        },
+    })
+}
+
+export function useUpdateTitle() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationKey: ["TITLE", "UPDATE"],
+        mutationFn: async ({
+            titleID,
+            label = null,
+            originalTranslation = null,
+            description = null,
+            copyright = null,
+            filmSuitability = null,
+            filmAgeMin = null,
+            listData = null,
+            titleCover = null,
+        }) =>
+            await UpdateTitle(titleID, {
+                label,
+                originalTranslation,
+                description,
+                copyright,
+                filmSuitability,
+                filmAgeMin,
+                listData,
+                titleCover,
+            }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["TITLE"] })
+        },
     })
 }
 

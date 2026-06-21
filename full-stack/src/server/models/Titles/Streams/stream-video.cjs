@@ -146,10 +146,11 @@ class StreamVideo extends ModelExtension {
 
                 await streamVideo.validate()
 
-                await streamVideo.save({ transaction: transaction })
+                const video = await streamVideo.save({ transaction: transaction })
 
                 try {
                     await uploads_video.writeVideo(
+                        streamID,
                         mediaInputFilePath,
                         stream.titleID,
                         stream.installmentID,
@@ -222,6 +223,7 @@ class StreamVideo extends ModelExtension {
                 })
                 try {
                     await uploads_video.writeVideo(
+                        streamVideo.streamID,
                         mediaInputFilePath,
                         stream.titleID,
                         stream.installmentID,
@@ -255,7 +257,7 @@ class StreamVideo extends ModelExtension {
             try {
                 if (await this.#Exists(streamID)) {
                     const stream = await StreamVideo.#models.TitleInstallmentStream.GetByID(streamID)
-                    await uploads_video.deleteVideo(stream.titleID, stream.installmentID, stream.label)
+                    await uploads_video.deleteVideo(stream.id, stream.titleID, stream.installmentID, stream.label)
 
                     await StreamVideo.destroy({
                         where: {

@@ -1,11 +1,14 @@
 const path = require("path")
 const { uploads } = require("./server-uploads.cjs")
 
-async function writeVideo(inputPath, titleID, installmentID, streamTitle, onProgress, onComplete) {
-    return await uploads.media.generateAllResFromCap(inputPath, path.join(titleID, installmentID, streamTitle), onProgress, onComplete)
+async function writeVideo(video_id, inputPath, titleID, installmentID, streamTitle, onProgress, onComplete) {
+    return await uploads.media.generateAllResFromCap(video_id, inputPath, path.join(titleID, installmentID, streamTitle), onProgress, onComplete)
 }
 
-async function deleteVideo(titleID, installmentID, streamTitle) {
+async function deleteVideo(video_id, titleID, installmentID, streamTitle) {
+    if (uploads.media.VIDEO_RENDERS.has(video_id)) {
+        uploads.media.VIDEO_RENDERS.get(video_id).kill("SIGINT")
+    }
     return await uploads.media.deleteAllRes(path.join(titleID, installmentID, streamTitle))
 }
 
@@ -21,11 +24,14 @@ async function getFileVideoDetails(inputPath) {
     return uploads.media.extractRequiredVideoMetadata(videoMetaData)
 }
 
-async function writeAudio(inputPath, titleID, installmentID, streamTitle, audioName, streamIndex, onProgress, onComplete) {
-    return await uploads.media.generateAudio(inputPath, path.join(titleID, installmentID, streamTitle), streamIndex, audioName, onProgress, onComplete)
+async function writeAudio(audio_id, inputPath, titleID, installmentID, streamTitle, audioName, streamIndex, onProgress, onComplete) {
+    return await uploads.media.generateAudio(audio_id, inputPath, path.join(titleID, installmentID, streamTitle), streamIndex, audioName, onProgress, onComplete)
 }
 
-async function deleteAudio(titleID, installmentID, streamTitle, audioName) {
+async function deleteAudio(audio_id, titleID, installmentID, streamTitle, audioName) {
+    if (uploads.media.AUDIO_RENDERS.has(audio_id)) {
+        uploads.media.AUDIO_RENDERS.get(audio_id).kill("SIGINT")
+    }
     return await uploads.media.deleteAudio(path.join(titleID, installmentID, streamTitle), audioName)
 }
 
@@ -45,11 +51,14 @@ async function getFileAudioDetails(inputPath, streamIndex) {
     return uploads.media.extractRequiredAudioMetadata(audioMetaData)
 }
 
-async function writeSubtitle(inputPath, titleID, installmentID, streamTitle, subName, streamIndex, onProgress, onComplete) {
-    return await uploads.media.generateSubtitle(inputPath, path.join(titleID, installmentID, streamTitle), streamIndex, subName, onProgress, onComplete)
+async function writeSubtitle(subtitle_id, inputPath, titleID, installmentID, streamTitle, subName, streamIndex, onProgress, onComplete) {
+    return await uploads.media.generateSubtitle(subtitle_id, inputPath, path.join(titleID, installmentID, streamTitle), streamIndex, subName, onProgress, onComplete)
 }
 
-async function deleteSubtitle(titleID, installmentID, streamTitle, subName, codecName) {
+async function deleteSubtitle(subtitle_id, titleID, installmentID, streamTitle, subName, codecName) {
+    if (uploads.media.SUBTITLE_RENDERS.has(subtitle_id)) {
+        uploads.media.SUBTITLE_RENDERS.get(subtitle_id).kill("SIGINT")
+    }
     return await uploads.media.deleteSubtitle(path.join(titleID, installmentID, streamTitle), subName, codecName)
 }
 

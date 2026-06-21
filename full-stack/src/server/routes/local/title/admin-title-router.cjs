@@ -25,7 +25,7 @@ adminTitleRouter.delete("/stream/:streamID", titleController.DeleteStream)
 
 adminTitleRouter.post("/genre", titleController.AddGenre)
 
-adminTitleRouter.delete("/genre", titleController.DeleteGenre)
+adminTitleRouter.delete("/genre/:name", titleController.DeleteGenre)
 
 /* --- MEDIA UPLOADS --- */
 

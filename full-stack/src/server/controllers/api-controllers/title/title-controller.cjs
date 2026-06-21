@@ -156,7 +156,15 @@ async function AddTitle(req, res) {
             return
         }
 
-        const title = await db.models.Title.AddToDB(titleData.label, titleData.description, titleData.copyright, titleData.originalTranslation, transaction)
+        const title = await db.models.Title.AddToDB(
+            titleData.label,
+            titleData.description,
+            titleData.copyright,
+            titleData.originalTranslation,
+            titleData.filmSuitability,
+            titleData.filmAgeMin,
+            transaction
+        )
 
         for (const genre of titleData.genres) {
             await db.models.TitleGenre.AddToDB(title.id, genre, transaction)
@@ -164,6 +172,10 @@ async function AddTitle(req, res) {
 
         for (const otherTranslation of titleData.otherTranslations) {
             await db.models.TitleOtherTranslation.AddToDB(title.id, otherTranslation, transaction)
+        }
+
+        for (const contentAdvisory of titleData.contentAdvisories) {
+            await db.models.TitleContentAdvisory.AddToDB(title.id, contentAdvisory, transaction)
         }
 
         await uploads_image.uploadTitleCover(title.id, titleCover.buffer)
@@ -193,31 +205,50 @@ async function UpdateTitle(req, res) {
 
         const title = await db.models.Title.UpdateInDB(
             titleID,
-            { label: titleData.label, description: titleData.description, copyright: titleData.copyright, originalTranslation: titleData.originalTranslation },
+            {
+                label: titleData.label,
+                description: titleData.description,
+                copyright: titleData.copyright,
+                originalTranslation: titleData.originalTranslation,
+                filmSuitability: titleData.filmSuitability,
+                filmAgeMin: titleData.filmAgeMin,
+            },
             transaction
         )
 
-        for (const genre of titleData.genres_delete) {
+        for (const genre of titleData.listData.delete.genres) {
             if (db.models.TitleGenre.Exists(title.id, genre, transaction)) {
                 await db.models.TitleGenre.RemoveByTitleIDAndGenreFromDB(title.id, genre, transaction)
             }
         }
 
-        for (const genre of titleData.genres_add) {
+        for (const genre of titleData.listData.add.genres) {
             if (db.models.TitleGenre.Exists(title.id, genre, transaction)) {
                 await db.models.TitleGenre.AddToDB(title.id, genre, transaction)
             }
         }
 
-        for (const otherTranslation of titleData.otherTranslations_delete) {
+        for (const otherTranslation of titleData.listData.delete.otherTranslations) {
             if (db.models.TitleOtherTranslation.Exists(title.id, otherTranslation, transaction)) {
                 await db.models.TitleOtherTranslation.AddToDB(title.id, otherTranslation, transaction)
             }
         }
 
-        for (const otherTranslation of titleData.otherTranslations_add) {
+        for (const otherTranslation of titleData.listData.add.otherTranslations) {
             if (db.models.TitleOtherTranslation.Exists(title.id, otherTranslation, transaction)) {
                 await db.models.TitleOtherTranslation.AddToDB(title.id, otherTranslation, transaction)
+            }
+        }
+
+        for (const contentAdvisory of titleData.listData.delete.contentAdvisories) {
+            if (db.models.TitleContentAdvisory.Exists(title.id, contentAdvisory, transaction)) {
+                await db.models.TitleContentAdvisory.AddToDB(title.id, contentAdvisory, transaction)
+            }
+        }
+
+        for (const contentAdvisory of titleData.listData.add.contentAdvisories) {
+            if (db.models.TitleContentAdvisory.Exists(title.id, contentAdvisory, transaction)) {
+                await db.models.TitleContentAdvisory.AddToDB(title.id, contentAdvisory, transaction)
             }
         }
 
@@ -411,8 +442,8 @@ async function AddStreamVideo(req, res) {
 
 async function AddStreamAudio(req, res) {
     try {
-        const { streamID, label } = req.params
-        const { streamIndexAudioOnly, tempFileID } = JSON.parse(req.body)
+        const { streamID } = req.params
+        const { label, streamIndexAudioOnly, tempFileID } = JSON.parse(req.body)
         if (!streamID || !tempFileID) {
             res.status(400).json({ error: "missing required data within request" })
             return
@@ -519,7 +550,7 @@ async function UpdateStreamAudio(req, res) {
         const { streamID, label } = req.params
         const { streamIndexAudioOnly, tempFileID, newLabel } = JSON.parse(req.body)
 
-        if (tempFileID) {
+        if (tempFileID && streamIndexAudioOnly) {
             const tempUpload = await db.models.TempUpload.GetByID(tempFileID)
             const tempUploadFilename = db.models.TempUpload.GetFilename(tempUpload.id, db.models.TempUpload.GetExtension(tempUpload.originalFilename))
             const mediaPath = uploads.temp.getTempPath(tempUploadFilename)

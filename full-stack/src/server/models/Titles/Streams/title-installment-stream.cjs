@@ -45,6 +45,10 @@ class TitleInstallmentStream extends ModelExtension {
                 streamNumber: {
                     type: DataTypes.INTEGER,
                     allowNull: false,
+                    min: {
+                        args: [-1],
+                        msg: "Quantity must be greater than -1.",
+                    },
                 },
                 synopsis: {
                     type: DataTypes.STRING,

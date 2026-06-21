@@ -152,10 +152,11 @@ class StreamAudio extends ModelExtension {
 
                 await streamAudio.validate()
 
-                await streamAudio.save()
+                const audio = await streamAudio.save()
 
                 try {
                     await uploads_video.writeAudio(
+                        label,
                         mediaInputFilePath,
                         stream.titleID,
                         stream.installmentID,
@@ -243,6 +244,7 @@ class StreamAudio extends ModelExtension {
                 })
                 if (mediaInputFilePath) {
                     await uploads_video.writeAudio(
+                        label ? label : current_label,
                         mediaInputFilePath,
                         stream.titleID,
                         stream.installmentID,
@@ -276,7 +278,7 @@ class StreamAudio extends ModelExtension {
             try {
                 if (await StreamAudio.#Exists(streamID, label)) {
                     const stream = await StreamAudio.#models.TitleInstallmentStream.GetByID(streamID)
-                    await uploads_video.deleteAudio(stream.titleID, stream.installmentID, stream.label, label)
+                    await uploads_video.deleteAudio(label, stream.titleID, stream.installmentID, stream.label, label)
 
                     await StreamAudio.destroy({
                         where: {

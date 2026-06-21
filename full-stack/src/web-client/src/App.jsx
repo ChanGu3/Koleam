@@ -26,7 +26,7 @@ import MemberAccountPage from "./pages/member-only/MemberAccountPage/MemberAccou
 import AdminAccountPage from "./pages/admin-only/AdminAccountPage/AdminAccountPage.jsx"
 
 import AdminDashboard from "./pages/admin-only/AdminDashboard.jsx"
-import AdminTitles from "./pages/admin-only/AdminTitles.jsx"
+import AdminManageTitles from "./pages/admin-only/AdminManageTitles.jsx"
 import AdminMembersControl from "./pages/admin-only/AdminMembersControl.jsx"
 
 import HomeSignOutLocalPage from "./pages/admin-only/HomeSignOutLocalPage.jsx"
@@ -212,7 +212,7 @@ function App() {
                                 />
                                 <Route
                                     path="titles"
-                                    element={<AdminTitles />}
+                                    element={<AdminManageTitles />}
                                 />
                             </Route>
                         </Route>

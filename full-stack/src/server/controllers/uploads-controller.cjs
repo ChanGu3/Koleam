@@ -97,8 +97,10 @@ async function GetTitleInstallmentStreamThumbnail(req, res) {
 }
 
 async function UploadChunkToTempFile(req, res) {
-    const { tempFileID, chunkNum } = JSON.parse(req.body)
+    const body = JSON.parse(req.body)
+    const { originalFilename, fileSize, ...body_0 } = body
     const tempChunk = req.files["tempChunk"][0]
+    const { tempfileID, chunkNum } = body_0
 
     if (tempChunk == null || tempChunk == undefined) {
         res.status(400).json({ error: "No chunk was recieved" })
@@ -106,13 +108,13 @@ async function UploadChunkToTempFile(req, res) {
     }
 
     try {
-        // means create a new file for this upload
-        if (tempFileID == null || tempFileID == undefined) {
+        // create a new file for this upload not a new tempfileID
+        if (tempfileID == null || tempfileID == undefined) {
             const instance = await db.models.TempUpload.AddToDB(tempChunk.originalname, tempChunk.size, tempChunk.buffer.length)
             res.status(200).json({ message: "upload transaction successfully started", data: { ...instance } })
             return
         } else {
-            const instance = await db.models.TempUpload.ApplyChunkToDB(tempFileID, tempChunk.buffer)
+            const instance = await db.models.TempUpload.ApplyChunkToDB(tempfileID, tempChunk.buffer)
             res.status(200).json({
                 message: `chunk ${chunkNum} successfully uploaded`,
                 data: { ...instance, percentDownloaded: (instance.fileSizeDownloaded / instance.fileSize) * 100 },

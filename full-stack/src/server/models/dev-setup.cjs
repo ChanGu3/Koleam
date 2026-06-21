@@ -7,7 +7,7 @@ const lorem =
 
 async function TestUsingMKV(models, animeCloudsSeason1ep1) {
     await models.StreamVideo.AddToDB("./dev/media/test5.mkv", { streamID: animeCloudsSeason1ep1.id }, null, (progress) => {
-        Logging.LogDev(`Loading Test Video: ${progress}%`)
+        Logging.LogDev(`Loading Test Video: ${progress.percentAllRes}%`)
     })
 
     /* Works
@@ -72,6 +72,10 @@ async function TestUsingMKV(models, animeCloudsSeason1ep1) {
 
     await models.StreamSubtitle.AddToDB("./dev/media/basic-dialogue.ass", 0, { streamID: animeCloudsSeason1ep1.id, label: "ASS", isCC: false }, null, (progress) => {
         Logging.LogDev(`Loading Test Subtitle ASS: ${progress.timemark}%`)
+    })
+
+    await models.StreamAudio.AddToDB("./dev/media/audio_test.wav", 0, { streamID: animeCloudsSeason1ep1.id, label: "WAV" }, null, (progress) => {
+        Logging.LogDev(`Loading Test Audio WAV: ${progress.percent}%`)
     })
 }
 

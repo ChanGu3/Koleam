@@ -12,6 +12,12 @@ titleRouter.get("/stream", titleController.GetAllTitleInstallmentStream)
 
 // More specific dynamic routes first
 titleRouter.get("/stream/:streamID/likes", titleController.GetTitleInstallmentStreamLikes)
+
+// SSE routes for rendering progress
+titleRouter.get("/stream/:streamID/video/render", titleController.stream.StreamVideoRenderInfo)
+titleRouter.get("/stream/:streamID/audio/:label/render", titleController.stream.StreamAudioRenderInfo)
+titleRouter.get("/stream/:streamID/subtitle/:label/:isCC/render", titleController.stream.StreamSubtitleRenderInfo)
+
 titleRouter.get("/stream/:streamID/*filename", uploadsController.GetStreamUploads)
 
 // Generic dynamic routes

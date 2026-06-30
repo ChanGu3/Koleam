@@ -101,7 +101,7 @@ class StreamVideo extends ModelExtension {
         return
     }
 
-    static async #Exists(streamID) {
+    static async Exists(streamID) {
         const streamVideo = await StreamVideo.findByPk(streamID)
         return streamVideo ? true : false
     }
@@ -118,144 +118,158 @@ class StreamVideo extends ModelExtension {
     static async #OnRenderCycleComplete(streamVideo) {
         streamVideo.isDownloaded = true
         await streamVideo.save()
+        events.emit(StreamVideo.GetVideoUpdateProgressEventName(streamVideo.streamID), { progress: { percent: 100, percentAllRes: 100 }, streamVideoData: streamVideo.toJSON() })
     }
 
     // TODO: in the future for writing media to disk maybe just get the details before writing the video oh well for now this is something id need to do for each media extension model
-    static AddToDB(mediaInputFilePath, { streamID } = {}, transaction = null, onProgress = (progress) => {}) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const stream = await StreamVideo.#models.TitleInstallmentStream.GetByID(streamID, transaction)
-                const videoData = await uploads_video.getFileVideoDetails(mediaInputFilePath)
+    static async AddToDB(mediaInputFilePath, { streamID } = {}, transaction = null, onProgress = (progress) => {}) {
+        try {
+            const stream = await StreamVideo.#models.TitleInstallmentStream.GetByID(streamID, transaction)
+            const videoData = await uploads_video.getFileVideoDetails(mediaInputFilePath)
 
-                const streamVideo = await StreamVideo.build({
-                    streamID: streamID,
-                    width: videoData.width,
-                    height: videoData.height,
-                    codec_name: videoData.codec_name,
-                    bit_rate: videoData.bit_rate,
-                    profile: videoData.profile,
-                    level: videoData.level,
-                    avg_frame_rate: videoData.avg_frame_rate,
-                    duration: videoData.duration,
-                    pix_fmt: videoData.pix_fmt,
-                    color_space: videoData.color_space,
-                    start_time: videoData.start_time,
-                    display_aspect_ratio: videoData.display_aspect_ratio,
-                    isDownloaded: false,
+            const streamVideo = await StreamVideo.build({
+                streamID: streamID,
+                width: videoData.width,
+                height: videoData.height,
+                codec_name: videoData.codec_name,
+                bit_rate: videoData.bit_rate,
+                profile: videoData.profile,
+                level: videoData.level,
+                avg_frame_rate: videoData.avg_frame_rate,
+                duration: videoData.duration,
+                pix_fmt: videoData.pix_fmt,
+                color_space: videoData.color_space,
+                start_time: videoData.start_time,
+                display_aspect_ratio: videoData.display_aspect_ratio,
+                isDownloaded: false,
+            })
+
+            await streamVideo.validate()
+
+            const video = await streamVideo.save({ transaction: transaction })
+
+            // Defer the execution of the video writing to the next event loop tick
+
+            uploads_video
+                .writeVideo(
+                    streamID,
+                    mediaInputFilePath,
+                    stream.titleID,
+                    stream.installmentID,
+                    stream.label,
+                    (progress) => {
+                        StreamVideo.#OnRenderCycle(progress, streamVideo)
+                        onProgress(progress)
+                        return
+                    },
+                    () => StreamVideo.#OnRenderCycleComplete(streamVideo)
+                )
+                .then(async () => {
+                    // when using a transaction it is assumed master file is not written to automatically.
+                    if (!transaction) {
+                        await StreamVideo.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
+                    }
+                })
+                .catch((err) => {
+                    streamVideo.destroy({ transaction: transaction }).then()
+                    Logging.LogError(`${err.message}`)
                 })
 
-                await streamVideo.validate()
-
-                const video = await streamVideo.save({ transaction: transaction })
-
-                try {
-                    await uploads_video.writeVideo(
-                        streamID,
-                        mediaInputFilePath,
-                        stream.titleID,
-                        stream.installmentID,
-                        stream.label,
-                        (progress) => {
-                            StreamVideo.#OnRenderCycle(progress, streamVideo)
-                            onProgress(progress)
-                            return
-                        },
-                        () => StreamVideo.#OnRenderCycleComplete(streamVideo)
-                    )
-                } catch (err) {
-                    await streamVideo.destroy({ transaction: transaction })
-                    reject(err)
-                }
-
-                // when using a transaction it is assumed master file is not written to automatically.
-                if (!transaction) {
-                    await StreamVideo.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
-                }
-
-                resolve(streamVideo)
-            } catch (err) {
-                Logging.LogError(`could not add ${StreamVideo.name} to database ${streamID} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
+            return streamVideo
+        } catch (err) {
+            Logging.LogError(`could not add ${StreamVideo.name} to database ${streamID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
-    static UpdateInDB(streamID, mediaInputFilePath, transaction = null, onProgress = (progress) => {}) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const stream = await StreamVideo.#models.TitleInstallmentStream.GetByID(streamID, transaction)
-                const videoData = await uploads_video.getFileVideoDetails(mediaInputFilePath)
-                const streamVideoPre = await StreamVideo.GetByStreamID(streamID, transaction)
+    static async UpdateInDB(streamID, mediaInputFilePath, transaction = null, onProgress = (progress) => {}) {
+        try {
+            const stream = await StreamVideo.#models.TitleInstallmentStream.GetByID(streamID, transaction)
+            const streamVideoPre = await StreamVideo.GetByStreamID(streamID, transaction)
 
-                if (!streamVideoPre.isDownloaded) {
-                    reject(new Error(`cannot update ${StreamVideo.name} with streamID:${streamID} because video has not finished downloading yet`))
-                }
-
-                const query = {}
-                query.where = {}
-                query.where.streamID = streamID
-                if (transaction) {
-                    query.transaction = transaction
-                }
-
-                await StreamVideo.update(
-                    {
-                        width: videoData.width,
-                        height: videoData.height,
-                        codec_name: videoData.codec_name,
-                        bit_rate: videoData.bit_rate,
-                        profile: videoData.profile,
-                        level: videoData.level,
-                        avg_frame_rate: videoData.avg_frame_rate,
-                        duration: videoData.duration,
-                        pix_fmt: videoData.pix_fmt,
-                        color_space: videoData.color_space,
-                        start_time: videoData.start_time,
-                        display_aspect_ratio: videoData.display_aspect_ratio,
-                        isDownloaded: false,
-                    },
-                    query
-                )
-
-                const streamVideo = await StreamVideo.findOne({
-                    where: { streamID: streamID },
-                    transaction: transaction,
-                })
-                try {
-                    await uploads_video.writeVideo(
-                        streamVideo.streamID,
-                        mediaInputFilePath,
-                        stream.titleID,
-                        stream.installmentID,
-                        stream.label,
-                        (progress) => {
-                            StreamVideo.#OnRenderCycle(progress, streamVideo)
-                            onProgress(progress)
-                            return
-                        },
-                        () => StreamVideo.#OnRenderCycleComplete(streamVideo)
-                    )
-                } catch (err) {
-                    await uploads_video.deleteVideo(stream.titleID, stream.installmentID, stream.label)
-                }
-
-                // when using a transaction it is assumed master file is not written to automatically.
-                if (!transaction) {
-                    await StreamVideo.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
-                }
-
-                resolve()
-            } catch (err) {
-                Logging.LogError(`could not update ${StreamVideo.name} in database ${streamID} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
+            if (!streamVideoPre.isDownloaded) {
+                reject(new Error(`cannot update ${StreamVideo.name} with streamID:${streamID} because video has not finished downloading yet`))
             }
-        })
+
+            uploads_video
+                .getFileVideoDetails(mediaInputFilePath)
+                .then(async (videoData) => {
+                    const query = {}
+                    query.where = {}
+                    query.where.streamID = streamID
+                    if (transaction) {
+                        query.transaction = transaction
+                    }
+
+                    await StreamVideo.update(
+                        {
+                            width: videoData.width,
+                            height: videoData.height,
+                            codec_name: videoData.codec_name,
+                            bit_rate: videoData.bit_rate,
+                            profile: videoData.profile,
+                            level: videoData.level,
+                            avg_frame_rate: videoData.avg_frame_rate,
+                            duration: videoData.duration,
+                            pix_fmt: videoData.pix_fmt,
+                            color_space: videoData.color_space,
+                            start_time: videoData.start_time,
+                            display_aspect_ratio: videoData.display_aspect_ratio,
+                            isDownloaded: false,
+                        },
+                        query
+                    )
+
+                    const streamVideo = await StreamVideo.findOne({
+                        where: { streamID: streamID },
+                        transaction: transaction,
+                    })
+
+                    uploads_video
+                        .writeVideo(
+                            streamID,
+                            mediaInputFilePath,
+                            stream.titleID,
+                            stream.installmentID,
+                            stream.label,
+                            (progress) => {
+                                StreamVideo.#OnRenderCycle(progress, streamVideo)
+                                onProgress(progress)
+                                return
+                            },
+                            () => StreamVideo.#OnRenderCycleComplete(streamVideo)
+                        )
+                        .then(async () => {
+                            // when using a transaction it is assumed master file is not written to automatically.
+                            if (!transaction) {
+                                await StreamVideo.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
+                            }
+                        })
+                        .catch(async (err) => {
+                            await uploads_video.deleteVideo(stream.titleID, stream.installmentID, stream.label)
+                            Logging.LogError(`${err.message}`)
+                        })
+
+                    // when using a transaction it is assumed master file is not written to automatically.
+                    if (!transaction) {
+                        await StreamVideo.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
+                    }
+                })
+                .catch((err) => {
+                    Logging.LogError(`${err.message}`)
+                })
+
+            return
+        } catch (err) {
+            Logging.LogError(`could not update ${StreamVideo.name} in database ${streamID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
     static RemoveFromDB(streamID) {
         return new Promise(async (resolve, reject) => {
             try {
-                if (await this.#Exists(streamID)) {
+                if (await this.Exists(streamID)) {
                     const stream = await StreamVideo.#models.TitleInstallmentStream.GetByID(streamID)
                     await uploads_video.deleteVideo(stream.id, stream.titleID, stream.installmentID, stream.label)
 
@@ -281,7 +295,7 @@ class StreamVideo extends ModelExtension {
     static GetByStreamID(streamID, transaction = null) {
         return new Promise(async (resolve, reject) => {
             try {
-                if (await this.#Exists(streamID)) {
+                if (await this.Exists(streamID)) {
                     const default_query = {
                         where: {
                             streamID: streamID,

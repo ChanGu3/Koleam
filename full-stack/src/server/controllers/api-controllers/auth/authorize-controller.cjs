@@ -2,8 +2,8 @@ const db = require("../../../models/database.cjs")
 
 async function AuthorizeMember(req, res, next) {
     try {
-        if (req.session.user) {
-            if (await db.models.Member.Exists(req.session.user.email)) {
+        if (req.session.member) {
+            if (await db.models.Member.Exists(req.session.member.email)) {
                 next()
                 return
             }

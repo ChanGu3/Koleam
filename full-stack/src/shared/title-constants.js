@@ -38,8 +38,8 @@ const GENRES = Object.freeze({
     WESTERN: "Western",
 })
 
-module.exports = {
-    FILM_RATING,
-    CONTENT_ADVISORIES,
-    GENRES,
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = { FILM_RATING, CONTENT_ADVISORIES, GENRES }
 }
+
+export { FILM_RATING, CONTENT_ADVISORIES, GENRES }

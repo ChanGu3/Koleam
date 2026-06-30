@@ -157,12 +157,12 @@ class TitleOtherTranslation extends ModelExtension {
                 })
                 resolve(
                     titleOtherTranslations.map((element) => {
-                        const { animeID, createdAt, updatedAt, ...rest } = element.toJSON()
+                        const { titleID, createdAt, updatedAt, ...rest } = element.toJSON()
                         return rest
                     })
                 )
             } catch (err) {
-                Logging.LogError(`could not get list of ${TitleOtherTranslation.name} from database using animeID:${titleID} --- ${err.message}`)
+                Logging.LogError(`could not get list of ${TitleOtherTranslation.name} from database using titleID:${titleID} --- ${err.message}`)
                 reject(new Error(errormsg.fallback))
             }
         })

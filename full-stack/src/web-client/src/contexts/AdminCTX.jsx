@@ -1,12 +1,11 @@
-import { createContext, useEffect, useState } from "react"
-import { ACCESS_TYPE } from "../constants"
+import { useEffect, useState } from "react"
+import { ACCESS_TYPE } from "../../dev/constants.js"
 import useUIConfig from "../hooks/useUIConfig"
 import { AdminSignOut, AdminSignIn } from "../services/auth/authentification"
 import { isAdminAuthorized } from "../services/auth/authorization"
 import { AdminData, AdminUpdatePassword } from "../services/account/admin"
 import { useQueryClient } from "@tanstack/react-query"
-
-export const AdminContext = createContext(undefined)
+import { AdminContext } from "./createContext/AdminContext.jsx"
 
 export function AdminCTX({ children }) {
     const queryClient = useQueryClient()

@@ -98,7 +98,7 @@ function HomePage() {
                                           })()}
                                           href={`/stream/${stream.id}/${stream.label}`}
                                           installmentLabel={stream.TitleInstallment.label}
-                                          streamNumber={stream.streamNumber}
+                                          streamNumber={stream.order_number_by_release_date}
                                       />
                                   )
                               })
@@ -121,12 +121,10 @@ function HomePage() {
                                           key={titleItem.id}
                                           titleID={titleItem.id}
                                           label={titleItem.label}
-                                          imageSrc={`api/title/${titleItem.id}/cover.jpg`}
                                           seasonNum={titleItem.seasons_count}
                                           episodeNum={titleItem.stream_episodes_count}
                                           movieNum={titleItem.stream_movies_count}
                                           description={titleItem.description}
-                                          href={`/title/${titleItem.id}/${titleItem.label}`}
                                       />
                                   )
                               })

@@ -1,3 +1,5 @@
+import { ERROR_MESSAGES } from "../../../../shared/log-messages"
+
 export async function GetAllGenres(limit = 10, offset = 0) {
     const response = await fetch(`/api/title/genre?offset=${offset}&limit=${limit}`, {
         method: "GET",
@@ -35,38 +37,34 @@ export async function FetchGenre(genre) {
 }
 
 /**
- * @returns {Promise<boolean>}
+ * @returns {Promise<any>}
  *
  */
 export async function DeleteGenre(name) {
+    let data = null
     try {
         const response = await fetch(`/api/title/genre/${name}`, {
             method: "DELETE",
         })
 
-        if (!response.ok) {
-            return false
-        }
+        data = await response.json()
+    } catch (err) {
+        throw Error(ERROR_MESSAGES.SHARED.unexpected)
+    }
 
-        if (response.status !== 200) {
-            return false
-        }
+    if (data && data.error) {
+        throw Error(data.error)
+    }
 
-        const data = await response.json()
-
-        if (data.error) {
-            return false
-        }
-
-        return true
-    } catch (err) {}
+    return data
 }
 
 /**
- * @returns {Promise<boolean>}
+ * @returns {Promise<any>}
  *
  */
 export async function AddGenre({ name }) {
+    let data = null
     try {
         const response = await fetch(`/api/title/genre`, {
             method: "POST",
@@ -76,22 +74,14 @@ export async function AddGenre({ name }) {
             },
         })
 
-        if (!response.ok) {
-            return false
-        }
-
-        if (response.status !== 200) {
-            return false
-        }
-
-        const data = await response.json()
-
-        if (data.error) {
-            return false
-        }
-
-        return true
+        data = await response.json()
     } catch (err) {
-        return false
+        throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
+
+    if (data && data.error) {
+        throw Error(data.error)
+    }
+
+    return data
 }

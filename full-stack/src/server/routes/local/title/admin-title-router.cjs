@@ -39,18 +39,12 @@ adminTitleRouter.delete("/stream/:streamID/video", titleController.stream.Delete
 
 adminTitleRouter.delete("/stream/:streamID/audio/:label", titleController.stream.DeleteStreamAudio)
 
-adminTitleRouter.delete("/stream/:streamID/subtitle/:label", titleController.stream.DeleteStreamSubtitle)
+adminTitleRouter.delete("/stream/:streamID/subtitle/:label/:isCC", titleController.stream.DeleteStreamSubtitle)
 
 adminTitleRouter.put("/stream/:streamID/video", titleController.stream.UpdateStreamVideo)
 
 adminTitleRouter.put("/stream/:streamID/audio/:label", titleController.stream.UpdateStreamAudio)
 
-adminTitleRouter.put("/stream/:streamID/subtitle/:label", titleController.stream.UpdateStreamSubtitle)
-
-adminTitleRouter.get("/stream/:streamID/video/render", titleController.stream.StreamVideoRenderInfo)
-
-adminTitleRouter.get("/stream/:streamID/audio/:label/render", titleController.stream.StreamAudioRenderInfo)
-
-adminTitleRouter.get("/stream/:streamID/subtitle/:label/render", titleController.stream.StreamSubtitleRenderInfo)
+adminTitleRouter.put("/stream/:streamID/subtitle/:label/:isCC", titleController.stream.UpdateStreamSubtitle)
 
 module.exports = adminTitleRouter

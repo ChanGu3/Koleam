@@ -77,7 +77,7 @@ class TitleFavorite extends ModelExtension {
 
     //
     // reject --> string: error msg
-    // resolve --> instance: created AnimeFavorite
+    // resolve --> instance: created TitleFavorite
     //
     static AddToDB(email, titleID) {
         return new Promise(async (resolve, reject) => {
@@ -189,11 +189,11 @@ class TitleFavorite extends ModelExtension {
                         attributes: {
                             exclude: ["createdAt", "updatedAt", "id"],
                             include: ["label", "description", "copyright", "originalTranslation"].concat(
-                                TitleFavorite.#models.Title.GET_INSTALLMENT_INCLUDE,
-                                TitleFavorite.#models.Title.GET_OTHERTRANSLATIONS_INCLUDE,
-                                TitleFavorite.#models.Title.GET_RATINGS_INCLUDE,
-                                TitleFavorite.#models.Title.GET_GENRES_INCLUDE,
-                                TitleFavorite.#models.Title.GET_FAVORITES_INCLUDE
+                                TitleFavorite.#models.Title.GET_INSTALLMENT_INCLUDE(),
+                                TitleFavorite.#models.Title.GET_OTHERTRANSLATIONS_INCLUDE(),
+                                TitleFavorite.#models.Title.GET_RATINGS_INCLUDE(),
+                                TitleFavorite.#models.Title.GET_GENRES_INCLUDE(),
+                                TitleFavorite.#models.Title.GET_FAVORITES_INCLUDE()
                             ),
                         },
                     },
@@ -203,11 +203,13 @@ class TitleFavorite extends ModelExtension {
 
                 const titleFavorites = await TitleFavorite.findAll(query)
                 resolve(
-                    await Promise.all(titleFavorites.map(async (element) => {
-                        const { createdAt, updatedAt, ...rest } = element.toJSON()
+                    await Promise.all(
+                        titleFavorites.map(async (element) => {
+                            const { createdAt, updatedAt, ...rest } = element.toJSON()
 
-                        return rest
-                    }))
+                            return rest
+                        })
+                    )
                 )
             } catch (err) {
                 Logging.LogError(`could not get list of ${TitleFavorite.name} from database using email:${email} --- ${err.message}`)

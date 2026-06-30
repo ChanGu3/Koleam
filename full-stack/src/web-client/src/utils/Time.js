@@ -20,6 +20,14 @@ function getCalendarDateAndTime(date) {
     return `${time} - [${monthAbrv} ${day}, ${year}]`
 }
 
+function getSeriesTime(releaseDate) {
+    return new Date(releaseDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+}
+
+function getInputCalendarValue(date) {
+    return new Date(date).toISOString().split("T")[0]
+}
+
 function runOnTheMinute(onNewMinute = () => {}) {
     const now = new Date()
 
@@ -34,4 +42,4 @@ function runOnTheMinute(onNewMinute = () => {}) {
     }, msUntilNextMinute)
 }
 
-export { getTimeNowWithSecondChange, getCalendarDateAndTime, runOnTheMinute }
+export { getTimeNowWithSecondChange, getCalendarDateAndTime, getSeriesTime, runOnTheMinute, getInputCalendarValue }

@@ -1,5 +1,5 @@
 import { useContext } from "react"
-import { MemberContext } from "../contexts/MemberCTX.jsx"
+import { MemberContext } from "../contexts/createContext/MemberContext.jsx"
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query"
 import { DeleteMember } from "../services/FetchMembers.js"
 

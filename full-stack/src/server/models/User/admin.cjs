@@ -2,7 +2,6 @@ const { DataTypes } = require("sequelize")
 const bcrypt = require("bcrypt")
 const { Logging, errormsg } = require("../../server-logging.cjs")
 const { HashPassword, saltRounds } = require("./util.cjs")
-const adminDefault = { username: "username", password: "Password*0" }
 const { ModelExtension } = require("../model-extension.cjs")
 const { validatePassword } = require("../../../shared/Validations/account-validations")
 
@@ -91,6 +90,12 @@ class Admin extends ModelExtension {
     static RemoveByUsername(username) {
         return new Promise(async (resolve, reject) => {
             try {
+                const adminList = await Admin.findAll()
+                if (adminList.length <= 1) {
+                    reject(new Error("Cannot delete the last admin account create a new account before deleting this one"))
+                    return
+                }
+
                 await Admin.destroy({ where: { username: username } })
                 resolve()
             } catch (err) {
@@ -146,6 +151,7 @@ class Admin extends ModelExtension {
     //
     static Authentification(username, password) {
         return new Promise(async (resolve, reject) => {
+            console.log(`Authenticating admin: ${username} ${password}`)
             if (await Admin.Exists(username)) {
                 const existingAdmin = await Admin.findByPk(username)
                 if (existingAdmin) {
@@ -235,7 +241,38 @@ class Admin extends ModelExtension {
                 }
 
                 if (validatePassword(newPassword) === false) {
-                    reject(new Error(validatePassword))
+                    reject(new Error("Invalid password format"))
+                    return
+                }
+
+                // Hash new password
+                const newHash = await HashPassword(newPassword, saltRounds)
+
+                // Update password
+                existingAdmin.password = newHash
+                await existingAdmin.save()
+
+                resolve(existingAdmin)
+            } catch (err) {
+                Logging.LogError(`Could Not Update Password for ${username} --- ${err.message}`)
+                reject(new Error(errormsg.fallback))
+            }
+        })
+    }
+
+    static UpdatePasswordByAdmin(username, newPassword) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                // Check if user exists
+                if (!(await Admin.Exists(username))) {
+                    reject(new Error("User not found"))
+                    return
+                }
+
+                const existingAdmin = await Admin.findByPk(username)
+
+                if (validatePassword(newPassword) === false) {
+                    reject(new Error("Invalid password format"))
                     return
                 }
 
@@ -256,6 +293,7 @@ class Admin extends ModelExtension {
 
     static async DefaultSetup() {
         try {
+            const adminDefault = { username: "username", password: "Password*0" }
             const adminList = await Admin.findAll()
 
             if (adminList.length <= 0) {

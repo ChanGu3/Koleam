@@ -1,4 +1,5 @@
-import { createContext, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
+import { LocalStorageContext } from "./createContext/LocalStorageContext.jsx"
 
 function useLocalStorageZ(key, initialValue) {
     const [storedValue, setStoredValue] = useState(() => {
@@ -21,8 +22,6 @@ function useLocalStorageZ(key, initialValue) {
 
     return [storedValue, setStoredValue]
 }
-
-export const LocalStorageContext = createContext(undefined)
 
 export function LocalStorageCTX({ children }) {
     const [isAutoPlay, SetIsAutoPlay] = useLocalStorageZ("isAutoPlay", false)

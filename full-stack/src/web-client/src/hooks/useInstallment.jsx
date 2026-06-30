@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { FetchIntallmentsByTitleID, FetchIntallmentByID, DeleteInstallmentByID, AddInstallment, UpdateInstallment } from "../services/Titles/FetchInstallment"
 
 export function useGetIntallmentByID(installmentID) {
@@ -11,37 +11,41 @@ export function useGetIntallmentByID(installmentID) {
 
 export function useGetIntallmentsByTitleID(titleID) {
     return useQuery({
-        queryKey: ["INSTALLMENT", "BY_ID", titleID],
+        queryKey: ["INSTALLMENT", "BY_TITLE", "ALL", titleID],
         queryFn: async () => await FetchIntallmentsByTitleID(titleID),
         enabled: !!titleID,
     })
 }
 
-export function useDeleteInstallment() {
+export function useDeleteInstallment({ onSuccess = () => {}, onError = () => {} }) {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["INSTALLMENT", "DELETE"],
         mutationFn: async ({ installmentID }) => await DeleteInstallmentByID(installmentID),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["TITLE"] })
-            queryClient.invalidateQueries({ queryKey: ["INSTALLMENT"] })
+        onSuccess: async (data, variables, onMutateResult, context) => {
+            await queryClient.invalidateQueries({ queryKey: ["TITLE"] })
+            await queryClient.invalidateQueries({ queryKey: ["INSTALLMENT"] })
+            onSuccess(data, variables, onMutateResult, context)
         },
+        onError,
     })
 }
 
-export function useAddInstallment() {
+export function useAddInstallment({ onSuccess = () => {}, onError = () => {} }) {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["INSTALLMENT", "ADD"],
         mutationFn: async ({ titleID, label, isSeason }) => await AddInstallment({ titleID, label, isSeason }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["TITLE"] })
-            queryClient.invalidateQueries({ queryKey: ["INSTALLMENT"] })
+        onSuccess: async (data, variables, onMutateResult, context) => {
+            await queryClient.invalidateQueries({ queryKey: ["TITLE"] })
+            await queryClient.invalidateQueries({ queryKey: ["INSTALLMENT"] })
+            onSuccess(data, variables, onMutateResult, context)
         },
+        onError,
     })
 }
 
-export function useUpdateInstallment() {
+export function useUpdateInstallment({ onSuccess = () => {}, onError = () => {} }) {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["INSTALLMENT", "UPDATE"],
@@ -51,9 +55,11 @@ export function useUpdateInstallment() {
                 installmentNumber,
                 isSeason,
             }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["TITLE"] })
-            queryClient.invalidateQueries({ queryKey: ["INSTALLMENT"] })
+        onSuccess: async (data, variables, onMutateResult, context) => {
+            await queryClient.invalidateQueries({ queryKey: ["TITLE"] })
+            await queryClient.invalidateQueries({ queryKey: ["INSTALLMENT"] })
+            onSuccess(data, variables, onMutateResult, context)
         },
+        onError,
     })
 }

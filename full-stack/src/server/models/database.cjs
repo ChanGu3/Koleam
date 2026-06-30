@@ -1,7 +1,6 @@
 const minimist = require("minimist")
 const argv = minimist(process.argv.slice(2))
 const isDev = argv.dev === true || argv.d === true
-const { env } = require("../server-environment.cjs")
 const { Logging } = require("../server-logging.cjs")
 const { uploads } = require("../server-uploads.cjs")
 const { Sequelize } = require("sequelize")
@@ -77,7 +76,6 @@ async function Setup() {
         if (isDev) {
             const { DevSetup } = require("./dev-setup.cjs")
             await DevSetup(Database)
-            await env.CreateDefaultEnvFile(false)
         } else {
             await models.Member.sync()
             await models.Session.sync()
@@ -96,7 +94,6 @@ async function Setup() {
             await models.StreamVideo.sync()
             await models.StreamSubtitle.sync()
             await models.StreamAudio.sync()
-            await env.CreateDefaultEnvFile(true)
             await Genre.DefaultSetup()
         }
         await Admin.DefaultSetup()

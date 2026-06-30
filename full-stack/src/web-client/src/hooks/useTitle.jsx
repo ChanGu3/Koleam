@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query"
 import { FetchTitleBySearchQuery, FetchTitleByID, DeleteTitleByID, AddTitle, UpdateTitle } from "../services/Titles/FetchTitle.js"
 import { FetchMemberRatingOfTitle, MemberUpdateRatingOfTitle, FetchMemberFavoriteOfTitle, MemberUpdateFavoriteOfTitle } from "../services/account/member.js"
 
@@ -11,38 +11,56 @@ export function useGetTitleByID(titleID) {
     })
 }
 
+export function getCoverTitleURL(titleID, coverVersion) {
+    return `/api/title/${titleID}/cover.jpg?v=${coverVersion}`
+}
+
+export function useGetTitleCoverVersion(titleID) {
+    return useQuery({
+        queryKey: ["TITLE", "COVER_VERSION", titleID],
+        queryFn: () => Date.now(),
+        enabled: !!titleID,
+        staleTime: Infinity,
+    })
+}
+
 export function useGetTitles(searchGetLimit, newSearchQuery) {
     return useInfiniteQuery({
         queryKey: ["TITLE", "ALL", searchGetLimit, newSearchQuery],
         queryFn: async ({ pageParam = 0 }) => await FetchTitleBySearchQuery(newSearchQuery, searchGetLimit, pageParam),
-        getNextageParam: (lastPage, allPages) => (lastPage && lastPage.length === searchGetLimit ? allPages.length * searchGetLimit : undefined),
+        getNextPageParam: (lastPage, allPages) => (lastPage && lastPage.length === searchGetLimit ? allPages.length * searchGetLimit : undefined),
     })
 }
 
-export function useDeleteTitle() {
+export function useDeleteTitle({ onSuccess, onError }) {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["TITLE", "DELETE"],
-        mutationFn: async ({ titleID }) => await DeleteTitleByID(titleID),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["TITLE", "ALL"] })
+        mutationFn: async (titleID) => await DeleteTitleByID(titleID),
+        onSuccess: async (data, variables, onMutateResult, context) => {
+            await queryClient.invalidateQueries({ queryKey: ["TITLE", "ADMINISTRATION", "SEARCH"] })
+            onSuccess(data, variables, onMutateResult, context)
         },
+        onError,
     })
 }
 
-export function useAddTitle() {
+export function useAddTitle({ onError, onSuccess }) {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["TITLE", "ADD"],
         mutationFn: async ({ label, originalTranslation, description, copyright, filmSuitability, filmAgeMin, genres, otherTranslations, contentAdvisories, titleCover }) =>
             await AddTitle({ label, originalTranslation, description, copyright, filmSuitability, filmAgeMin, genres, otherTranslations, contentAdvisories, titleCover }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["TITLE", "ALL"] })
+        onSuccess: async (data, variables, onMutateResult, context) => {
+            await queryClient.invalidateQueries({ queryKey: ["TITLE", "ADMINISTRATION", "SEARCH"] })
+            await queryClient.invalidateQueries({ queryKey: ["TITLE", "ALL"] })
+            onSuccess(data, variables, onMutateResult, context)
         },
+        onError,
     })
 }
 
-export function useUpdateTitle() {
+export function useUpdateTitle({ onError, onSuccess }) {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["TITLE", "UPDATE"],
@@ -67,9 +85,13 @@ export function useUpdateTitle() {
                 listData,
                 titleCover,
             }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["TITLE"] })
+        onSuccess: async (data, variables, onMutateResult, context) => {
+            await queryClient.invalidateQueries({ queryKey: ["TITLE", variables.titleID] })
+            await queryClient.invalidateQueries({ queryKey: ["TITLE", "ADMINISTRATION", "SEARCH"] })
+            await queryClient.invalidateQueries({ queryKey: ["TITLE", "COVER_VERSION", variables.titleID] })
+            onSuccess(data, variables, onMutateResult, context)
         },
+        onError,
     })
 }
 
@@ -86,9 +108,9 @@ export function useMemberUpdateRating(titleID) {
     return useMutation({
         mutationKey: ["USER", "RATING", titleID],
         mutationFn: async (rating) => await MemberUpdateRatingOfTitle(titleID, rating),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["TITLE", "BY_ID", titleID] })
-            queryClient.invalidateQueries({ queryKey: ["USER", "RATING", titleID] })
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: ["TITLE", "BY_ID", titleID] })
+            await queryClient.invalidateQueries({ queryKey: ["USER", "RATING", titleID] })
         },
     })
 }
@@ -106,9 +128,9 @@ export function useMemberUpdateFavorite(titleID) {
     return useMutation({
         mutationKey: ["USER", "FAVORITE", titleID],
         mutationFn: async () => await MemberUpdateFavoriteOfTitle(titleID),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["USER", "FAVORITE", titleID] })
-            queryClient.invalidateQueries({ queryKey: ["USER", "FAVORITES"] })
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: ["USER", "FAVORITE", titleID] })
+            await queryClient.invalidateQueries({ queryKey: ["USER", "FAVORITES"] })
         },
     })
 }

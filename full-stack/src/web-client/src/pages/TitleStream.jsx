@@ -6,9 +6,9 @@ import LikeButton from "../components/LikeButton.jsx"
 import StreamModule2 from "../components/modules/StreamModule2.jsx"
 import { UpdateLogStream, FetchLogStream, FetchSubtitleByStreamIDLabelExt } from "../services/Titles/FetchStream.js"
 import { useGetIntallmentsByTitleID } from "../hooks/useInstallment.jsx"
-import { useGetStreamByID } from "../hooks/useStream.jsx"
+import { useGetStreamByID, useGetLogStream } from "../hooks/useStream.jsx"
 import ImageUI from "../components/ImageUI.jsx"
-import { FileQuestionMark, User } from "lucide-react"
+import { FileQuestionMark, User, Video } from "lucide-react"
 import { useGetTitleByID } from "../hooks/useTitle.jsx"
 import { DefaultSpinner } from "../components/Spinners.jsx"
 import { Link } from "react-router-dom"
@@ -16,23 +16,14 @@ import { FILLED_ROUTES, FULL_ROUTES } from "../constants.js"
 import VideoPlayer from "../components/media/VideoPlayer.jsx"
 import useLocalStorage from "../hooks/useLocalStorage.jsx"
 import useUIConfig from "../hooks/useUIConfig.jsx"
-import { ACCESS_TYPE } from "../constants.js"
-
-function getExtensionFromSubtitleCodec(codecName) {
-    switch (codecName.toLowerCase()) {
-        case "subrip":
-            return "srt"
-        case "ass":
-            return "ass"
-        case "ssa":
-            return "ssa"
-        case "webvtt":
-        default:
-            return "vtt"
-    }
-}
+import { ACCESS_TYPE } from "../../dev/constants.js"
+import { getExtensionFromSubtitleCodec } from "../../../shared/extensions.js"
+import useMember from "../hooks/useMember.jsx"
+import useAdmin from "../hooks/useAdmin.jsx"
 
 function TitleStream() {
+    const { memberIsSignedIn } = useMember()
+    const { adminIsSignedIn } = useAdmin()
     const { CURRENT_ACCESS_TYPE } = useUIConfig()
     const { streamID, label } = useParams()
     const navigate = useNavigate()
@@ -74,8 +65,6 @@ function TitleStream() {
         }
     }, []) // Empty dependency array ensures this only initializes once
 
-    const [startTime, SetStartTime] = useState(0)
-
     //TODO: TIME
     async function UploadTimeStamp(totalTimeElapsedInSeconds) {
         if (ACCESS_TYPE.PUBLIC === CURRENT_ACCESS_TYPE) {
@@ -109,8 +98,8 @@ function TitleStream() {
             const currentInstallment = installments[index]
             SetInstallment(currentInstallment)
 
-            const prevStream = installments[index].TitleInstallmentStreams.find((s) => s.streamNumber === stream.streamNumber - 1)
-            const nextStream = installments[index].TitleInstallmentStreams.find((s) => s.streamNumber === stream.streamNumber + 1)
+            const prevStream = installments[index].TitleInstallmentStreams.find((s) => s.order_number_by_release_date === stream.order_number_by_release_date - 1)
+            const nextStream = installments[index].TitleInstallmentStreams.find((s) => s.order_number_by_release_date === stream.order_number_by_release_date + 1)
 
             if (prevStream) {
                 SetPrevStream(prevStream)
@@ -138,16 +127,7 @@ function TitleStream() {
         }
     }, [installments, streamID])
 
-    useEffect(() => {
-        // loggin time for watched streams
-        if (ACCESS_TYPE.PUBLIC === CURRENT_ACCESS_TYPE) {
-            FetchLogStream(streamID).then((data) => {
-                if (data && data.lastTimeStampInSeconds) {
-                    SetStartTime(data.lastTimeStampInSeconds)
-                }
-            })
-        }
-    }, [streamID, CURRENT_ACCESS_TYPE])
+    const { data: logStreamData, error: isErrorLogStream, isLoading: isLoadingLogStream } = useGetLogStream(streamID)
 
     if (isErrorStream || (!stream && !isLoadingStreamData)) {
         navigate(FULL_ROUTES.NOT_FOUND)
@@ -180,40 +160,54 @@ function TitleStream() {
                     <div className="absolute top-0 left-0 bg-s-dark-tertiary/80 w-[100%] h-[100%] z-0"></div>
                     <div className={`relative bg-s-dark-tertiary aspect-video w-[100%] xl:w-[70vw] h-[100%] z-10`}>
                         <div className="absolute top-0 left-0 flex flex-col justify-center items-center w-[100%] h-[100%]">
-                            <VideoPlayer
-                                src={`/api/title/stream/${stream.id}/master.m3u8`}
-                                AutoPlay={{ firstRenderValue: isAutoPlayRef.current, OnValueChange: SetIsAutoPlay }}
-                                Quality={{ firstRenderValue: qualityRef.current, OnValueChange: SetQuality }}
-                                Audio={{ firstRenderValue: audioRef.current, OnValueChange: SetAudio }}
-                                Subtitle={{ firstRenderValue: subtitleRef.current, OnValueChange: SetSubtitle }}
-                                Volume={{ firstRenderValue: volumeRef.current, OnValueChange: SetVolume }}
-                                Speed={{ firstRenderValue: 1, OnValueChange: () => {} }}
-                                Muted={{ firstRenderValue: mutedRef.current, OnValueChange: SetMuted }}
-                                endCountdown={5}
-                                onStreamEnd={() => onStreamEnd(nextStream ? nextStream.id : stream.id)}
-                                startTime={startTime}
-                                periodicTimeUpdateInterval={5}
-                                onPeriodicTimeUpdateInterval={(lastTimeElapsed) => {
-                                    UploadTimeStamp(lastTimeElapsed)
-                                }}
-                                onChangeSubtitle={async (currentSubtitle) => {
-                                    if (!currentSubtitle) {
-                                        return null
-                                    }
-                                    const subtitleData = stream.StreamSubtitles.find((el) => el.label === currentSubtitle.name)
-                                    if (!subtitleData) {
-                                        return null
-                                    }
-                                    const ext = getExtensionFromSubtitleCodec(subtitleData.codec_name)
-                                    if (ext !== "ssa" && ext !== "ass") {
-                                        return null
-                                    }
+                            {memberIsSignedIn || adminIsSignedIn ? (
+                                <VideoPlayer
+                                    src={`/api/title/stream/${stream.id}/master.m3u8`}
+                                    AutoPlay={{ firstRenderValue: isAutoPlayRef.current, OnValueChange: SetIsAutoPlay }}
+                                    Quality={{ firstRenderValue: qualityRef.current, OnValueChange: SetQuality }}
+                                    Audio={{ firstRenderValue: audioRef.current, OnValueChange: SetAudio }}
+                                    Subtitle={{ firstRenderValue: subtitleRef.current, OnValueChange: SetSubtitle }}
+                                    Volume={{ firstRenderValue: volumeRef.current, OnValueChange: SetVolume }}
+                                    Speed={{ firstRenderValue: 1, OnValueChange: () => {} }}
+                                    Muted={{ firstRenderValue: mutedRef.current, OnValueChange: SetMuted }}
+                                    endCountdown={5}
+                                    onStreamEnd={() => onStreamEnd(nextStream ? nextStream.id : stream.id)}
+                                    startTime={logStreamData ? logStreamData.lastTimeStampInSeconds : 0}
+                                    periodicTimeUpdateInterval={5}
+                                    onPeriodicTimeUpdateInterval={(lastTimeElapsed) => {
+                                        UploadTimeStamp(lastTimeElapsed)
+                                    }}
+                                    onChangeSubtitle={async (currentSubtitle) => {
+                                        if (!currentSubtitle) {
+                                            return null
+                                        }
+                                        const subtitleData = stream.StreamSubtitles.find((el) => el.label === currentSubtitle.name)
+                                        if (!subtitleData) {
+                                            return null
+                                        }
+                                        const ext = getExtensionFromSubtitleCodec(subtitleData.codec_name)
+                                        if (ext !== "ssa" && ext !== "ass") {
+                                            return null
+                                        }
 
-                                    const content = await FetchSubtitleByStreamIDLabelExt(stream.id, currentSubtitle.name, ext)
+                                        const content = await FetchSubtitleByStreamIDLabelExt(stream.id, currentSubtitle.name, ext)
 
-                                    return content
-                                }}
-                            />
+                                        return content
+                                    }}
+                                />
+                            ) : (
+                                <div
+                                    onClick={() => {
+                                        navigate(FULL_ROUTES.SIGN_IN)
+                                    }}
+                                    className="cursor-pointer group absolute top-0 left-0 w-full h-full z-100 bg-black flex flex-col justify-center items-center gap-y-4"
+                                >
+                                    <div className="text-s-white flex flex-col justify-center items-center gap-y-2 group-hover:scale-125 transition-transform duration-300 rounded-sm">
+                                        <p className="font-semibold text-md">Log In To View Stream</p>
+                                        <Video size={64} />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -290,7 +284,7 @@ function TitleStream() {
                                         streamImageSrc={`${`/api/title/stream/${prevStream.id}/thumbnail.jpg`}`}
                                         dateReleased={new Date(prevStream.releaseDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                                         href={FILLED_ROUTES.STREAM_PAGE(prevStream.id, prevStream.label)}
-                                        episodeNum={prevStream.streamNumber}
+                                        episodeNum={prevStream.order_number_by_release_date}
                                         flipBottomText={true}
                                     />
                                 ) : (
@@ -311,7 +305,7 @@ function TitleStream() {
                                         streamImageSrc={`${`/api/title/stream/${nextStream.id}/thumbnail.jpg`}`}
                                         dateReleased={new Date(nextStream.releaseDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                                         href={FILLED_ROUTES.STREAM_PAGE(nextStream.id, nextStream.label)}
-                                        episodeNum={nextStream.streamNumber}
+                                        episodeNum={nextStream.order_number_by_release_date}
                                     />
                                 ) : (
                                     ""

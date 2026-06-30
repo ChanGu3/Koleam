@@ -33,7 +33,7 @@ function CarouselItem({ index, item, currCarouselIndex, prevCarouselIndex }) {
                 <p className="md:p-1 text-s-white font-bold text-lf md:text-4xl">{item.logoImage}</p>
                 <p className="p-0.5 md:p-2 text-s-white/95 font-semibold text-[6px] md:text-xs h-7.5 md:h-18 line-clamp-3 md:line-clamp-4">{item.description}</p>
             </div>
-            <div className="absolute flex justify-center w-full h-full -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 z-30 [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)]">
+            <div className="absolute flex justify-center w-full h-full -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 z-30 mask-[linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)]">
                 <div className="absolute w-full h-full object-cover object-top self-center">
                     <ImageUI
                         Src={item.src}

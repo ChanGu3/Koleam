@@ -42,6 +42,7 @@ class TitleInstallmentStream extends ModelExtension {
                     type: DataTypes.STRING,
                     allowNull: false,
                 },
+                /*
                 streamNumber: {
                     type: DataTypes.INTEGER,
                     allowNull: false,
@@ -50,9 +51,10 @@ class TitleInstallmentStream extends ModelExtension {
                         msg: "Quantity must be greater than -1.",
                     },
                 },
+                */
                 synopsis: {
                     type: DataTypes.STRING,
-                    allowNull: false,
+                    allowNull: true,
                 },
                 releaseDate: {
                     type: DataTypes.DATE,
@@ -67,10 +69,12 @@ class TitleInstallmentStream extends ModelExtension {
                         unique: true,
                         fields: ["installmentID", "label"],
                     },
+                    /*
                     {
                         unique: true,
                         fields: ["installmentID", "streamNumber"],
                     },
+                    */
                 ],
             }
         )
@@ -223,6 +227,7 @@ class TitleInstallmentStream extends ModelExtension {
                             name: subtitleStream.label,
                             default: subtitleIndex === 0,
                             uri: `subs/${encodeURIComponent(subtitleStream.label)}.m3u8`,
+                            isCC: subtitleStream.isCC,
                         })
                         subtitleIndex++
                     }
@@ -243,7 +248,7 @@ class TitleInstallmentStream extends ModelExtension {
                 const titleStream = await TitleInstallmentStream.build({
                     installmentID: installmentID,
                     label: label,
-                    streamNumber: streamNumber,
+                    // streamNumber: streamNumber,
                     synopsis: synopsis,
                     releaseDate: releaseDate,
                     titleID: titleID,
@@ -292,36 +297,17 @@ class TitleInstallmentStream extends ModelExtension {
                     query.transaction = transaction
                 }
 
-                if (updateValues.label) {
-                    newTitleStream = await TitleInstallmentStream.GetByID(oldTitleStream.id, transaction)
-                    await this.#RenameDirectory(oldTitleStream, newTitleStream)
-                    renameDirectory = true
+                if (streamNumber) {
+                    // this will be for updating all the streamNumber after updating to one within the list
+                    // TODO: I DONT REALLY NEED THIS FOR THIS RIGHT NOW WILL IN THE FUTURE FOR INSTALLMENT AS WELL ILLL JUST BE USING RELEASE DATE FOR NOW
                 }
 
-                if (streamNumber) {
-                    if (streamNumber > (await TitleInstallmentStream.count({ where: { installmentID: installment.installmentID } }))) {
-                        reject(new Error(`streamNumber ${streamNumber} is greater than the number of streams for the installment with id:${installment.installmentID}`))
-                    }
+                await TitleInstallmentStream.update(updateValues, query)
 
-                    updateValues.streamNumber = streamNumber
-
-                    const requiredChangedStream = await TitleInstallmentStream.GetAll({ installmentID: oldTitleStream.installmentID, streamNumber: streamNumber }, transaction)
-                    const requiredChangedQuery = {}
-                    requiredChangedQuery.where = {}
-                    requiredChangedQuery.where.id = requiredChangedStream.id
-                    if (transaction) {
-                        requiredChangedQuery.transaction = transaction
-                    }
-                    await TitleInstallmentStream.update({ streamNumber: -1 }, requiredChangedQuery)
-                    await requiredChangedStream.reload({ transaction: transaction })
-
-                    await TitleInstallmentStream.update(updateValues, query)
-
-                    if (updateValues.streamNumber > oldTitleStream.streamNumber) {
-                        await TitleInstallmentStream.UpdateInDB(requiredChangedStream.id, { streamNumber: streamNumber - 1 }, transaction)
-                    } else if (updateValues.streamNumber < oldTitleStream.streamNumber) {
-                        await TitleInstallmentStream.UpdateInDB(requiredChangedStream.id, { streamNumber: streamNumber + 1 }, transaction)
-                    }
+                if (updateValues.label) {
+                    newTitleStream = await TitleInstallmentStream.GetByID(oldTitleStream.id, null, transaction)
+                    await this.#RenameDirectory(oldTitleStream, newTitleStream)
+                    renameDirectory = true
                 }
 
                 resolve()
@@ -395,6 +381,25 @@ class TitleInstallmentStream extends ModelExtension {
         ]
     }
 
+    static GET_STREAM_ORDER_NUMBER_BY_REALEASE_DATE_INCLUDE(isTablePlural = false) {
+        const tableName = TitleInstallmentStream.getTableName()
+        return [
+            [
+                literal(`(
+                SELECT row_index 
+                FROM (
+                    SELECT 
+                        "id", 
+                        ROW_NUMBER() OVER (PARTITION BY "installmentID" ORDER BY "releaseDate" ASC) as row_index
+                    FROM ${tableName}
+                ) AS "subquery"
+                WHERE "subquery"."id" = TitleInstallmentStream${isTablePlural ? "s" : ""}."id"
+            )`),
+                "order_number_by_release_date",
+            ],
+        ]
+    }
+
     static GetByID(id, includeMediaData = false, transaction = null) {
         return new Promise(async (resolve, reject) => {
             try {
@@ -448,9 +453,10 @@ class TitleInstallmentStream extends ModelExtension {
                         transaction: default_query.transaction,
                         attributes: {
                             exclude: ["createdAt", "updatedAt"],
-                            include: ["id", "installmentID", "titleID", "label", "streamNumber", "synopsis", "releaseDate"].concat(
+                            include: ["id", "installmentID", "titleID", "label", /* "streamNumber", */ "synopsis", "releaseDate"].concat(
                                 TitleInstallmentStream.GET_STREAMLIKES_INCLUDE(false),
-                                TitleInstallmentStream.GET_WATCHHISTORY_INCLUDE(false)
+                                TitleInstallmentStream.GET_WATCHHISTORY_INCLUDE(false),
+                                TitleInstallmentStream.GET_STREAM_ORDER_NUMBER_BY_REALEASE_DATE_INCLUDE(false)
                             ),
                         },
                         include: default_query.include,
@@ -499,9 +505,10 @@ class TitleInstallmentStream extends ModelExtension {
                     transaction: default_query.transaction,
                     attributes: {
                         exclude: ["createdAt", "updatedAt"],
-                        include: ["id", "installmentID", "titleID", "label", "streamNumber", "synopsis", "releaseDate"].concat(
+                        include: ["id", "installmentID", "titleID", "label", /* "streamNumber", */ "synopsis", "releaseDate"].concat(
                             TitleInstallmentStream.GET_STREAMLIKES_INCLUDE(false),
-                            TitleInstallmentStream.GET_WATCHHISTORY_INCLUDE(false)
+                            TitleInstallmentStream.GET_WATCHHISTORY_INCLUDE(false),
+                            TitleInstallmentStream.GET_STREAM_ORDER_NUMBER_BY_REALEASE_DATE_INCLUDE(false)
                         ),
                     },
                 })

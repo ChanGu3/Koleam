@@ -9,23 +9,26 @@ import { MemberCTX } from "./contexts/MemberCTX.jsx"
 import { AdminCTX } from "./contexts/AdminCTX.jsx"
 import { PopupControllerCTX } from "./Popup/PopupControllerCTX.jsx"
 import { LocalStorageCTX } from "./contexts/LocalStorageCTX.jsx"
+import { EventErrorCTX } from "./ErrorEvents/EventErrorCTX.jsx"
 
 const queryClient = new QueryClient()
 
 createRoot(document.getElementById("root")).render(
     <StrictMode>
         <QueryClientProvider client={queryClient}>
-            <LocalStorageCTX>
-                <UIConfigCTX>
-                    <MemberCTX>
-                        <AdminCTX>
-                            <PopupControllerCTX>
-                                <App />
-                            </PopupControllerCTX>
-                        </AdminCTX>
-                    </MemberCTX>
-                </UIConfigCTX>
-            </LocalStorageCTX>
+            <EventErrorCTX>
+                <LocalStorageCTX>
+                    <UIConfigCTX>
+                        <MemberCTX>
+                            <AdminCTX>
+                                <PopupControllerCTX>
+                                    <App />
+                                </PopupControllerCTX>
+                            </AdminCTX>
+                        </MemberCTX>
+                    </UIConfigCTX>
+                </LocalStorageCTX>
+            </EventErrorCTX>
         </QueryClientProvider>
     </StrictMode>
 )

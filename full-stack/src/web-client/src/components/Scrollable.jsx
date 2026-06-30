@@ -21,7 +21,7 @@ function LoadingItemRenderer({ isALoadingItem, ItemRenderer, index, allItems }) 
     )
 }
 
-function DefaultEmptyRenderer({ EmptyRenderer = null }) {
+function DefaultEmptyRenderer({ EmptyRenderer = undefined }) {
     return (
         <div className="w-full h-full flex items-center justify-center bg-s-dark-tertiary/50 rounded-lg py-2">
             {EmptyRenderer ? (
@@ -55,7 +55,7 @@ export function VerticalQueryScrollable({
 }) {
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
         queryKey,
-        queryFn, // fetch(`/api/anime?offset=${pageParam}&limit=20`).then((res) => res.json())
+        queryFn, 
         getNextPageParam,
     })
 
@@ -101,9 +101,10 @@ export function VerticalQueryScrollable({
  * @param { boolean } isWindowVirtualizer - when true uses the windowVirtualizer instead of the normal one (NOTE: when this is enabled the Cuttoff height and width are disabled) JUST USE WindowVerticalScrollable COMPONENT INSTEAD OF THIS ONE FOR WINDOW VIRTUALIZER USES THIS COMPONENT ANYWAYS
  */
 export function VerticalScrollable({
+    ref = null,
     className = "",
     ItemRenderer,
-    EmptyRenderer = null,
+    EmptyRenderer = undefined,
     itemCount,
     columnsCount = { default: 1, sm: undefined, md: undefined, lg: undefined, xl: undefined }, // can specify different column counts for different screen sizes by passing in an object with keys xs, sm, md, lg, xl and values for each key representing the number of columns for that screen size
     columnGap = { x: 0, y: 0 },
@@ -154,8 +155,8 @@ export function VerticalScrollable({
         })
 
         rootDivClassname = "overflow-y-auto overflow-x-hidden pr-2"
-        rootDivStyle.height = `${pxCutoffHeight}px`
-        rootDivStyle.width = pxCutoffWidth ? `${pxCutoffWidth}px` : "auto"
+        rootDivStyle.height = pxCutoffHeight ? `${pxCutoffHeight}px` : "auto"
+        rootDivStyle.width = pxCutoffWidth ? `${pxCutoffWidth}px` : "100%"
     }
 
     const virtualItems = rowVirtualizer.getVirtualItems()
@@ -189,13 +190,22 @@ export function VerticalScrollable({
     }, [isSm, isMd, isLg, isXl, currentColSize])
 
     if (itemCount === 0) {
+        if (EmptyRenderer === null) {
+            return <></>
+        }
+
         return <DefaultEmptyRenderer EmptyRenderer={EmptyRenderer} />
     }
 
     return (
         <>
             <div
-                ref={parentRef}
+                ref={(node) => {
+                    if (ref) {
+                        ref.current = node
+                    }
+                    parentRef.current = node
+                }}
                 tabIndex={0}
                 className={`${className} ${rootDivClassname} focus:outline-none`}
                 style={rootDivStyle}
@@ -271,7 +281,7 @@ export function VerticalScrollable({
 export function WindowVerticalScrollable({
     className = "",
     ItemRenderer,
-    EmptyRenderer = null,
+    EmptyRenderer = undefined,
     itemCount,
     columnsCount = { default: 1, sm: undefined, md: undefined, lg: undefined, xl: undefined },
     columnGap = { x: 0, y: 0 },
@@ -332,9 +342,10 @@ export function WindowVerticalQueryScrollable({
  * @param {{sm:number, md:number, lg: number, xl: number}} rowsCount - number of rows to render in the scrollable, default is 1 (for vertical scroll), if more than 1, it will render in a grid format with the specified number of columns
  */
 export function HorizontalScrollable({
+    ref = null,
     className = "",
     ItemRenderer,
-    EmptyRenderer = null,
+    EmptyRenderer = undefined,
     itemCount,
     rowsCount = { default: 1, sm: undefined, md: undefined, lg: undefined, xl: undefined }, // can specify different row counts for different screen sizes by passing in an object with keys xs, sm, md, lg, xl and values for each key representing the number of columns for that screen size
     rowsGap = { x: 0, y: 0 },
@@ -368,8 +379,8 @@ export function HorizontalScrollable({
     })
 
     rootDivClassname = "overflow-x-auto overflow-y-hidden pb-2"
-    rootDivStyle.height = pxCutoffHeight ? `${pxCutoffHeight}px` : "auto"
-    rootDivStyle.width = pxCutoffWidth ? `${pxCutoffWidth}px` : "auto"
+    rootDivStyle.height = pxCutoffHeight ? `${pxCutoffHeight}px` : "100%"
+    rootDivStyle.width = pxCutoffWidth ? `${pxCutoffWidth}px` : "100%"
 
     const virtualItems = rowVirtualizer.getVirtualItems()
 
@@ -402,13 +413,22 @@ export function HorizontalScrollable({
     }, [isSm, isMd, isLg, isXl, currentRowSize])
 
     if (itemCount === 0) {
+        if (EmptyRenderer === null) {
+            return <></>
+        }
+
         return <DefaultEmptyRenderer EmptyRenderer={EmptyRenderer} />
     }
 
     return (
         <>
             <div
-                ref={parentRef}
+                ref={(node) => {
+                    if (ref) {
+                        ref.current = node
+                    }
+                    parentRef.current = node
+                }}
                 tabIndex={0}
                 className={`${rootDivClassname} ${className} focus:outline-none`}
                 style={rootDivStyle}
@@ -462,7 +482,7 @@ export function HorizontalScrollable({
                                     style={{
                                         transform: `translateX(${virtualRow.start}px)`,
                                         width: fixedColumnWidth ? `${virtualRow.size}px` : "auto",
-                                        paddingRight: `${rowsGap.y}px`,
+                                        paddingRight: `${rowsGap.x}px`,
                                     }}
                                 >
                                     <ItemRenderer index={virtualRow.index} />

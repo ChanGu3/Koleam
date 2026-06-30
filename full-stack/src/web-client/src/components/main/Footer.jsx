@@ -58,11 +58,11 @@ function FooterLinksRow({ isShowingAdminColumns = false, isShowingMemberColumns 
     const accountLinks = []
 
     if (isShowingMemberColumns) {
-        accountLinks.push({ id: 1, name: "Favorites", href: "/favorites" })
+        accountLinks.push({ id: 1, name: "SafeSpace", href: "/safespace" })
         accountLinks.push({ id: 2, name: "Settings", href: "/settings/member/account" })
     }
 
-    if (isShowingAdminColumns || isShowingMemberColumns) {
+    if (isShowingAdminColumns) {
         accountLinks.push({ id: 2, name: "Settings", href: "/settings/admin/account" })
     }
 

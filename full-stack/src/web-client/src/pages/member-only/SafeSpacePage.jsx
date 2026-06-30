@@ -10,9 +10,11 @@ import { HorizontalQueryScrollable } from "../../components/Scrollable.jsx"
 import SeriesModule from "../../components/modules/SeriesModule.jsx"
 import { FetchMemberFavorites } from "../../services/account/member.js"
 import { useNavigate } from "react-router-dom"
-import { FULL_ROUTES, ACCESS_TYPE } from "../../constants.js"
+import { ACCESS_TYPE } from "../../../dev/constants.js"
+import { FULL_ROUTES } from "../../constants.js"
 import useUIConfig from "../../hooks/useUIConfig.jsx"
 import LoadingPage from "../other/LoadingPage.jsx"
+import { getSeriesTime } from "../../utils/Time.js"
 
 const FavoritesLoadingMax = 12
 
@@ -65,14 +67,14 @@ function SafeSpacePage() {
                                               description={stream.synopsis}
                                               dateReleased={(() => {
                                                   if (stream) {
-                                                      return `${new Date(stream.releaseDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}`
+                                                      return getSeriesTime(stream.dateReleased)
                                                   } else {
                                                       return ""
                                                   }
                                               })()}
                                               href={`/stream/${stream.id}/${stream.label}`}
                                               installmentLabel={stream.TitleInstallment.label}
-                                              streamNumber={stream.streamNumber}
+                                              streamNumber={stream.order_number_by_release_date}
                                           />
                                       )
                                   })
@@ -95,12 +97,10 @@ function SafeSpacePage() {
                                     key={dataItem.titleID}
                                     titleID={dataItem.titleID}
                                     label={dataItem.Title.label}
-                                    imageSrc={`api/title/${dataItem.titleID}/cover.jpg`}
                                     seasonNum={dataItem.Title.seasons_count}
                                     episodeNum={dataItem.Title.stream_episodes_count}
                                     movieNum={dataItem.Title.stream_movies_count}
                                     description={dataItem.Title.description}
-                                    href={`/title/${dataItem.titleID}/${dataItem.Title.label}`}
                                 />
                             )
                         }}

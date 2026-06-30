@@ -1,5 +1,5 @@
 import { useContext } from "react"
-import { UIConfigContext } from "../contexts/UIConfigCTX.jsx"
+import { UIConfigContext } from "../contexts/createContext/UIConfigContext.jsx"
 
 /** * Hook for accessing UI configuration values from the UIConfigCTX.
  * @returns {{ WEBSITE_NAME: string, CURRENT_ACCESS_TYPE: string, COLORS: { WHITE: string, PRIMARY: string, SECONDARY: string, TERTIARY: string, "DARK-PRIMARY": string, "DARK-SECONDARY": string, "DARK-TERTIARY": string, "LINK-VISITED": string, ERROR: string } }}

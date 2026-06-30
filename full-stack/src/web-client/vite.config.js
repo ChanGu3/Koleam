@@ -2,14 +2,18 @@ import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
 import { viteStaticCopy } from "vite-plugin-static-copy"
 import path from "path"
+import { DEV_PORT } from "./dev/constants.js"
 
-const PUBLIC_PORT = 5775
-const LOCAL_PORT = 5776
+const CURRENT_PORT_VIEW = DEV_PORT
 
-const CURRENT_PORT_VIEW = LOCAL_PORT
+const nodeModulesPathSrc = path.resolve(__dirname, "..", "node_modules")
 
-const libasswasmWorkerPathSrc = path.resolve(__dirname, "..", "node_modules", "libass-wasm", "dist", "js")
+// octopus libass-wasm subtitles
+const libasswasmWorkerPathSrc = path.resolve(nodeModulesPathSrc, "libass-wasm", "dist", "js")
 const jassubWorkerPathDst = path.join("libasswasm")
+
+const ffmpegWorkerPathSrc = path.resolve(nodeModulesPathSrc, "@ffmpeg", "core", "dist", "esm")
+const ffmpegWorkerPathDst = path.join("ffmpegwasm")
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -32,11 +36,24 @@ export default defineConfig({
                     dest: jassubWorkerPathDst,
                     rename: { stripBase: true },
                 },
+                {
+                    src: path.join(ffmpegWorkerPathSrc, "ffmpeg-core.js"),
+                    dest: ffmpegWorkerPathDst,
+                    rename: { stripBase: true },
+                },
+                {
+                    src: path.join(ffmpegWorkerPathSrc, "ffmpeg-core.wasm"),
+                    dest: ffmpegWorkerPathDst,
+                    rename: { stripBase: true },
+                },
             ],
         }),
     ],
+    optimizeDeps: {
+        exclude: ["@ffmpeg/ffmpeg", "@ffmpeg/util", "@ffmpeg/core"],
+    },
     server: {
-        host: true, // Exposes the server to your local network
+        host: false, // Exposes the server to your local network
         fs: {
             allow: [".."],
         },
@@ -47,13 +64,14 @@ export default defineConfig({
                 secure: false,
             },
         },
+        headers: {
+            "Cross-Origin-Opener-Policy": "same-origin",
+            "Cross-Origin-Embedder-Policy": "require-corp",
+        },
     },
     build: {
         // Relative to the project root
         outDir: path.resolve(__dirname, "..", "..", "dist", "web-client"),
-
-        // Optional: If you want to empty the folder before building
-        // (Vite does this by default if the folder is inside your project root)
         emptyOutDir: true,
     },
 })

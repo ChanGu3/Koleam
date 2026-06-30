@@ -82,11 +82,11 @@ async function GetStreamUploads(req, res) {
 async function GetTitleInstallmentStreamThumbnail(req, res) {
     //title, series/movie, episode/movie
     const { streamID } = req.params
-    const streamData = await db.models.TitleInstallmentStream.GetByID(streamID)
-    const relativePath = path.join(streamData.titleID, streamData.installmentID, streamData.label, uploads.THUMBNAIL_FILENAME)
-    const filePath = uploads.getTitlePath(relativePath)
-
     try {
+        const streamData = await db.models.TitleInstallmentStream.GetByID(streamID)
+        const relativePath = path.join(streamData.titleID, streamData.installmentID, streamData.label, uploads.THUMBNAIL_FILENAME)
+        const filePath = uploads.getTitlePath(relativePath)
+
         if (!(await uploads.doesTitlesPathExist(relativePath))) {
             res.status(404).end()
         }
@@ -97,23 +97,27 @@ async function GetTitleInstallmentStreamThumbnail(req, res) {
 }
 
 async function UploadChunkToTempFile(req, res) {
-    const body = JSON.parse(req.body)
-    const { originalFilename, fileSize, ...body_0 } = body
-    const tempChunk = req.files["tempChunk"][0]
-    const { tempfileID, chunkNum } = body_0
-
-    if (tempChunk == null || tempChunk == undefined) {
-        res.status(400).json({ error: "No chunk was recieved" })
-        return
+    const { tempfileID, chunkNum } = req.body.chunkData ? JSON.parse(req.body.chunkData) : {}
+    const { originalFilename, fileSize, bufferSizeHandshake } = req.body.fileData ? JSON.parse(req.body.fileData) : {}
+    let tempChunk = null
+    if (req.files["tempChunk"] && req.files["tempChunk"][0]) {
+        tempChunk = req.files["tempChunk"][0]
     }
-
     try {
         // create a new file for this upload not a new tempfileID
         if (tempfileID == null || tempfileID == undefined) {
-            const instance = await db.models.TempUpload.AddToDB(tempChunk.originalname, tempChunk.size, tempChunk.buffer.length)
-            res.status(200).json({ message: "upload transaction successfully started", data: { ...instance } })
+            const instance = await db.models.TempUpload.AddToDB(originalFilename, fileSize, bufferSizeHandshake)
+            const instanceJSON = instance.toJSON()
+            res.status(200).json({ message: "upload transaction successfully started", data: { ...instanceJSON } })
+
             return
         } else {
+            if (tempChunk == null || tempChunk == undefined) {
+                res.status(400).json({ error: "No chunk was recieved" })
+
+                return
+            }
+
             const instance = await db.models.TempUpload.ApplyChunkToDB(tempfileID, tempChunk.buffer)
             res.status(200).json({
                 message: `chunk ${chunkNum} successfully uploaded`,
@@ -123,15 +127,16 @@ async function UploadChunkToTempFile(req, res) {
         }
     } catch (err) {
         res.status(400).json({ error: err.message })
+        console.error(err)
         return
     }
 }
 
 async function DeleteTempFile(req, res) {
-    const { tempFileID } = JSON.parse(req.body)
+    const { tempfileID } = req.body
 
     try {
-        await db.models.TempUpload.DeleteFromDB(tempFileID)
+        await db.models.TempUpload.RemoveByID(tempfileID)
         res.status(200).json({ message: "temp file successfully deleted" })
         return
     } catch (err) {

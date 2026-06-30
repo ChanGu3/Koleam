@@ -1,8 +1,3 @@
-/uploads/anime/*
-!/uploads/anime/about.txt
-/dev/anime/*
-!/dev/anime/about.txt
-
 # would normally do these two but for sake of 
 /db/*
 !/db/db.cjs

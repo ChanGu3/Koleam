@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import TextLink from "../../components/text/TextLink.jsx"
 import ErrorMsg from "../../utils/errormsg.mjs"
-import { ACCESS_TYPE, FULL_ROUTES } from "../../constants.js"
+import { ACCESS_TYPE } from "../../../dev/constants.js"
+import { FULL_ROUTES } from "../../constants.js"
 import useUIConfig from "../../hooks/useUIConfig.jsx"
 import useMember from "../../hooks/useMember.jsx"
 import useAdmin from "../../hooks/useAdmin.jsx"
@@ -134,11 +135,6 @@ function SignInPage() {
                                 <p className="px-2 text-s-dark-secondary text-[10px] md:text-xs">are you not ready to sign in?</p>
                                 <div className="w-[10%] mt-0.5 border-b border-s-white"></div>
                             </div>
-                            <TextLink
-                                className="text-s-tertiary hover:text-s-secondary active:text-s-secondary text-sm"
-                                pathname={FULL_ROUTES.FORGOT_PASSWORD}
-                                label={"Forgot Password?"}
-                            />
                             <TextLink
                                 className="text-sm"
                                 pathname={FULL_ROUTES.SIGN_UP}

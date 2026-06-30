@@ -10,7 +10,7 @@ import ImageUI from "../components/ImageUI.jsx"
 import { FileQuestionMark, Funnel, Play, Triangle } from "lucide-react"
 import { DefaultSpinner } from "../components/Spinners.jsx"
 import { useGetIntallmentsByTitleID } from "../hooks/useInstallment.jsx"
-import { useGetTitleByID, useMemberGetRating, useMemberUpdateRating } from "../hooks/useTitle.jsx"
+import { useGetTitleByID, useMemberGetRating, useMemberUpdateRating, useGetTitleCoverVersion, getCoverTitleURL } from "../hooks/useTitle.jsx"
 import { FILLED_ROUTES, FULL_ROUTES } from "../constants.js"
 import { Link } from "react-router-dom"
 import RatingStars from "../components/title/RatingStars.jsx"
@@ -18,6 +18,7 @@ import RatingDropdown from "../components/title/RatingDropdown.jsx"
 
 function TitleDetailsPage() {
     const { titleID, label } = useParams()
+    const { data: coverVersion } = useGetTitleCoverVersion(titleID)
     const navigate = useNavigate()
 
     // Member Data
@@ -73,9 +74,9 @@ function TitleDetailsPage() {
 
     function SortByToggled(streamList) {
         if (isOldest) {
-            SetStreamListGrid([...streamList].sort((animeStreamA, animeStreamB) => animeStreamB.streamNumber - animeStreamA.streamNumber))
+            SetStreamListGrid([...streamList].sort((titleStreamA, titleStreamB) => new Date(titleStreamB.releaseDate) - new Date(titleStreamA.releaseDate)))
         } else {
-            SetStreamListGrid([...streamList].sort((animeStreamA, animeStreamB) => animeStreamA.streamNumber - animeStreamB.streamNumber))
+            SetStreamListGrid([...streamList].sort((titleStreamA, titleStreamB) => new Date(titleStreamA.releaseDate) - new Date(titleStreamB.releaseDate)))
         }
     }
 
@@ -107,7 +108,7 @@ function TitleDetailsPage() {
                     {/* Title Cover Image*/}
                     <div className="object-cover object-top w-full h-full mask-b-from-55% mask-b-to-100%">
                         <ImageUI
-                            Src={`/api/title/${title.id}/cover.jpg`}
+                            Src={getCoverTitleURL(titleID, coverVersion)}
                             Fallback={FileQuestionMark}
                         ></ImageUI>
                     </div>
@@ -189,13 +190,13 @@ function TitleDetailsPage() {
                                               </Link>
                                           )
                                       })
-                                    : "None"}
+                                    : " None"}
                             </p>
                             <p
                                 id="othertranslation"
                                 className={`text-s-dark-secondary text-xs break-words whitespace-normal`}
                             >
-                                <span className="text-red-300">Content Advisories:</span>
+                                <span className="text-red-300">Content Advisory:</span>
                                 {" ["}
                                 {title && title.all_content_advisories.length > 0
                                     ? title.all_content_advisories.map((el, index) => {
@@ -216,7 +217,7 @@ function TitleDetailsPage() {
                                 id="sutability"
                                 className="text-s-dark-secondary text-xs  break-words whitespace-normal"
                             >
-                                <span className="text-red-300">Content Advisory:</span> {`(${title.filmSuitability}, +${title.filmAgeMin})`}
+                                <span className="text-red-300">Suitability:</span> {`(${title.filmSuitability}, +${title.filmAgeMin})`}
                             </p>
                             <p
                                 id="seriescopyright"
@@ -257,7 +258,7 @@ function TitleDetailsPage() {
                                         <span>{"Start Watching"}:</span>{" "}
                                         <span>
                                             {`${mostRecentWatchedStreamData.installment.label} - ${mostRecentWatchedStreamData.installment.isSeason ? `Episode:` : `Movie:`}
-                                        ${mostRecentWatchedStreamData.stream.streamNumber}`}
+                                        ${mostRecentWatchedStreamData.stream.order_number_by_release_date}`}
                                         </span>
                                     </p>
                                 </Link>
@@ -327,7 +328,7 @@ function TitleDetailsPage() {
                                       return (
                                           <StreamModule2
                                               key={index}
-                                              episodeNum={streamItem.streamNumber}
+                                              episodeNum={streamItem.order_number_by_release_date}
                                               isMovie={installments && installments[currentInstallmentIndex].isSeason ? false : true}
                                               streamTitle={streamItem.label}
                                               streamImageSrc={`${`/api/title/stream/${streamItem.id}/thumbnail.jpg`}`}

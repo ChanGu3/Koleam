@@ -10,7 +10,8 @@ import NavbarDropdownTab from "./NavbarComponents/NavbarDropdownTab.jsx"
 import { CircleArrowRight, Bolt, BookHeart, Cloud, ShieldUser } from "lucide-react"
 import NavbarTab from "./NavbarComponents/NavbarTab.jsx"
 import { VerticalQueryScrollable, VerticalScrollable } from "../Scrollable.jsx"
-import { ACCESS_TYPE, FILLED_ROUTES, FULL_ROUTES, Z_INDEX } from "../../constants.js"
+import { ACCESS_TYPE } from "../../../dev/constants.js"
+import { FILLED_ROUTES, FULL_ROUTES, Z_INDEX } from "../../constants.js"
 
 function Navbar({ SignOut = () => {} }) {
     const navRef = useRef(null)
@@ -47,81 +48,83 @@ function Navbar({ SignOut = () => {} }) {
                 </Link>
 
                 {/* Search Tab */}
-                {CURRENT_ACCESS_TYPE === ACCESS_TYPE.LOCAL && adminIsSignedIn && (
-                    <Link
-                        className=""
-                        to={{
-                            pathname: FULL_ROUTES.DISCOVER_SEARCH,
-                        }}
-                    >
-                        <NavbarTab>
-                            <div className="px-2 sm:px-4">
-                                <Search
-                                    size={16}
-                                    className="w-6 sm:w-8 text-s-white pointer-events-none"
-                                />
-                            </div>
-                        </NavbarTab>
-                    </Link>
-                )}
+                {(CURRENT_ACCESS_TYPE === ACCESS_TYPE.LOCAL && adminIsSignedIn) ||
+                    (CURRENT_ACCESS_TYPE === ACCESS_TYPE.PUBLIC && (
+                        <Link
+                            className=""
+                            to={{
+                                pathname: FULL_ROUTES.DISCOVER_SEARCH,
+                            }}
+                        >
+                            <NavbarTab>
+                                <div className="px-2 sm:px-4">
+                                    <Search
+                                        size={16}
+                                        className="w-6 sm:w-8 text-s-white pointer-events-none"
+                                    />
+                                </div>
+                            </NavbarTab>
+                        </Link>
+                    ))}
 
                 {/* Discover Dropdown Tab */}
-                {CURRENT_ACCESS_TYPE === ACCESS_TYPE.LOCAL && adminIsSignedIn && (
-                    <NavbarDropdownTab
-                        dropdownClassName="px-2 w-[150px] sm:w-[250px] lg:w-[500px]"
-                        label={<p className="text-s-white text-xs sm:text-sm">Discover</p>}
-                        id="discover"
-                        vectorOffset={{ x: 0, y: navOffsetHeight - 2 }}
-                    >
-                        <div
-                            id="genres"
-                            className="flex flex-col justify-start w-full px-2"
+                {(CURRENT_ACCESS_TYPE === ACCESS_TYPE.LOCAL && adminIsSignedIn) ||
+                    (CURRENT_ACCESS_TYPE === ACCESS_TYPE.PUBLIC && (
+                        <NavbarDropdownTab
+                            dropdownClassName="px-2 w-[150px] sm:w-[250px] lg:w-[500px]"
+                            label={<p className="text-s-white text-xs sm:text-sm">Discover</p>}
+                            id="discover"
+                            vectorOffset={{ x: 0, y: navOffsetHeight - 2 }}
                         >
-                            <a className="text-s-white font-semibold text-xs pt-1">Genres</a>{" "}
-                            {/* hover:underline href="/discover/genres"  // bassically have a page with all genres in the future*/}
-                            <div className="border-s-white border-b-2 h-2 w-full rounded-xs"></div>
-                            <VerticalQueryScrollable
-                                queryKey={["navbar", "discover", "genres"]}
-                                queryFn={async ({ pageParam = 0 }) => await GetAllGenres(8, pageParam)}
-                                getNextPageParam={(lastPage, allPages) => (lastPage && lastPage.length === 8 ? allPages.length * 8 : undefined)}
-                                pxCutoffHeight={128}
-                                pxCutoffWidth={null}
-                                ItemRenderer={({ index, dataItem }) => {
-                                    return (
-                                        <Category
-                                            key={index}
-                                            categoryName={dataItem.name}
-                                            pathname={FILLED_ROUTES.DISCOVER_GENRE(dataItem.name)}
-                                        />
-                                    )
-                                }}
-                                columnsCount={{ sm: 2 }}
-                                fixedRowHeight={32}
-                            />
-                        </div>
+                            <div
+                                id="genres"
+                                className="flex flex-col justify-start w-full px-2"
+                            >
+                                <a className="text-s-white font-semibold text-xs pt-1">Genres</a>{" "}
+                                {/* hover:underline href="/discover/genres"  // bassically have a page with all genres in the future*/}
+                                <div className="border-s-white border-b-2 h-2 w-full rounded-xs"></div>
+                                <VerticalQueryScrollable
+                                    queryKey={["navbar", "discover", "genres"]}
+                                    queryFn={async ({ pageParam = 0 }) => await GetAllGenres(8, pageParam)}
+                                    getNextPageParam={(lastPage, allPages) => (lastPage && lastPage.length === 8 ? allPages.length * 8 : undefined)}
+                                    pxCutoffHeight={128}
+                                    pxCutoffWidth={null}
+                                    ItemRenderer={({ index, dataItem }) => {
+                                        return (
+                                            <Category
+                                                key={index}
+                                                categoryName={dataItem.name}
+                                                pathname={FILLED_ROUTES.DISCOVER_GENRE(dataItem.name)}
+                                            />
+                                        )
+                                    }}
+                                    columnsCount={{ sm: 2 }}
+                                    fixedRowHeight={32}
+                                />
+                            </div>
 
-                        <div
-                            id="other"
-                            className="flex flex-col justify-start w-full px-2"
-                        >
-                            <a className="text-s-white font-semibold text-xs pt-1">Other</a> {/* hover:underline href="/discover/other" */}
-                            <div className="border-s-white border-b-2 h-2 w-full rounded-xs"></div>
-                            <VerticalScrollable
-                                itemCount={1}
-                                pxCutoffHeight={40}
-                                pxCutoffWidth={null}
-                                ItemRenderer={({ index }) => {
-                                    return (
-                                        <Category
-                                            categoryName="Browse [A-Z]"
-                                            pathname={FULL_ROUTES.DISCOVER_A_Z}
-                                        />
-                                    )
-                                }}
-                            />
-                        </div>
-                    </NavbarDropdownTab>
-                )}
+                            <div
+                                id="other"
+                                className="flex flex-col justify-start w-full px-2"
+                            >
+                                <a className="text-s-white font-semibold text-xs pt-1">Other</a> {/* hover:underline href="/discover/other" */}
+                                <div className="border-s-white border-b-2 h-2 w-full rounded-xs"></div>
+                                <VerticalScrollable
+                                    itemCount={1}
+                                    pxCutoffHeight={40}
+                                    pxCutoffWidth={null}
+                                    ItemRenderer={({ index }) => {
+                                        return (
+                                            <Category
+                                                categoryName="Browse [A-Z]"
+                                                pathname={FULL_ROUTES.DISCOVER_A_Z}
+                                            />
+                                        )
+                                    }}
+                                />
+                            </div>
+                        </NavbarDropdownTab>
+                    ))}
                 {/* --- Profile Dropdown Tab --- */}
                 <NavbarDropdownTab
                     className="ml-auto"

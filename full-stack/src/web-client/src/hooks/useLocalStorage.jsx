@@ -1,5 +1,5 @@
 import { useContext } from "react"
-import { LocalStorageContext } from "../contexts/LocalStorageCTX.jsx"
+import { LocalStorageContext } from "../contexts/createContext/LocalStorageContext.jsx"
 
 /** * Hook for accessing UI configuration values from the LocalStorageCTX.
  * @returns {{ video: {isAutoPlay: boolean, SetIsAutoPlay: function, quality: { height: number }, SetQuality: function, audio: { name: string }, SetAudio: function, subtitle: { name: string }, SetSubtitle: function, volume: number, SetVolume: function, muted: boolean, SetMuted: function}}}

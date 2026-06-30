@@ -2,7 +2,7 @@ const { DataTypes, Op, fn, col, literal } = require("sequelize")
 const { Logging, errormsg } = require("../../server-logging.cjs")
 const { uploads } = require("../../server-uploads.cjs")
 const { ModelExtension } = require("../model-extension.cjs")
-const { FILM_RATING } = require("../../../shared/title-constants.cjs")
+const { FILM_RATING } = require("../../../shared/title-constants.js")
 
 class Title extends ModelExtension {
     static #models = null
@@ -172,7 +172,7 @@ class Title extends ModelExtension {
         return new Promise(async (resolve, reject) => {
             try {
                 const title = await Title.GetByID(id)
-                if (!(await uploads.doesAnimePathExist(this.#TitleDirPath(title)))) {
+                if (!(await uploads.doesTitlesPathExist(this.#TitleDirPath(title)))) {
                     await this.#CreateDirectory(title)
                     Logging.LogWarning(`directory does not exist had to re-create directory for title called ${title.title}`)
                 }
@@ -228,7 +228,7 @@ class Title extends ModelExtension {
                         },
                     })
 
-                    if (await uploads.doesAnimePathExist(dirName)) {
+                    if (await uploads.doesTitlesPathExist(dirName)) {
                         this.#DeleteDirectory(title)
                     }
                 } else {
@@ -243,158 +243,174 @@ class Title extends ModelExtension {
         })
     }
 
-    static GET_INSTALLMENT_INCLUDE = [
-        // Total Installments Count
-        [
-            literal(`(
+    static GET_INSTALLMENT_INCLUDE() {
+        const titleInstallmentTableName = Title.#models.TitleInstallment.getTableName()
+        const titleInstallmentStreamsTableName = Title.#models.TitleInstallmentStream.getTableName()
+
+        return [
+            // Total Installments Count
+            [
+                literal(`(
                 SELECT COUNT(*)
-                FROM TitleInstallments AS ti
+                FROM ${titleInstallmentTableName} AS ti
                 WHERE ti.titleId = Title.id
             )`),
-            "installments_count",
-        ],
-        // Season Installment Count
-        [
-            literal(`(
+                "installments_count",
+            ],
+            // Season Installment Count
+            [
+                literal(`(
                 SELECT COUNT(*)
-                FROM TitleInstallments AS ti
+                FROM ${titleInstallmentTableName} AS ti
                 WHERE ti.titleId = Title.id AND ti.isSeason = true
             )`),
-            "seasons_count",
-        ],
-        [
-            literal(`(
+                "seasons_count",
+            ],
+            [
+                literal(`(
                 SELECT COUNT(*)
-                FROM TitleInstallments AS ti
+                FROM ${titleInstallmentTableName} AS ti
                 WHERE ti.titleId = Title.id AND ti.isSeason = false
             )`),
-            "movie_group_count",
-        ],
-        // Movies Count
-        [
-            literal(`(
+                "movie_group_count",
+            ],
+            // Movies Count
+            [
+                literal(`(
                 SELECT COUNT(*)
-                FROM TitleInstallments as ti INNER JOIN TitleInstallmentStreams AS tis
-                ON ti.id = tis.installmentID
-                WHERE ti.titleId = Title.id AND ti.isSeason = false
-            )`),
-            "stream_episodes_count",
-        ],
-        // Episodes Count
-        [
-            literal(`(
-                SELECT COUNT(*)
-                FROM TitleInstallments as ti INNER JOIN TitleInstallmentStreams AS tis
+                FROM ${titleInstallmentTableName} as ti INNER JOIN ${titleInstallmentStreamsTableName} AS tis
                 ON ti.id = tis.installmentID
                 WHERE ti.titleId = Title.id AND ti.isSeason = true
             )`),
-            "stream_movies_count",
-        ],
-    ]
-
-    static GET_OTHERTRANSLATIONS_INCLUDE = [
-        // ALL OTHER TRANSLATIONS
-        [
-            literal(`(
+                "stream_episodes_count",
+            ],
+            // Episodes Count
+            [
+                literal(`(
+                SELECT COUNT(*)
+                FROM ${titleInstallmentTableName} as ti INNER JOIN ${titleInstallmentStreamsTableName} AS tis
+                ON ti.id = tis.installmentID
+                WHERE ti.titleId = Title.id AND ti.isSeason = false
+            )`),
+                "stream_movies_count",
+            ],
+        ]
+    }
+    static GET_OTHERTRANSLATIONS_INCLUDE() {
+        const titleOtherTranslationsTableName = Title.#models.TitleOtherTranslation.getTableName()
+        return [
+            // ALL OTHER TRANSLATIONS
+            [
+                literal(`(
                 SELECT GROUP_CONCAT(tot.translation)
-                FROM TitleOtherTranslations AS tot
+                FROM ${titleOtherTranslationsTableName} AS tot
                 WHERE tot.titleId = Title.id
             )`),
-            "all_other_translations",
-        ],
-    ]
-
-    static GET_RATINGS_INCLUDE = [
-        [
-            literal(`(
+                "all_other_translations",
+            ],
+        ]
+    }
+    static GET_RATINGS_INCLUDE() {
+        const titleRatingsTableName = Title.#models.TitleRating.getTableName()
+        return [
+            [
+                literal(`(
                 SELECT COUNT(CASE WHEN tr.rating = 1 THEN 1 END)
-                FROM TitleRatings AS tr
+                FROM ${titleRatingsTableName} AS tr
                 WHERE tr.titleId = Title.id
             )`),
-            "rating_1_count",
-        ],
-        [
-            literal(`(
+                "rating_1_count",
+            ],
+            [
+                literal(`(
                 SELECT COUNT(CASE WHEN tr.rating = 2 THEN 1 END)
-                FROM TitleRatings AS tr
+                FROM ${titleRatingsTableName} AS tr
                 WHERE tr.titleId = Title.id
             )`),
-            "rating_2_count",
-        ],
-        [
-            literal(`(
+                "rating_2_count",
+            ],
+            [
+                literal(`(
                 SELECT COUNT(CASE WHEN tr.rating = 3 THEN 1 END)
-                FROM TitleRatings AS tr
+                FROM ${titleRatingsTableName} AS tr
                 WHERE tr.titleId = Title.id
             )`),
-            "rating_3_count",
-        ],
-        [
-            literal(`(
+                "rating_3_count",
+            ],
+            [
+                literal(`(
                 SELECT COUNT(CASE WHEN tr.rating = 4 THEN 1 END)
-                FROM TitleRatings AS tr
+                FROM ${titleRatingsTableName} AS tr
                 WHERE tr.titleId = Title.id
             )`),
-            "rating_4_count",
-        ],
-        [
-            literal(`(
+                "rating_4_count",
+            ],
+            [
+                literal(`(
                 SELECT COUNT(CASE WHEN tr.rating = 5 THEN 1 END)
-                FROM TitleRatings AS tr
+                FROM ${titleRatingsTableName} AS tr
                 WHERE tr.titleId = Title.id
             )`),
-            "rating_5_count",
-        ],
-        [
-            literal(`(
+                "rating_5_count",
+            ],
+            [
+                literal(`(
                 SELECT AVG(tr.rating)
-                FROM TitleRatings AS tr
+                FROM ${titleRatingsTableName} AS tr
                 WHERE tr.titleId = Title.id
             )`),
-            "rating_average",
-        ],
-        [
-            literal(`(
+                "rating_average",
+            ],
+            [
+                literal(`(
                 SELECT COUNT(tr.email)
-                FROM TitleRatings AS tr
+                FROM ${titleRatingsTableName} AS tr
                 WHERE tr.titleId = Title.id
             )`),
-            "rating_count",
-        ],
-    ]
-
-    static GET_GENRES_INCLUDE = [
-        [
-            literal(`(
+                "rating_count",
+            ],
+        ]
+    }
+    static GET_GENRES_INCLUDE() {
+        const titleGenresTableName = Title.#models.TitleGenre.getTableName()
+        return [
+            [
+                literal(`(
                 SELECT GROUP_CONCAT(tg.genre)
-                FROM TitleGenres AS tg
+                FROM ${titleGenresTableName} AS tg
                 WHERE tg.titleId = Title.id
             )`),
-            "all_genres",
-        ],
-    ]
+                "all_genres",
+            ],
+        ]
+    }
 
-    static GET_FAVORITES_INCLUDE = [
-        [
-            literal(`(
+    static GET_FAVORITES_INCLUDE() {
+        const titleFavoritesTableName = Title.#models.TitleFavorite.getTableName()
+        return [
+            [
+                literal(`(
                 SELECT COUNT(tf.email)
-                FROM TitleFavorites AS tf
+                FROM ${titleFavoritesTableName} AS tf
                 WHERE tf.titleId = Title.id
             )`),
-            "favorite_count",
-        ],
-    ]
-
-    static GET_CONTENT_ADVISORIES_INCLUDE = [
-        [
-            literal(`(
+                "favorite_count",
+            ],
+        ]
+    }
+    static GET_CONTENT_ADVISORIES_INCLUDE() {
+        const titleContentAdvisoriesTableName = Title.#models.TitleContentAdvisory.getTableName()
+        return [
+            [
+                literal(`(
                 SELECT GROUP_CONCAT(tcd.contentAdvisory)
-                FROM TitleContentAdvisories AS tcd
+                FROM ${titleContentAdvisoriesTableName} AS tcd
                 WHERE tcd.titleId = Title.id
             )`),
-            "all_content_advisories",
-        ],
-    ]
+                "all_content_advisories",
+            ],
+        ]
+    }
 
     static GetByID(id, transaction = null) {
         return new Promise(async (resolve, reject) => {
@@ -416,12 +432,12 @@ class Title extends ModelExtension {
                         attributes: {
                             exclude: ["createdAt", "updatedAt"],
                             include: ["id", "label", "description", "copyright", "originalTranslation"].concat(
-                                Title.GET_INSTALLMENT_INCLUDE,
-                                Title.GET_OTHERTRANSLATIONS_INCLUDE,
-                                Title.GET_RATINGS_INCLUDE,
-                                Title.GET_GENRES_INCLUDE,
-                                Title.GET_FAVORITES_INCLUDE,
-                                Title.GET_CONTENT_ADVISORIES_INCLUDE
+                                Title.GET_INSTALLMENT_INCLUDE(),
+                                Title.GET_OTHERTRANSLATIONS_INCLUDE(),
+                                Title.GET_RATINGS_INCLUDE(),
+                                Title.GET_GENRES_INCLUDE(),
+                                Title.GET_FAVORITES_INCLUDE(),
+                                Title.GET_CONTENT_ADVISORIES_INCLUDE()
                             ),
                         },
                         group: default_query.group,
@@ -495,12 +511,12 @@ class Title extends ModelExtension {
                     attributes: {
                         exclude: ["createdAt", "updatedAt"],
                         include: ["id", "label", "description", "copyright", "originalTranslation"].concat(
-                            this.GET_INSTALLMENT_INCLUDE,
-                            this.GET_OTHERTRANSLATIONS_INCLUDE,
-                            this.GET_RATINGS_INCLUDE,
-                            this.GET_GENRES_INCLUDE,
-                            this.GET_FAVORITES_INCLUDE,
-                            Title.GET_CONTENT_ADVISORIES_INCLUDE
+                            this.GET_INSTALLMENT_INCLUDE(),
+                            this.GET_OTHERTRANSLATIONS_INCLUDE(),
+                            this.GET_RATINGS_INCLUDE(),
+                            this.GET_GENRES_INCLUDE(),
+                            this.GET_FAVORITES_INCLUDE(),
+                            Title.GET_CONTENT_ADVISORIES_INCLUDE()
                         ),
                     },
                     group: default_query.group,
@@ -512,11 +528,12 @@ class Title extends ModelExtension {
 
                 resolve(
                     original_title_data.map((element, index) => {
-                        const { createdAt: c1, updatedAt: u1, all_other_translations, all_genres, ...rest1 } = element.toJSON()
+                        const { createdAt: c1, updatedAt: u1, all_other_translations, all_genres, all_content_advisories, ...rest1 } = element.toJSON()
                         const all_title_data = {
                             ...rest1,
                             all_other_translations: all_other_translations ? all_other_translations.split(",") : [],
                             all_genres: all_genres ? all_genres.split(",") : [],
+                            all_content_advisories: all_content_advisories ? all_content_advisories.split(",") : [],
                         }
                         return all_title_data
                     })

@@ -1,9 +1,7 @@
 # WEB CLIENT TODO:
 
 - REVAMP ENTIRE WEB CLIENT TO FIT BOTH MEMBER AND ADMIN PORTS ALLOWING ONLY SPECIFIC PAGES FROM EACH PORT.
-- fix admin adding titles (previously known as anime) pages as well as the video player so that it can add everything seperately
 - seperate api calls into service folder for multi access
-- fix areas where is mentions anime into title
 - some values like colors schemes, website name should be configureable by using api of server that fetches the environment variables
 - remove payment schema this is just going to exist as a self hosting service
 - remove all previous names that were associated with Otaku Stream this was from course work from college

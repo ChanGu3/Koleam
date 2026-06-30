@@ -51,33 +51,26 @@ export async function FetchIntallmentByID(installmentID) {
 }
 
 /**
- * @returns {Promise<boolean>}
+ * @returns {Promise<any>}
  *
  */
 export async function DeleteInstallmentByID(installmentID) {
+    let data = null
     try {
         const response = await fetch(`/api/title/installment/${installmentID}`, {
             method: "DELETE",
         })
 
-        if (!response.ok) {
-            return false
-        }
-
-        if (response.status !== 200) {
-            return false
-        }
-
-        const data = await response.json()
-
-        if (data.error) {
-            return false
-        }
-
-        return true
+        data = await response.json()
     } catch (err) {
-        return false
+        throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
+
+    if (data && data.error) {
+        throw Error(data.error)
+    }
+
+    return data
 }
 
 /**ark
@@ -85,6 +78,7 @@ export async function DeleteInstallmentByID(installmentID) {
  *
  */
 export async function AddInstallment({ titleID, label, isSeason }) {
+    let data = null
     try {
         const response = await fetch(`/api/title/installment`, {
             method: "POST",
@@ -94,24 +88,16 @@ export async function AddInstallment({ titleID, label, isSeason }) {
             body: JSON.stringify({ titleID, label, isSeason }),
         })
 
-        if (!response.ok) {
-            return false
-        }
-
-        if (response.status !== 200) {
-            return false
-        }
-
-        const data = await response.json()
-
-        if (data.error) {
-            return false
-        }
-
-        return true
+        data = await response.json()
     } catch (err) {
-        return false
+        throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
+
+    if (data && data.error) {
+        throw Error(data.error)
+    }
+
+    return data
 }
 
 /**
@@ -119,6 +105,7 @@ export async function AddInstallment({ titleID, label, isSeason }) {
  *
  */
 export async function UpdateInstallment(installmentID, { label = null, installmentNumber = null, isSeason = null }) {
+    let data = null
     try {
         const response = await fetch(`/api/title/installment/${installmentID}`, {
             method: "PUT",
@@ -128,22 +115,14 @@ export async function UpdateInstallment(installmentID, { label = null, installme
             body: JSON.stringify({ label, installmentNumber, isSeason }),
         })
 
-        if (!response.ok) {
-            return false
-        }
-
-        if (response.status !== 200) {
-            return false
-        }
-
-        const data = await response.json()
-
-        if (data.error) {
-            return false
-        }
-
-        return true
+        data = await response.json()
     } catch (err) {
-        return false
+        throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
+
+    if (data && data.error) {
+        throw Error(data.error)
+    }
+
+    return data
 }

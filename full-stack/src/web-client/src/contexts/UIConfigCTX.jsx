@@ -1,8 +1,6 @@
-import { createContext, useEffect, useState } from "react"
-import { ACCESS_TYPE } from "../constants"
-import { FetchSavedColorTheme } from "../services/ui-config/ColorTheme.js"
-
-export const UIConfigContext = createContext(undefined)
+import { useEffect, useState } from "react"
+import { FetchSavedColorTheme, FetchSavedWebsiteName, FetchSavedCurrentAccessType } from "../services/ui-config/ENV_UI_DATA.js"
+import { UIConfigContext } from "./createContext/UIConfigContext.jsx"
 
 export function UIConfigCTX({ children }) {
     const [WEBSITE_NAME, SetWEBSITE_NAME] = useState(null)
@@ -10,12 +8,15 @@ export function UIConfigCTX({ children }) {
     const [COLORS, SetCOLORS] = useState(null)
 
     useEffect(() => {
-        // TODO: - Fetch These From Server
-        SetWEBSITE_NAME("Koleam")
+        FetchSavedWebsiteName().then((websiteName) => {
+            SetWEBSITE_NAME(websiteName)
+        })
         FetchSavedColorTheme().then((colors) => {
             SetCOLORS(colors)
         })
-        SetCURRENT_ACCESS_TYPE(ACCESS_TYPE.LOCAL)
+        FetchSavedCurrentAccessType().then((C_A_T) => {
+            SetCURRENT_ACCESS_TYPE(C_A_T)
+        })
     }, [])
 
     useEffect(() => {
@@ -47,7 +48,6 @@ export function UIConfigCTX({ children }) {
     function InjectWEBSITE_NAME(websiteName) {
         document.title = websiteName
     }
-
     const value = {
         WEBSITE_NAME,
         CURRENT_ACCESS_TYPE, // FOR NOW I CAN CHANGE THIS FOR CHECKING WILL BE USED FOR PORT CHECKING THOUGH

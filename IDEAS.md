@@ -1,7 +1,5 @@
-# IDEAS
+# IDEA LIST
 
 - ACTUAL BUILD OF THE ENTIRE SERVER + REACT APPLICATION THAT CAN STROE THAT INFORMATION AND ALSO POSSIBLY USE APP DATA FOR STORAGE (MAYBE GET TO WHERE TO STORE ITEMS IF I DO THAT ILL NEED TO MAKE IT SO THAT THE FOLDER CAN BE RESTORED BY RE-CREATING THEM AND ALLOWING THE USER TO RE-POPULATE THE DATA FOR STREAMS AND INSTALLMENTS HOWEVER IF THEY WANTED AND IF THEY MOVED WHERE ITS STORED THEY CAN DRAG AND DROP A FOLDER AND IT'LL PICK UP THE CONTENTS AS WELL AS HAVING AN OPTION WHEN CHANING IT TO MOVE ALL THE DATA THEIR BY DEFAULT)
-
-- Admin can create their own categories for installments as well as tags for installments possibly more tags for streams themselves
 
 - I really want to make it so that a user can create a pg version of any stream with that option toggled for a user so that it auto skips or hides the footage but not audio of certain parts of videos and disallows them to access them

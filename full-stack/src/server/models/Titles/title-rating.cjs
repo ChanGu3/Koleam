@@ -198,7 +198,7 @@ class TitleRating extends ModelExtension {
     // reject --> string: error msg
     // resolve --> instance: single found TitleRating
     //
-    static GetByEmailANDAnimeID(email, titleID) {
+    static GetByEmailANDTitleID(email, titleID) {
         return new Promise(async (resolve, reject) => {
             try {
                 const titleRating = await TitleRating.findOne({

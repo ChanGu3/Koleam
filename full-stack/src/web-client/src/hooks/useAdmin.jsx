@@ -1,5 +1,5 @@
 import { useContext } from "react"
-import { AdminContext } from "../contexts/AdminCTX"
+import { AdminContext } from "../contexts/createContext/AdminContext.jsx"
 
 /** * Hook for member related functions and data.
  * @returns {{ adminccountData: { username: string } | null, adminSignIn: function, adminSignOut: function, adminIsSignedIn: boolean, changePassword: function }}

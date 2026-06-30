@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom"
 
-import { COPYRIGHT_NAME, ACCESS_TYPE } from "./constants.js"
+import { COPYRIGHT_NAME } from "./constants.js"
+import { ACCESS_TYPE } from "../dev/constants.js"
 
 import useUIConfig from "./hooks/useUIConfig.jsx"
 import useMember from "./hooks/useMember.jsx"
@@ -35,10 +36,6 @@ function App() {
     const { CURRENT_ACCESS_TYPE } = useUIConfig()
     const { adminIsSignedIn } = useAdmin()
 
-    if (!CURRENT_ACCESS_TYPE || adminIsSignedIn === null) {
-        return <LoadingPage />
-    }
-
     return (
         <Router>
             <MainPageWrapper>
@@ -46,7 +43,7 @@ function App() {
                     {/*Root URL*/}
                     <Route
                         path="/"
-                        element={CURRENT_ACCESS_TYPE === ACCESS_TYPE.LOCAL && !adminIsSignedIn ? <HomeSignOutLocalPage /> : <HomePage />} // TODO: NEED TO TEST WITH MEMBER
+                        element={CURRENT_ACCESS_TYPE === ACCESS_TYPE.LOCAL && !adminIsSignedIn ? <HomeSignOutLocalPage /> : <HomePage />}
                     />
                     <Route
                         path="/404"
@@ -236,7 +233,8 @@ function RequireMember() {
                 replace
             />
         )
-    if (memberIsSignedIn === null) return <LoadingPage />
+
+    if (memberIsSignedIn == null) return <LoadingPage />
     if (!memberIsSignedIn)
         return (
             <Navigate
@@ -259,7 +257,8 @@ function RequireAdmin() {
                 replace
             />
         )
-    if (adminIsSignedIn === null) return <LoadingPage />
+
+    if (adminIsSignedIn == null) return <LoadingPage />
     if (!adminIsSignedIn)
         return (
             <Navigate
@@ -275,7 +274,7 @@ function RestrictIfLocalAdminSignedOut() {
     const { CURRENT_ACCESS_TYPE } = useUIConfig()
     const { adminIsSignedIn } = useAdmin()
 
-    if (adminIsSignedIn === null) return <LoadingPage />
+    if (CURRENT_ACCESS_TYPE === ACCESS_TYPE.LOCAL && adminIsSignedIn == null) return <LoadingPage />
 
     if (CURRENT_ACCESS_TYPE === ACCESS_TYPE.LOCAL && !adminIsSignedIn) {
         console.log("Restricting access to local admin signed out users")

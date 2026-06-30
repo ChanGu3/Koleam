@@ -1,12 +1,11 @@
-import { createContext, use, useEffect, useState } from "react"
-import { ACCESS_TYPE } from "../constants"
+import { useEffect, useState } from "react"
+import { ACCESS_TYPE } from "../../dev/constants.js"
 import useUIConfig from "../hooks/useUIConfig"
 import { MemberData, MemberUpdateEmail, MemberUpdatePassword } from "../services/account/member"
 import { MemberSignIn, MemberSignOut, MemberSignUp } from "../services/auth/authentification"
 import { isMemberAuthorized } from "../services/auth/authorization"
 import { useQueryClient } from "@tanstack/react-query"
-
-export const MemberContext = createContext(undefined)
+import { MemberContext } from "./createContext/MemberContext.jsx"
 
 export function MemberCTX({ children }) {
     const queryClient = useQueryClient()

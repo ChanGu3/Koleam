@@ -3,32 +3,36 @@ import FavoriteButton from "../FavoriteButton.jsx"
 import { CircleChevronUp, FileQuestionMark } from "lucide-react"
 import ImageUI from "../ImageUI.jsx"
 import { Link } from "react-router-dom"
+import { getCoverTitleURL, useGetTitleCoverVersion } from "../../hooks/useTitle.jsx"
+import { FILLED_ROUTES } from "../../constants.js"
 
-function SeriesModule({ titleID, label, imageSrc, seasonNum, episodeNum, movieNum, description, href }) {
+function SeriesModule({ titleID, label, seasonNum, episodeNum, movieNum, description }) {
+    const { data: coverVersion } = useGetTitleCoverVersion(titleID)
+
     return (
         <>
-            <div className="w-36 md:w-72 h-auto relative">
+            <div className="w-36 md:w-72 h-auto relative group">
                 <Link
-                    to={{ pathname: href }}
-                    className="relative flex flex-col gap-y-1 group"
+                    to={{ pathname: FILLED_ROUTES.TITLE_PAGE(titleID, label) }}
+                    className="relative flex flex-col gap-y-1"
                 >
-                    <div className="rounded-xs w-full aspect-[3/2] overflow-hidden">
+                    <div className="rounded-xs w-full aspect-3/2 overflow-hidden">
                         <ImageUI
                             className="rounded-xs w-full h-full object-cover"
-                            Src={imageSrc}
+                            Src={getCoverTitleURL(titleID, coverVersion)}
                             Fallback={FileQuestionMark}
                         />
                     </div>
-                    <div className="absolute top-0 left-0 rounded-xs w-full aspect-[3/2] group-active:bg-s-dark-secondary/30 pointer-events-none"></div>
+                    <div className="absolute top-0 left-0 rounded-xs w-full aspect-3/2 group-active:bg-s-dark-secondary/30 pointer-events-none"></div>
                     <p className="font-semibold text-sm md:text-lg text-s-dark-secondary group-active:underline truncate">{label}</p>
                 </Link>
 
                 {/* --HOVERING-- Discover */}
-                <div className="absolute top-0 left-0 w-full h-full opacity-0 pointer-events-none md:pointer-events-auto md:hover:opacity-100">
+                <div className="absolute top-0 left-0 w-full h-full opacity-0 pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto transition-opacity duration-100">
                     <div className="rounded-xs w-full h-full aspect-[3/2] overflow-hidden">
                         <ImageUI
                             className="w-full h-full object-cover"
-                            Src={imageSrc}
+                            Src={getCoverTitleURL(titleID, coverVersion)}
                             Fallback={FileQuestionMark}
                         />
                     </div>
@@ -57,7 +61,7 @@ function SeriesModule({ titleID, label, imageSrc, seasonNum, episodeNum, movieNu
                         </div>
                         <div className="py-1 w-full flex-1 flex items-center justify-center mt-auto">
                             <Link
-                                to={{ pathname: href }}
+                                to={{ pathname: FILLED_ROUTES.TITLE_PAGE(titleID, label) }}
                                 className="w-full h-full bg-s-white/30 rounded-xs flex flex-row items-center justify-center gap-2 text-lg text-s-tertiary hover:text-s-tertiary/60 active:text-s-tertiary/80 font-semibold"
                             >
                                 <CircleChevronUp /> Discover

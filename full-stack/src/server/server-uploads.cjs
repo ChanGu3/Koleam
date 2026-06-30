@@ -68,7 +68,10 @@ async function doesTitlesPathExist(relativePath = "") {
 //
 async function doesTempFileExist(filename = "") {
     try {
-        const fullPath = path.join(pathTemp, filename)
+        let fullPath = pathTemp
+        if (filename !== null && filename !== undefined && filename !== "") {
+            fullPath = path.join(pathTemp, filename)
+        }
         await fs.access(fullPath)
         return true
     } catch (err) {
@@ -102,6 +105,8 @@ async function rnDir(prevRelativePath, relativePath) {
             const newFullPath = path.join(pathTitles, relativePath)
             await fs.rename(oldFullPath, newFullPath)
             return relativePath
+        } else {
+            throw new Error(`could not rename directory from ${prevRelativePath} to ${relativePath} --- invalid path or path does not exist`)
         }
     } catch (err) {
         Logging.LogError(`could not rename directory from ${prevRelativePath} to ${relativePath} ${err}`)
@@ -145,6 +150,27 @@ async function deleteTitleFile(relativePath, filename) {
 }
 
 //
+// deletes a directory recursively
+//
+async function recursiveDirDeleteInTemp(relativePath = "") {
+    try {
+        if (!relativePath.includes("..") && (await doesTempFileExist(relativePath))) {
+            let fullpath = pathTemp
+            if (relativePath !== null && relativePath !== undefined && relativePath !== "") {
+                fullpath = path.join(pathTemp, relativePath)
+            }
+
+            await fs.rm(fullpath, { recursive: true, force: true })
+        } else {
+            Logging.LogError(`could not delete path ${relativePath} in temp --- invalid path or path does not exist`)
+        }
+    } catch (err) {
+        Logging.LogError(`could not delete path ${relativePath} --- ${err}`)
+        throw err
+    }
+}
+
+//
 // deletes temp file
 //
 async function deleteTempFile(filename) {
@@ -183,7 +209,11 @@ async function uploadTitleFile(relativePath, filename, buffer) {
 //
 async function uploadTempFile(filename, buffer) {
     try {
-        if (!(await doesTempFileExist(filename))) {
+        if (!(await doesTempFileExist())) {
+            await fs.mkdir(pathTemp, { recursive: true })
+        }
+
+        if (await doesTempFileExist(filename)) {
             const fullPath = path.join(pathTemp, filename)
             await fs.writeFile(fullPath, buffer, { flush: true })
             return fullPath
@@ -199,10 +229,15 @@ async function uploadTempFile(filename, buffer) {
 //
 async function uploadChuckToTempFile(filename, buffer) {
     try {
+        if (!(await doesTempFileExist())) {
+            await fs.mkdir(pathTemp, { recursive: true })
+        }
+
+        const fullPath = path.join(pathTemp, filename)
         await fs.appendFile(fullPath, buffer)
         return fullPath
     } catch (err) {
-        Logging.LogError(`could not upload file to relativepath:${relativePath} --- ${err}`)
+        Logging.LogError(`could not upload file to --- ${err}`)
         throw err
     }
 }
@@ -357,7 +392,7 @@ function generateSingleVideo(video_id, inputFile, outputPlaylist, videoIndex = 0
                     })
                     .save(outputPlaylist)
 
-                VIDEO_RENDERS.set(video_id, command)
+                VIDEO_RENDERS.set(video_id, { command, inputFile })
             })
             .catch((err) => {
                 reject(err)
@@ -445,7 +480,7 @@ function generateSingleAudio(audio_id, inputFile, outputPlaylist, streamIndex = 
                     })
                     .save(outputPlaylist)
 
-                AUDIO_RENDERS.set(audio_id, command)
+                AUDIO_RENDERS.set(audio_id, { command, inputFile })
             })
             .catch((err) => {
                 reject(err)
@@ -512,7 +547,7 @@ function generateSingleSubtitle(subtitle_id, inputFile, outputFolder, subName, s
                     })
                     .run()
 
-                SUBTITLE_RENDERS.set(subtitle_id, command)
+                SUBTITLE_RENDERS.set(subtitle_id, { command, inputFile })
             })
             .catch((err) => {
                 reject(err)
@@ -616,7 +651,7 @@ async function generateMasterPlaylist(videoStreams, audioStreams, subStreams, re
     // Subtitles
     m3u8Content += `# Subtitles\n`
     subStreams.forEach((sub) => {
-        m3u8Content += `#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",LANGUAGE="${sub.lang}",NAME="${sub.name}",DEFAULT=${sub.default ? "YES" : "NO"},AUTOSELECT=YES,URI="${sub.uri}"\n`
+        m3u8Content += `#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",LANGUAGE="${sub.lang}",NAME="${sub.name}",DEFAULT=${sub.default ? "YES" : "NO"},AUTOSELECT=YES,${sub.isCC ? 'CHARACTERISTICS="public.accessibility.describes-music-and-sound",' : ""}URI="${sub.uri}"\n`
     })
     m3u8Content += `\n`
 
@@ -706,6 +741,12 @@ if (isDev) {
             } else {
                 Logging.LogDev(`could not clear title folder`)
             }
+
+            if (await doesTempFileExist()) {
+                await recursiveDirDeleteInTemp()
+            }
+
+            Logging.LogDev(`temp folder successfully cleared`)
         } catch (err) {
             Logging.LogDev(`could not clear title folder --- ${err}`)
         }

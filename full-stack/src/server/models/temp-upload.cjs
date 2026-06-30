@@ -8,8 +8,7 @@ const path = require("path")
 class TempUpload extends ModelExtension {
     static GetNewExpDate() {
         newDate = new Date()
-        newDate.setDate(newDate.getDate() + 1)
-        newDate.setHours(0, 0, 0, 0)
+        newDate.setMinutes(newDate.getMinutes() + 5)
         return newDate
     }
 
@@ -22,7 +21,7 @@ class TempUpload extends ModelExtension {
             return `${id}`
         }
 
-        return `${id}.${extension}`
+        return `${id}${extension}`
     }
 
     /**
@@ -33,6 +32,7 @@ class TempUpload extends ModelExtension {
             {
                 id: {
                     type: DataTypes.UUID,
+                    defaultValue: DataTypes.UUIDV4,
                     allowNull: false,
                     primaryKey: true,
                 },
@@ -67,7 +67,7 @@ class TempUpload extends ModelExtension {
             }
         )
 
-        cron.schedule("0 0 * * *", async () => {
+        cron.schedule("*/30 * * * *", async () => {
             const expiredUploads = await TempUpload.GetAllExpired()
 
             for (const upload of expiredUploads) {
@@ -78,7 +78,7 @@ class TempUpload extends ModelExtension {
                 }
             }
 
-            Logging.LogProcess(`Purged All Uploads Past 24 HR upload window ${dateNow}`)
+            Logging.LogProcess(`Purged All Uploads Past 30 MIN upload window ${new Date().toUTCString()}`)
         })
         return
     }
@@ -149,7 +149,7 @@ class TempUpload extends ModelExtension {
                 const upload = await TempUpload.findByPk(id)
 
                 if (upload) {
-                    resolve(upload)
+                    resolve(upload.toJSON())
                 } else {
                     reject(new Error(errormsg.uploadDoesNotExist))
                 }
@@ -170,7 +170,7 @@ class TempUpload extends ModelExtension {
                     reject(new Error(`temp upload with id ${id} does not exist`))
                 }
 
-                const instance = await TempUpload.GetByID(id)
+                const instance = await TempUpload.findByPk(id)
 
                 if (instance.fileSizeDownloaded === instance.fileSize) {
                     reject(new Error(`upload with id ${id} has already been fully uploaded`))
@@ -180,15 +180,15 @@ class TempUpload extends ModelExtension {
                     reject(new Error(`the expected chunck size is ${instance.chunkSize} but received ${buffer.length}`))
                 }
 
-                uploads.temp.uploadChuckToTempFile(uploads.temp.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename)), buffer)
+                await uploads.temp.uploadChuckToTempFile(TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename)), buffer)
 
                 instance.fileSizeDownloaded += buffer.length
                 instance.chunkNum += 1
                 instance.expDate = TempUpload.GetNewExpDate()
 
-                await upload.save()
+                await instance.save()
 
-                resolve(instance)
+                resolve(instance.toJSON())
             } catch (err) {
                 reject(new Error(errormsg.fallback))
             }
@@ -202,7 +202,25 @@ class TempUpload extends ModelExtension {
     static RemoveByID(id) {
         return new Promise(async (resolve, reject) => {
             try {
-                const instance = await GetByID(id)
+                const instance = await TempUpload.GetByID(id)
+
+                // stop all renders using the temp file as input before removing from system
+                uploads.media.VIDEO_RENDERS.forEach((value, key) => {
+                    if (path.basename(value.inputFile) === TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename))) {
+                        value.command.kill("SIGINT")
+                    }
+                })
+                uploads.media.AUDIO_RENDERS.forEach((value, key) => {
+                    if (path.basename(value.inputFile) === TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename))) {
+                        value.command.kill("SIGINT")
+                    }
+                })
+                uploads.media.SUBTITLE_RENDERS.forEach((value, key) => {
+                    if (path.basename(value.inputFile) === TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename))) {
+                        value.command.kill("SIGINT")
+                    }
+                })
+
                 await uploads.temp.deleteTempFile(TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename)))
                 await TempUpload.destroy({ where: { id: id } })
                 resolve()

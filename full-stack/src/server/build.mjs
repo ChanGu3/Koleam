@@ -10,7 +10,9 @@ await build({
     bundle: true,
     platform: "node",
     outfile: "../../dist/server/server-main.cjs",
-    external: ["pg-hstore", "bcrypt", "sqlite3"],
+    external: ["pg-hstore", "bcrypt", "sqlite3", "ffmpeg-static", "ffprobe-static"],
+    keepNames: true, // keeps sequelize out of trouble if i want to disable this would just have to switch completely to variables instead of strings
+    minify: true,
 })
 
 async function copAndCleanPackageJsonForProduction() {

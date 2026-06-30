@@ -60,12 +60,10 @@ function Search() {
                                     key={dataItem.id}
                                     titleID={dataItem.id}
                                     label={dataItem.label}
-                                    imageSrc={`/api/title/${dataItem.id}/cover.jpg`}
                                     seasonNum={dataItem.seasons_count}
                                     episodeNum={dataItem.stream_episodes_count}
                                     movieNum={dataItem.stream_movies_count}
                                     description={dataItem.description}
-                                    href={`/title/${dataItem.id}/${dataItem.label}`}
                                 />
                             )
                         }}

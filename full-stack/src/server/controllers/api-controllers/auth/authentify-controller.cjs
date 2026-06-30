@@ -2,8 +2,8 @@ const { Logging } = require("../../../server-logging.cjs")
 const db = require("../../../models/database.cjs")
 
 async function AttemptMemberSignIn(req, res) {
-    // user already exists sign in just take them to home bypasses sign in entirely -- WONT NEED THIS WHEN BLOCKING SIGN IN ENTIRELY
-    if (req.session && req.session.user) {
+    // member already exists sign in just take them to home bypasses sign in entirely -- WONT NEED THIS WHEN BLOCKING SIGN IN ENTIRELY
+    if (req.session && req.session.member) {
         res.status(200).end()
         return
     }
@@ -11,11 +11,11 @@ async function AttemptMemberSignIn(req, res) {
     const { email, password } = req.body
 
     try {
-        const user = await db.models.Member.Authentification(email, password)
-        const userJSON = user.toJSON()
-        req.session.user = {}
-        req.session.user.email = userJSON.email
-        const newSession = await db.models.Session.AddToDB(req.sessionID, userJSON.email, db.models.Session.SESSION_ROLES.MEMBER)
+        const member = await db.models.Member.Authentification(email, password)
+        const memberJSON = member.toJSON()
+        req.session.member = {}
+        req.session.member.email = memberJSON.email
+        const newSession = await db.models.Session.AddToDB(req.sessionID, memberJSON.email, db.models.Session.SESSION_ROLES.MEMBER)
         res.status(200).end()
     } catch (err) {
         res.clearCookie("connect.sid")
@@ -35,8 +35,8 @@ async function AttemptMemberSignUp(req, res, next) {
 }
 
 async function AttemptAdminSignIn(req, res) {
-    // user already exists sign in just take them to home bypasses sign in entirely -- WONT NEED THIS WHEN BLOCKING SIGN IN ENTIRELY
-    if (req.session && req.session.user) {
+    // member already exists sign in just take them to home bypasses sign in entirely -- WONT NEED THIS WHEN BLOCKING SIGN IN ENTIRELY
+    if (req.session && req.session.member) {
         res.status(200).end()
         return
     }
@@ -44,12 +44,12 @@ async function AttemptAdminSignIn(req, res) {
     const { username, password } = req.body
 
     try {
-        const user = await db.models.Admin.Authentification(username, password)
-        const userJSON = user.toJSON()
+        const admin = await db.models.Admin.Authentification(username, password)
+        const adminJSON = admin.toJSON()
         req.session.admin = {}
-        req.session.admin.username = userJSON.username
-        //req.session.member_id = user.id; [NOTE MEMEBER AND ADMIN SESSIONS ARE THE SAME BUT ITS OKAY SINCE THEY SHARE THE SAME SESSIONID Space]
-        const newSession = await db.models.Session.AddToDB(req.sessionID, userJSON.username, db.models.Session.SESSION_ROLES.ADMIN)
+        req.session.admin.username = adminJSON.username
+        //req.session.member_id = member.id; [NOTE MEMEBER AND ADMIN SESSIONS ARE THE SAME BUT ITS OKAY SINCE THEY SHARE THE SAME SESSIONID Space]
+        const newSession = await db.models.Session.AddToDB(req.sessionID, adminJSON.username, db.models.Session.SESSION_ROLES.ADMIN)
         res.status(200).end()
     } catch (err) {
         res.clearCookie("connect.sid")

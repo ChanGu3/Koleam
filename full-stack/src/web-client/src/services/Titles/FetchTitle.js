@@ -1,5 +1,7 @@
 // some of these are the same could possibly condense into one
 
+import { ERROR_MESSAGES } from "../../../../shared/log-messages"
+
 export async function FetchTitleInstallmentStreamHistory(limit = 10, offset = 0) {
     try {
         const response = await fetch(`/api/title/member/stream/lastwatched?latestStreamPerSeries=true&limit=${limit}&offset=${offset}`, {
@@ -187,29 +189,22 @@ export async function FetchTitleByID(titleID) {
  *
  */
 export async function DeleteTitleByID(titleID) {
+    let data = null
     try {
         const response = await fetch(`/api/title/${titleID}`, {
             method: "DELETE",
         })
 
-        if (!response.ok) {
-            return false
-        }
-
-        if (response.status !== 200) {
-            return false
-        }
-
-        const data = await response.json()
-
-        if (data.error) {
-            return false
-        }
-
-        return true
+        data = await response.json()
     } catch (err) {
-        return false
+        throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
+
+    if (data && data.error) {
+        throw Error(data.error)
+    }
+
+    return data
 }
 
 /**
@@ -232,30 +227,23 @@ export async function AddTitle({
     formData.append("titleCover", titleCover)
     formData.append("titleData", JSON.stringify({ label, originalTranslation, description, copyright, filmSuitability, filmAgeMin, genres, otherTranslations, contentAdvisories }))
 
+    let data = null
     try {
         const response = await fetch(`/api/title`, {
             method: "POST",
             body: formData,
         })
 
-        if (!response.ok) {
-            return false
-        }
-
-        if (response.status !== 200) {
-            return false
-        }
-
-        const data = await response.json()
-
-        if (data.error) {
-            return false
-        }
-
-        return true
+        data = await response.json()
     } catch (err) {
-        return false
+        throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
+
+    if (data && data.error) {
+        throw Error(data.error)
+    }
+
+    return data
 }
 
 /**
@@ -284,28 +272,21 @@ export async function UpdateTitle(
         formData.append("titleCover", titleCover)
     }
 
+    let data = null
     try {
         const response = await fetch(`/api/title/${titleID}`, {
             method: "PUT",
             body: formData,
         })
 
-        if (!response.ok) {
-            return false
-        }
-
-        if (response.status !== 200) {
-            return false
-        }
-
-        const data = await response.json()
-
-        if (data.error) {
-            return false
-        }
-
-        return true
+        data = await response.json()
     } catch (err) {
-        return false
+        throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
+
+    if (data && data.error) {
+        throw Error(data.error)
+    }
+
+    return data
 }

@@ -7,7 +7,7 @@ async function writeVideo(video_id, inputPath, titleID, installmentID, streamTit
 
 async function deleteVideo(video_id, titleID, installmentID, streamTitle) {
     if (uploads.media.VIDEO_RENDERS.has(video_id)) {
-        uploads.media.VIDEO_RENDERS.get(video_id).kill("SIGINT")
+        uploads.media.VIDEO_RENDERS.get(video_id).command.kill("SIGINT")
     }
     return await uploads.media.deleteAllRes(path.join(titleID, installmentID, streamTitle))
 }
@@ -30,7 +30,7 @@ async function writeAudio(audio_id, inputPath, titleID, installmentID, streamTit
 
 async function deleteAudio(audio_id, titleID, installmentID, streamTitle, audioName) {
     if (uploads.media.AUDIO_RENDERS.has(audio_id)) {
-        uploads.media.AUDIO_RENDERS.get(audio_id).kill("SIGINT")
+        uploads.media.AUDIO_RENDERS.get(audio_id).command.kill("SIGINT")
     }
     return await uploads.media.deleteAudio(path.join(titleID, installmentID, streamTitle), audioName)
 }
@@ -57,7 +57,7 @@ async function writeSubtitle(subtitle_id, inputPath, titleID, installmentID, str
 
 async function deleteSubtitle(subtitle_id, titleID, installmentID, streamTitle, subName, codecName) {
     if (uploads.media.SUBTITLE_RENDERS.has(subtitle_id)) {
-        uploads.media.SUBTITLE_RENDERS.get(subtitle_id).kill("SIGINT")
+        uploads.media.SUBTITLE_RENDERS.get(subtitle_id).command.kill("SIGINT")
     }
     return await uploads.media.deleteSubtitle(path.join(titleID, installmentID, streamTitle), subName, codecName)
 }

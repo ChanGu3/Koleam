@@ -57,13 +57,13 @@ function formatTime(seconds) {
  */
 function VideoPlayer({
     src,
-    AutoPlay,
-    Quality,
-    Audio,
-    Subtitle,
-    Volume,
-    Muted,
-    Speed,
+    AutoPlay = { firstRenderValue: true, OnValueChange: () => {} },
+    Quality = { firstRenderValue: { height: "auto" }, OnValueChange: () => {} },
+    Audio = { firstRenderValue: { name: "default" }, OnValueChange: () => {} },
+    Subtitle = { firstRenderValue: { name: "none" }, OnValueChange: () => {} },
+    Volume = { firstRenderValue: 0.45, OnValueChange: () => {} },
+    Muted = { firstRenderValue: false, OnValueChange: () => {} },
+    Speed = { firstRenderValue: 1, OnValueChange: () => {} },
     startTime = null,
     periodicTimeUpdateInterval = null,
     onPeriodicTimeUpdateInterval = async (totalTimeElapsedInSeconds) => {},
@@ -209,6 +209,8 @@ function VideoPlayer({
     const [activeCues, setActiveCues] = useState([])
 
     useEffect(() => {
+        let isMounted = true
+
         async function InitializeOctopus() {
             const options = {
                 video: videoRef.current,
@@ -216,7 +218,7 @@ function VideoPlayer({
                 legacyWorkerUrl: workerLegacyUrl,
                 subContent: "[Script Info]\nScriptType: v4.00+",
                 onReady: () => {
-                    SetIsLoadingOctopus(false)
+                    if (isMounted) SetIsLoadingOctopus(false)
                 },
                 fallbackFont: "/fonts/OpenSans-Regular-webfont.woff2",
                 fonts: [
@@ -231,7 +233,6 @@ function VideoPlayer({
                 ],
             }
             const instance = new SubtitlesOctopus(options)
-
             instance.canvas.style.display = "none"
 
             return instance
@@ -239,9 +240,16 @@ function VideoPlayer({
 
         InitializeOctopus()
             .then((instance) => {
+                if (!isMounted) {
+                    instance.dispose()
+                    return
+                }
+
                 octopusRef.current = instance
             })
             .catch(() => {
+                if (!isMounted) return
+
                 SetIsLoadingOctopus(false)
                 octopusRef.current = null
                 SetIsOctopusError(true)
@@ -249,6 +257,8 @@ function VideoPlayer({
             })
 
         return () => {
+            isMounted = false
+
             if (octopusRef.current) {
                 octopusRef.current.dispose()
                 octopusRef.current = null
@@ -322,10 +332,6 @@ function VideoPlayer({
         if (hlsRef.current) {
             hlsRef.current.subtitleTrack = subtitleIndex
 
-            if (isPlayingVideo) {
-                videoRef.current.pause()
-            }
-
             SetIsLoadingOctopus(true)
             const content = await onChangeSubtitle(newSubtitle)
 
@@ -346,9 +352,6 @@ function VideoPlayer({
                 }
             }
             SetIsLoadingOctopus(false)
-            if (isPlayingVideo) {
-                videoRef.current.play()
-            }
 
             updateUISubtitleInfo()
         }
@@ -428,7 +431,7 @@ function VideoPlayer({
                     return newList
                 })
                 setIsLoadingVideoData(false)
-                if (lastCurrentTime) {
+                if (startTime && lastCurrentTime) {
                     video.currentTime = lastCurrentTime.current
                 }
             })
@@ -706,6 +709,7 @@ function VideoPlayer({
             } else {
                 videoRef.current.muted = !videoRef.current.muted
             }
+
             setIsMuted(videoRef.current.muted)
 
             if (!videoRef.current.muted && videoRef.current.volume === 0) {
@@ -1034,7 +1038,9 @@ function VideoPlayer({
                     {/* Volume */}
                     <div className="flex items-center justify-center relative mx-1 gap-1 md:gap-2 touch-none bg-black/60 rounded-full pl-2 pr-4">
                         <button
-                            onClick={handleMuteToggle}
+                            onClick={() => {
+                                handleMuteToggle()
+                            }}
                             className="p-1 hover:rounded-xs hover:bg-s-tertiary/40 cursor-pointer"
                         >
                             {isMuted || volumePercentage <= 0 ? (
@@ -1466,7 +1472,9 @@ function VideoPlayerOptions({
                                     label={
                                         <SubtitleLabel
                                             label={track && track.name}
-                                            isCC={false}
+                                            isCC={
+                                                track.attrs && track.attrs.CHARACTERISTICS && track.attrs.CHARACTERISTICS.includes("public.accessibility.describes-music-and-sound")
+                                            }
                                         />
                                     }
                                     onToggle={(isChecked, toggle) => {
@@ -1690,7 +1698,7 @@ function ResolutionLabel({ height, isHD, isAuto = false }) {
 function SubtitleLabel({ label, isCC = false }) {
     return (
         <Label>
-            {label} {isCC && <span className={"text-s-secondary font-bold select-none"}>CC</span>}
+            {label} {isCC && <span className={"text-s-secondary font-semibold select-none"}>[CC]</span>}
         </Label>
     )
 }

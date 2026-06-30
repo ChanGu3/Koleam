@@ -42,13 +42,6 @@ function SignupSuccessPage() {
                         pathname={FULL_ROUTES.HOME}
                         label={"Home"}
                     />
-                    <TextButton
-                        className="text-lg md:text-3xl"
-                        onClick={() => {
-                            navigate(-2)
-                        }}
-                        label={"Return To Pre Signup Page"}
-                    />
                 </div>
             </main>
         </>

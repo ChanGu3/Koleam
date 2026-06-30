@@ -78,8 +78,8 @@ class TitleInstallment extends ModelExtension {
     }
 
     static async #Exists(id) {
-        const anime = await TitleInstallment.findByPk(id)
-        return anime ? true : false
+        const title = await TitleInstallment.findByPk(id)
+        return title ? true : false
     }
 
     static #TitleDirPath(titleInstallment) {
@@ -103,7 +103,7 @@ class TitleInstallment extends ModelExtension {
         return new Promise(async (resolve, reject) => {
             try {
                 const dirName = this.#TitleDirPath(titleInstallment)
-                await uploads.recursiveDirDeleteInAnime(dirName)
+                await uploads.recursiveDirDeleteInTitles(dirName)
                 resolve(dirName)
             } catch (err) {
                 Logging.LogError(`${TitleInstallment.name} directory removal could not be resolved for id:${titleInstallment.id} --- ${err}`)
@@ -139,7 +139,7 @@ class TitleInstallment extends ModelExtension {
         })
     }
 
-    static UpdateInDB(id, { label = null, installmentNum = null, isSeason = null } = {}, transaction = null) {
+    static UpdateInDB(id, { label = null, installmentNumber = null, isSeason = null } = {}, transaction = null) {
         return new Promise(async (resolve, reject) => {
             try {
                 const installment = await TitleInstallment.GetByID(id)
@@ -153,42 +153,58 @@ class TitleInstallment extends ModelExtension {
                     updateValues.label = label
                 }
 
-                if (isSeason) {
+                if (isSeason !== null && isSeason !== undefined) {
                     updateValues.isSeason = isSeason
                 }
 
                 const query = {}
-                query.where = {}
-                query.where.id = id
+                query.where = { id }
                 if (transaction) {
                     query.transaction = transaction
                 }
 
-                if (installmentNum) {
-                    if (installmentNum > (await TitleInstallment.count({ where: { titleID: installment.titleID } }))) {
-                        reject(new Error(`installmentNum ${installmentNum} is greater than the number of installments for title with id:${installment.titleID}`))
+                if (installmentNumber !== null && installmentNumber !== undefined) {
+                    if (installmentNumber < 0) {
+                        reject(new Error(`installmentNumber must be a non-negative number`))
                     }
 
-                    updateValues.installmentNum = installmentNum
+                    updateValues.installmentNum = installmentNumber
+                    const installmentToChange = await TitleInstallment.GetByID(id)
+                    const installmentToChangeOldNum = installmentToChange.installmentNum
+                    await TitleInstallment.update({ installmentNum: -1 }, { where: { id: installmentToChange.id }, transaction })
 
-                    const requiredChangedInstallment = await TitleInstallment.GetAll({ titleID: installment.titleID, installmentNum: installmentNum }, transaction)
-                    const requiredChangedQuery = {}
-                    requiredChangedQuery.where = {}
-                    requiredChangedQuery.where.id = requiredChangedInstallment.id
-                    if (transaction) {
-                        requiredChangedQuery.transaction = transaction
-                    }
-                    await TitleInstallment.update({ installmentNum: -1 }, requiredChangedQuery)
-                    await requiredChangedInstallment.reload({ transaction: transaction })
-
-                    await TitleInstallment.update(updateValues, query)
-
-                    if (updateValues.installmentNum > installment.installmentNum) {
-                        await TitleInstallment.UpdateInDB(requiredChangedInstallment.id, { installmentNum: installmentNum - 1 }, transaction)
-                    } else if (updateValues.installmentNum < installment.installmentNum) {
-                        await TitleInstallment.UpdateInDB(requiredChangedInstallment.id, { installmentNum: installmentNum + 1 }, transaction)
+                    if (installmentNumber > installmentToChangeOldNum) {
+                        for (let i = installmentToChangeOldNum + 1; i <= installmentNumber; i++) {
+                            const nextInstallment = await TitleInstallment.GetAll({ titleID: installmentToChange.titleID, installmentNum: i }, transaction)
+                            if (nextInstallment[0]) {
+                                const nextUpdateValues = { installmentNum: i - 1 }
+                                const nextQuery = {
+                                    where: {
+                                        id: nextInstallment[0].id,
+                                    },
+                                    transaction,
+                                }
+                                await TitleInstallment.update(nextUpdateValues, nextQuery)
+                            }
+                        }
+                    } else if (installmentNumber < installmentToChangeOldNum) {
+                        for (let i = installmentToChangeOldNum - 1; i >= installmentNumber; i--) {
+                            const nextInstallment = await TitleInstallment.GetAll({ titleID: installmentToChange.titleID, installmentNum: i })
+                            if (nextInstallment[0]) {
+                                const nextUpdateValues = { installmentNum: i + 1 }
+                                const nextQuery = {
+                                    where: {
+                                        id: nextInstallment[0].id,
+                                    },
+                                    transaction,
+                                }
+                                await TitleInstallment.update(nextUpdateValues, nextQuery)
+                            }
+                        }
                     }
                 }
+
+                await TitleInstallment.update(updateValues, query)
 
                 resolve()
             } catch (err) {
@@ -211,6 +227,19 @@ class TitleInstallment extends ModelExtension {
                         },
                     })
 
+                    for (let i = installment.installmentNum; i < (await TitleInstallment.count({ where: { titleID: installment.titleID } })); i++) {
+                        const nextInstallment = await TitleInstallment.GetAll({ titleID: installment.titleID, installmentNum: i + 1 })
+                        if (nextInstallment[0]) {
+                            const updateValues = { installmentNum: i }
+                            const query = {
+                                where: {
+                                    id: nextInstallment[0].id,
+                                },
+                            }
+                            await TitleInstallment.update(updateValues, query)
+                        }
+                    }
+
                     if (await uploads.doesTitlesPathExist(dirName)) {
                         this.#DeleteDirectory(installment)
                     }
@@ -227,11 +256,13 @@ class TitleInstallment extends ModelExtension {
     }
 
     static GET_STREAMS_INCLUDE(isPlural = false) {
+        const titleInstallmentStreamName = TitleInstallment.#models.TitleInstallmentStream.getTableName()
+
         return [
             [
                 literal(`(
                 SELECT COUNT(*)
-                FROM TitleInstallmentStreams AS tis
+                FROM ${titleInstallmentStreamName} AS tis
                 WHERE tis.installmentID = TitleInstallment${isPlural ? "s" : ""}.id
             )`),
                 "streams_count",
@@ -250,15 +281,16 @@ class TitleInstallment extends ModelExtension {
                         include: [
                             {
                                 model: TitleInstallment.#models.TitleInstallmentStream,
-                                required: true,
+                                required: false,
                                 attributes: {
                                     exclude: ["createdAt", "updatedAt"],
-                                    include: ["id", "installmentID", "titleID", "label", "streamNumber", "synopsis", "releaseDate"].concat(
+                                    include: ["id", "installmentID", "titleID", "label", /* "streamNumber", */ "synopsis", "releaseDate"].concat(
                                         TitleInstallment.#models.TitleInstallmentStream.GET_STREAMLIKES_INCLUDE(true),
-                                        TitleInstallment.#models.TitleInstallmentStream.GET_WATCHHISTORY_INCLUDE(true)
+                                        TitleInstallment.#models.TitleInstallmentStream.GET_WATCHHISTORY_INCLUDE(true),
+                                        TitleInstallment.#models.TitleInstallmentStream.GET_STREAM_ORDER_NUMBER_BY_REALEASE_DATE_INCLUDE(true)
                                     ),
                                 },
-                                order: ["streamNumber", "ASC"],
+                                order: [[literal("order_number_by_release_date"), "ASC"]],
                             },
                         ],
                         attributes: {
@@ -284,10 +316,9 @@ class TitleInstallment extends ModelExtension {
                 const query = {
                     limit: limit,
                     offset: offset,
+                    order: [["installmentNum", "ASC"]],
                     where: {},
                 }
-                query.order = []
-                query.order.push(["createdAt", "ASC"])
 
                 if (transaction) {
                     query.transaction = transaction
@@ -304,15 +335,16 @@ class TitleInstallment extends ModelExtension {
                 query.include = [
                     {
                         model: TitleInstallment.#models.TitleInstallmentStream,
-                        required: true,
+                        required: false,
                         attributes: {
                             exclude: ["createdAt", "updatedAt"],
-                            include: ["id", "installmentID", "titleID", "label", "streamNumber", "synopsis", "releaseDate"].concat(
+                            include: ["id", "installmentID", "titleID", "label", /* "streamNumber", */ "synopsis", "releaseDate"].concat(
                                 TitleInstallment.#models.TitleInstallmentStream.GET_STREAMLIKES_INCLUDE(true),
-                                TitleInstallment.#models.TitleInstallmentStream.GET_WATCHHISTORY_INCLUDE(true)
+                                TitleInstallment.#models.TitleInstallmentStream.GET_WATCHHISTORY_INCLUDE(true),
+                                TitleInstallment.#models.TitleInstallmentStream.GET_STREAM_ORDER_NUMBER_BY_REALEASE_DATE_INCLUDE(true)
                             ),
-                            order: ["streamNumber", "ASC"],
                         },
+                        order: [[literal("order_number_by_release_date"), "ASC"]],
                     },
                 ]
 
@@ -320,16 +352,20 @@ class TitleInstallment extends ModelExtension {
                     include: ["id", "titleID", "label", "isSeason", "installmentNum"].concat(TitleInstallment.GET_STREAMS_INCLUDE(false)),
                 }
 
-                query.group = [col("id")]
-
-                const installmentList = await TitleInstallment.findAll(query)
-
-                resolve(
-                    installmentList.map((element) => {
-                        const { createdAt: c1, updatedAt: u1, ...rest } = element.toJSON()
-                        return rest
-                    })
-                )
+                let installmentList = null
+                if (titleID && installmentNum) {
+                    installmentList = await TitleInstallment.findOne(query)
+                    const { createdAt: c1, updatedAt: u1, ...rest } = installmentList.toJSON()
+                    resolve([rest])
+                } else {
+                    installmentList = await TitleInstallment.findAll(query)
+                    resolve(
+                        installmentList.map((element) => {
+                            const { createdAt: c1, updatedAt: u1, ...rest } = element.toJSON()
+                            return rest
+                        })
+                    )
+                }
             } catch (err) {
                 Logging.LogError(`could not get all ${TitleInstallment.name} --- ${err}`)
                 reject({ error: err.message })

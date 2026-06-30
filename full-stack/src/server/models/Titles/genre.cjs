@@ -41,7 +41,7 @@ class Genre extends ModelExtension {
     //
     //  Genre Exists in DB true otherwise false
     //
-    static async #Exists(name) {
+    static async Exists(name) {
         const instance = await Genre.findByPk(name)
         return instance ? true : false
     }
@@ -52,7 +52,7 @@ class Genre extends ModelExtension {
     //
     static AddToDB(name) {
         return new Promise(async (resolve, reject) => {
-            if (await this.#Exists(name)) {
+            if (await this.Exists(name)) {
                 Logging.LogWarning(`genre exists no need to add ${name} to database with the same name`)
                 reject(`genre exists no need to add ${name} to database with the same name`)
                 return
@@ -81,7 +81,7 @@ class Genre extends ModelExtension {
     //
     static RemoveFromDB(name) {
         return new Promise(async (resolve, reject) => {
-            if (!(await this.#Exists(name))) {
+            if (!(await this.Exists(name))) {
                 Logging.LogWarning(`name does not exist`)
                 reject(new Error(`${name} is already a genre in the database`))
                 return
@@ -105,7 +105,7 @@ class Genre extends ModelExtension {
     static GetByGenre(name) {
         return new Promise(async (resolve, reject) => {
             try {
-                if (await this.#Exists(name)) {
+                if (await this.Exists(name)) {
                     const existingGenre = await Genre.findByPk(name)
                     const { createdAt, updatedAt, ...rest } = existingGenre.toJSON()
                     resolve(rest)
@@ -125,7 +125,7 @@ class Genre extends ModelExtension {
             try {
                 const allGenre = await Genre.findAll({
                     order: [["name", "ASC"]],
-                    limit,
+                    limit: limit === Infinity ? undefined : limit,
                     offset,
                 })
                 resolve(

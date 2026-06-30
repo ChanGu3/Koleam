@@ -10,8 +10,8 @@ const memberAuthentificationFail = "email or password is invalid please try agai
 const adminAuthentificationFail = "username or password is invalid please try again"
 const sessionDoesNotExist = "session does not exists so could not retrieve email"
 const genreDoesNotExist = "genre does not exists so could not retrieve it"
-const titleGenreDoesNotExist = "AnimeGenre does not exists so could not retrieve it"
-const titleOtherTranslationDoesNotExist = "AnimeOtherTranslation does not exists so could not retrieve it"
+const titleGenreDoesNotExist = "TitleGenre does not exists so could not retrieve it"
+const titleOtherTranslationDoesNotExist = "TitleOtherTranslation does not exists so could not retrieve it"
 
 function LogProcess(msg) {
     console.log(chalk.cyan(`[${processName}] ${msg}`))

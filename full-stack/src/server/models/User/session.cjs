@@ -53,17 +53,17 @@ class Session extends ModelExtension {
         )
 
         cron.schedule("0 0 * * *", async () => {
-            const dateNow = new Date()
-
-            await Session.destroy({
-                where: {
-                    expDate: {
-                        [Op.ls]: dateNow,
-                    },
-                },
-            })
-            Logging.LogProcess(`Purged All Expired Sessions Past ${dateNow}`)
+            try {
+                const dateNow = new Date()
+                const deletedCount = await Session.destroy({
+                    where: { expDate: { [Op.lt]: dateNow } },
+                })
+                Logging.LogProcess(`Purged ${deletedCount} sessions.`)
+            } catch (err) {
+                Logging.LogError(`Cron Purge Failed: ${err.message}`)
+            }
         })
+
         return
     }
 

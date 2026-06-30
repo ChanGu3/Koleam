@@ -85,7 +85,7 @@ class TitleInstallmentStreamWatchHistory extends ModelExtension {
 
     //
     // reject --> string: error msg
-    // resolve --> instance: created AnimeWatchHistory
+    // resolve --> instance: created TitleWatchHistory
     //
     static AddToDB(email, streamID) {
         return new Promise(async (resolve, reject) => {
@@ -241,7 +241,7 @@ class TitleInstallmentStreamWatchHistory extends ModelExtension {
         })
     }
 
-    static GetWatchHistoryByEmailANDStreamID(email, streamID) {
+    static GetWatchHistoryByEmailANDStreamID(email, streamID, transaction = null) {
         return new Promise(async (resolve, reject) => {
             try {
                 if (await this.Exists(email, streamID)) {
@@ -265,10 +265,10 @@ class TitleInstallmentStreamWatchHistory extends ModelExtension {
                         transaction: default_query.transaction,
                     })
 
-                    const { streamID, ...rest } = original_title_installment_watch_history.toJSON()
-                    const { streamData } = TitleInstallmentStreamWatchHistory.#models.TitleInstallmentStream.GetByID(streamID, transaction)
+                    const { streamID: _streamID, ...rest } = original_title_installment_watch_history.toJSON()
+                    const streamData = await TitleInstallmentStreamWatchHistory.#models.TitleInstallmentStream.GetByID(streamID, transaction)
 
-                    resolve({ ...rest, streamData })
+                    resolve({ ...rest, ...streamData })
                 } else {
                     const msg = `could not get ${TitleInstallmentStreamWatchHistory.name} with email:${email} and streamID:${streamID} does not exist`
                     Logging.LogError(msg)

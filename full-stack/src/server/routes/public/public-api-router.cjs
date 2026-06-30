@@ -5,7 +5,9 @@ const memberAuthorizeRouter = require("./api/auth/member-authorize-router.cjs")
 const titleRouter = require("../shared/title-router.cjs")
 const titleMemberRouter = require("../public/api/title/member-title-router.cjs")
 const memberAccountRouter = require("./api/member-account-router.cjs")
+const envRouter = require("../shared/env-router.cjs")
 const { AuthorizeMember } = require("../../controllers/api-controllers/auth/authorize-controller.cjs")
+const serverController = require("../../controllers/server-controller.cjs")
 
 apiRouter.use("/authentify", memberAuthentifyRouter)
 
@@ -16,5 +18,12 @@ apiRouter.use("/title/member", titleMemberRouter)
 apiRouter.use("/title", titleRouter)
 
 apiRouter.use("/account/member", AuthorizeMember, memberAccountRouter)
+
+//
+// - Environment Variables -
+//
+apiRouter.use("/env/PORT", serverController.GetPortForPublic)
+
+apiRouter.use("/env", envRouter)
 
 module.exports = apiRouter

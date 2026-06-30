@@ -49,7 +49,7 @@ async function GetSingleMember(req, res) {
 
 async function MemberGetSingleMember(req, res) {
     try {
-        const member = await db.models.Member.GetByEmail(req.session.user.email)
+        const member = await db.models.Member.GetByEmail(req.session.member.email)
         res.status(200).json(member)
     } catch {
         res.status(500).json({ error: `could not get member ${email}` })
@@ -66,7 +66,7 @@ async function MemberGetAllTitleStreamHistory(req, res) {
     query.offset = offset && !Number.isNaN(Number(offset)) ? Number(offset) : false
 
     try {
-        const streamHistoryList = await db.models.TitleInstallmentStreamWatchHistory.GetWatchHistoryByEmail(req.session.user.email, query)
+        const streamHistoryList = await db.models.TitleInstallmentStreamWatchHistory.GetWatchHistoryByEmail(req.session.member.email, query)
         res.status(200).json(streamHistoryList)
     } catch (err) {
         res.status(500).json({ error: err.message })
@@ -77,7 +77,7 @@ async function MemberGetSingleTitleStreamHistory(req, res) {
     const { streamID } = req.params
 
     try {
-        const streamWatchHistory = await db.models.TitleInstallmentStreamWatchHistory.GetWatchHistoryByEmailANDStreamID(req.session.user.email, streamID)
+        const streamWatchHistory = await db.models.TitleInstallmentStreamWatchHistory.GetWatchHistoryByEmailANDStreamID(req.session.member.email, streamID)
         res.status(200).json(streamWatchHistory)
     } catch (err) {
         res.status(500).json({ error: err.message })
@@ -89,11 +89,11 @@ async function MemberLogStreamWatchedStreamHistory(req, res) {
     const { lastTimeStampInSeconds } = req.body
 
     try {
-        if (await db.models.TitleInstallmentStreamWatchHistory.Exists(req.session.user.email, streamID)) {
-            await db.models.TitleInstallmentStreamWatchHistory.UpdateDB(req.session.user.email, streamID, { lastTimeStampInSeconds: lastTimeStampInSeconds })
+        if (await db.models.TitleInstallmentStreamWatchHistory.Exists(req.session.member.email, streamID)) {
+            await db.models.TitleInstallmentStreamWatchHistory.UpdateDB(req.session.member.email, streamID, { lastTimeStampInSeconds: lastTimeStampInSeconds })
             res.status(200).json({ success: "updated the streamID to history" })
         } else {
-            await db.models.TitleInstallmentStreamWatchHistory.AddToDB(req.session.user.email, streamID)
+            await db.models.TitleInstallmentStreamWatchHistory.AddToDB(req.session.member.email, streamID)
             res.status(200).json({ success: "added the streamID to history" })
         }
     } catch (err) {
@@ -105,7 +105,7 @@ async function MemberDeleteStreamWatchedStreamHistory(req, res) {
     const { streamID } = req.params
 
     try {
-        await db.models.TitleInstallmentStreamWatchHistory.RemoveFromDB(req.session.user.email, streamID)
+        await db.models.TitleInstallmentStreamWatchHistory.RemoveFromDB(req.session.member.email, streamID)
         res.status(200).json({
             success: `successfully removed ${db.models.TitleInstallmentStreamWatchHistory.name} with ${streamID}`,
         })
@@ -126,11 +126,10 @@ async function MemberGetAllTitleFavorite(req, res) {
             query.offset = Number(offset)
         }
 
-        const streamFavorites = await db.models.TitleFavorite.GetAllByEmail(req.session.user.email, query)
+        const streamFavorites = await db.models.TitleFavorite.GetAllByEmail(req.session.member.email, query)
 
         res.status(200).json(streamFavorites)
     } catch (err) {
-        transaction.rollback()
         res.status(500).json({ error: err.message })
     }
 }
@@ -139,7 +138,7 @@ async function MemberGetTitleFavorite(req, res) {
     const { titleID } = req.params
 
     try {
-        const favorite = await db.models.TitleFavorite.GetByEmailANDTitleID(req.session.user.email, titleID)
+        const favorite = await db.models.TitleFavorite.GetByEmailANDTitleID(req.session.member.email, titleID)
         res.status(200).json(favorite)
     } catch (err) {
         res.status(200).json({ error: err.message })
@@ -150,10 +149,10 @@ async function MemberUpdateTitleFavorite(req, res) {
     const { titleID } = req.params
 
     try {
-        if (await db.models.TitleFavorite.Exists(req.session.user.email, titleID)) {
-            await db.models.TitleFavorite.RemoveFromDB(req.session.user.email, titleID)
+        if (await db.models.TitleFavorite.Exists(req.session.member.email, titleID)) {
+            await db.models.TitleFavorite.RemoveFromDB(req.session.member.email, titleID)
         } else {
-            await db.models.TitleFavorite.AddToDB(req.session.user.email, titleID)
+            await db.models.TitleFavorite.AddToDB(req.session.member.email, titleID)
         }
         res.status(200).json({
             success: `successfully updated ${db.models.TitleFavorite.name} with ${titleID}`,
@@ -167,7 +166,7 @@ async function MemberGetStreamLike(req, res) {
     const { streamID } = req.params
 
     try {
-        const streamLike = await db.models.TitleInstallmentStreamLike.GetByEmailANDStreamID(req.session.user.email, streamID)
+        const streamLike = await db.models.TitleInstallmentStreamLike.GetByEmailANDStreamID(req.session.member.email, streamID)
         res.status(200).json(streamLike)
     } catch (err) {
         res.status(500).json({ error: err.message })
@@ -178,10 +177,10 @@ async function MemberUpdateStreamLike(req, res) {
     const { streamID } = req.params
 
     try {
-        if (await db.models.TitleInstallmentStreamLike.Exists(req.session.user.email, streamID)) {
-            await db.models.TitleInstallmentStreamLike.RemoveFromDB(req.session.user.email, streamID)
+        if (await db.models.TitleInstallmentStreamLike.Exists(req.session.member.email, streamID)) {
+            await db.models.TitleInstallmentStreamLike.RemoveFromDB(req.session.member.email, streamID)
         } else {
-            await db.models.TitleInstallmentStreamLike.AddToDB(req.session.user.email, streamID)
+            await db.models.TitleInstallmentStreamLike.AddToDB(req.session.member.email, streamID)
         }
         res.status(200).json({ success: `successfully aupdated ${db.models.TitleInstallmentStreamLike.name} with ${streamID}` })
     } catch (err) {
@@ -193,8 +192,8 @@ async function MemberGetTitleRating(req, res) {
     const { titleID } = req.params
 
     try {
-        const animeRate = await db.models.TitleRating.GetByEmailANDAnimeID(req.session.user.email, titleID)
-        res.status(200).json(animeRate)
+        const titleRate = await db.models.TitleRating.GetByEmailANDTitleID(req.session.member.email, titleID)
+        res.status(200).json(titleRate)
     } catch (err) {
         res.status(500).json({ error: err.message })
     }
@@ -205,15 +204,15 @@ async function MemberUpdateTitleRating(req, res) {
     const { rating } = req.body
 
     try {
-        if (await db.models.TitleRating.Exists(req.session.user.email, titleID)) {
+        if (await db.models.TitleRating.Exists(req.session.member.email, titleID)) {
             if (rating === 0) {
-                await db.models.TitleRating.RemoveFromDB(req.session.user.email, titleID)
+                await db.models.TitleRating.RemoveFromDB(req.session.member.email, titleID)
             } else {
-                await db.models.TitleRating.UpdateDB(req.session.user.email, titleID, { rating })
+                await db.models.TitleRating.UpdateDB(req.session.member.email, titleID, { rating })
             }
         } else {
             if (rating !== 0) {
-                await db.models.TitleRating.AddToDB(req.session.user.email, titleID, rating)
+                await db.models.TitleRating.AddToDB(req.session.member.email, titleID, rating)
             }
         }
         res.status(200).json({
@@ -226,12 +225,12 @@ async function MemberUpdateTitleRating(req, res) {
 
 async function MemberUpdateEmail(req, res) {
     const { newEmail } = req.body
-    const currentEmail = req.session.user.email
+    const currentEmail = req.session.member.email
 
     try {
         await db.models.Member.UpdateEmail(currentEmail, newEmail)
-        req.session.user.email = newEmail.toLowerCase()
-        res.status(200).json({ email: req.session.user.email })
+        req.session.member.email = newEmail.toLowerCase()
+        res.status(200).json({ email: req.session.member.email })
     } catch (err) {
         res.status(400).json({ error: err.message })
     }
@@ -239,7 +238,7 @@ async function MemberUpdateEmail(req, res) {
 
 async function MemberUpdatePassword(req, res) {
     const { currentPassword, newPassword } = req.body
-    const email = req.session.user.email
+    const email = req.session.member.email
 
     try {
         await db.models.Member.UpdatePassword(email, currentPassword, newPassword)

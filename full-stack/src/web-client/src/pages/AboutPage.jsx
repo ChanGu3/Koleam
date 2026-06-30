@@ -25,11 +25,12 @@ function AboutPage() {
                 <Block
                     label="Our Mission"
                     description={`
-                        To bring a simple and clean user friendly Self-Video-Streaming service 
+                        To bring a simple and clean user friendly experience to the Self-Video-Streaming service 
                         for local networks with possible public setups. We hope to provide a 
                         quality and peformance experience for users who want to stream their media 
                         content across their local network without the hassle of complicated setups 
-                        and configurations. Thanks for reading and enjoy streaming your media content!`}
+                        and configurations. Thanks for reading and enjoy streaming your media content!
+                        Its still a work in progress but it'll all work out lol.`}
                 />
                 <Block
                     label="Support"
@@ -38,7 +39,7 @@ function AboutPage() {
                 <Block
                     label="Contributing"
                     description={`
-                        If you would like to contribute to the project, please feel free to create a pull request on our GitHub repository. Make sure you create an issue first as a notice that a pull request is being made. We welcome any contributions, whether it's bug fixes, new features, or documentation improvements. Make sure that each pull requests are as simple specific as possible for an easy review and merge. Warning your work may be rejected regardless of time put in this is why issues are important as to give us time to respond to your work before you waste your time gettings started on something we may not want or need. Let's work together to make this project even better!`}
+                        Pease feel free to create an issue on the repository and mention your working on something and the details of what your changing. Once you do create a pull request on our GitHub repository! Make sure you create that issue first as a notice that a pull request is being made. We welcome any contributions, whether it's bug fixes, new features, or documentation improvements. Make sure that each pull requests are as simple specific as possible for an easy review and merge. Warning your work may be rejected regardless of time put in this is why issues are important as to give us time to respond to your work before you waste your time gettings started on something we may not want or need. Let's work together to make this project even better!`}
                 />
                 <Block
                     label="Contact Us"

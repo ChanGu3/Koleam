@@ -102,7 +102,7 @@ class StreamAudio extends ModelExtension {
         return
     }
 
-    static async #Exists(streamID, label) {
+    static async Exists(streamID, label) {
         const streamAudio = await StreamAudio.findOne({
             where: {
                 streamID: streamID,
@@ -124,159 +124,186 @@ class StreamAudio extends ModelExtension {
     static async #OnRenderCycleComplete(streamAudio) {
         streamAudio.isDownloaded = true
         await streamAudio.save()
-    }
-
-    static AddToDB(mediaInputFilePath, streamIndex, { streamID, label } = {}, transaction = null, onProgress = (progress) => {}) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const stream = await StreamAudio.#models.TitleInstallmentStream.GetByID(streamID, transaction)
-
-                const audioData = await uploads_video.getFileAudioDetails(mediaInputFilePath, streamIndex)
-
-                const streamAudio = await StreamAudio.build({
-                    streamID: streamID,
-                    label: label,
-                    language: audioData?.tags?.language || "und",
-                    codec_name: audioData.codec_name,
-                    profile: audioData.profile,
-                    sample_fmt: audioData.sample_fmt,
-                    sample_rate: audioData.sample_rate,
-                    channels: audioData.channels,
-                    channel_layout: audioData.channel_layout,
-                    avg_frame_rate: audioData.avg_frame_rate,
-                    start_time: audioData.start_time,
-                    duration: audioData.duration,
-                    bit_rate: audioData.bit_rate,
-                    isDownloaded: false,
-                })
-
-                await streamAudio.validate()
-
-                const audio = await streamAudio.save()
-
-                try {
-                    await uploads_video.writeAudio(
-                        label,
-                        mediaInputFilePath,
-                        stream.titleID,
-                        stream.installmentID,
-                        stream.label,
-                        label,
-                        streamIndex,
-                        (progress) => {
-                            StreamAudio.#OnRenderCycle(progress, streamAudio)
-                            onProgress(progress)
-                            return
-                        },
-                        () => StreamAudio.#OnRenderCycleComplete(streamAudio)
-                    )
-                } catch (err) {
-                    await streamAudio.destroy()
-                    reject(err)
-                }
-
-                // when using a transaction it is assumed master file is not written to automatically.
-                if (!transaction) {
-                    await StreamAudio.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
-                }
-
-                resolve(streamAudio)
-            } catch (err) {
-                Logging.LogError(`could not add ${StreamAudio.name} to database ${streamID} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
+        events.emit(StreamAudio.GetAudioUpdateProgressEventName(streamAudio.streamID, streamAudio.label), {
+            progress: { percent: 100, percentAllRes: 100 },
+            streamAudioData: streamAudio.toJSON(),
         })
     }
 
-    static UpdateInDB(streamID, current_label, { mediaInputFilePath = null, streamIndex = 0 } = {}, { label } = {}, transaction = null, onProgress = (progress) => {}) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const stream = await StreamAudio.#models.TitleInstallmentStream.GetByID(streamID, transaction)
+    static async AddToDB(mediaInputFilePath, streamIndex, { streamID, label } = {}, transaction = null, onProgress = (progress) => {}) {
+        try {
+            const stream = await StreamAudio.#models.TitleInstallmentStream.GetByID(streamID, transaction)
 
-                const streamAudioPre = await StreamAudio.GetByStreamIDAndLabel(streamID, current_label, transaction)
+            const audioData = await uploads_video.getFileAudioDetails(mediaInputFilePath, streamIndex)
 
-                if (!streamAudioPre.isDownloaded) {
-                    reject(new Error(`cannot update ${StreamAudio.name} with streamID:${streamID} label:${current_label} because audio has not finished downloading yet`))
-                }
+            const streamAudio = await StreamAudio.build({
+                streamID: streamID,
+                label: label,
+                language: audioData?.tags?.language || audioData?.tags?.title || "und",
+                codec_name: audioData.codec_name,
+                profile: audioData.profile,
+                sample_fmt: audioData.sample_fmt,
+                sample_rate: audioData.sample_rate,
+                channels: audioData.channels,
+                channel_layout: audioData.channel_layout,
+                avg_frame_rate: audioData.avg_frame_rate,
+                start_time: audioData.start_time,
+                duration: audioData.duration,
+                bit_rate: audioData.bit_rate,
+                isDownloaded: false,
+            })
 
-                const query = {}
-                query.where = {}
-                query.where.streamID = streamID
-                query.where.label = current_label
-                if (transaction) {
-                    query.transaction = transaction
-                }
+            await streamAudio.validate()
 
-                const update_values = {}
+            const audio = await streamAudio.save()
 
-                if (label) {
-                    update_values.label = label
-                }
-
-                let audioData = {}
-                if (mediaInputFilePath) {
-                    audioData = await uploads_video.getFileAudioDetails(mediaInputFilePath, streamIndex)
-
-                    if (!audioData) {
-                        throw new Error("could not get audio data from input file")
-                    }
-
-                    update_values.language = audioData?.tags?.language || "und"
-                    update_values.codec_name = audioData.codec_name
-                    update_values.profile = audioData.profile
-                    update_values.sample_fmt = audioData.sample_fmt
-                    update_values.sample_rate = audioData.sample_rate
-                    update_values.channels = audioData.channels
-                    update_values.channel_layout = audioData.channel_layout
-                    update_values.avg_frame_rate = audioData.avg_frame_rate
-                    update_values.start_time = audioData.start_time
-                    update_values.duration = audioData.duration
-                    update_values.bit_rate = audioData.bit_rate
-                    update_values.isDownloaded = false
-
-                    await uploads_video.deleteAudio(stream.titleID, stream.installmentID, stream.label, current_label)
-                }
-
-                await StreamAudio.update(update_values, query)
-                const streamAudio = await StreamAudio.findOne({
-                    where: { streamID: streamID, label: label ? label : current_label },
-                    transaction: transaction,
-                })
-                if (mediaInputFilePath) {
-                    await uploads_video.writeAudio(
-                        label ? label : current_label,
-                        mediaInputFilePath,
-                        stream.titleID,
-                        stream.installmentID,
-                        stream.label,
-                        label ? label : current_label,
-                        streamIndex,
-                        (progress) => {
-                            StreamAudio.#OnRenderCycle(progress, streamAudio)
-                            onProgress(progress)
-                            return
-                        },
-                        () => StreamAudio.#OnRenderCycleComplete(streamAudio)
-                    )
-
+            // when upldading will have silent server logging errors
+            uploads_video
+                .writeAudio(
+                    label,
+                    mediaInputFilePath,
+                    stream.titleID,
+                    stream.installmentID,
+                    stream.label,
+                    label,
+                    streamIndex,
+                    (progress) => {
+                        StreamAudio.#OnRenderCycle(progress, streamAudio)
+                        onProgress(progress)
+                        return
+                    },
+                    () => StreamAudio.#OnRenderCycleComplete(streamAudio)
+                )
+                .then(async () => {
                     // when using a transaction it is assumed master file is not written to automatically.
                     if (!transaction) {
                         await StreamAudio.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
                     }
-                }
+                })
+                .catch((err) => {
+                    streamAudio.destroy().then()
+                    Logging.LogError(`${err.message}`)
+                })
 
-                resolve()
-            } catch (err) {
-                Logging.LogError(`could not update ${StreamAudio.name} in database ${streamID} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
+            return streamAudio
+        } catch (err) {
+            Logging.LogError(`could not add ${StreamAudio.name} to database ${streamID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
+    }
+
+    static async UpdateInDB(streamID, current_label, { mediaInputFilePath = null, streamIndex = 0 } = {}, { label } = {}, transaction = null, onProgress = (progress) => {}) {
+        try {
+            const stream = await StreamAudio.#models.TitleInstallmentStream.GetByID(streamID, transaction)
+
+            const streamAudioPre = await StreamAudio.GetByStreamIDAndLabel(streamID, current_label, transaction)
+
+            if (!streamAudioPre.isDownloaded) {
+                reject(new Error(`cannot update ${StreamAudio.name} with streamID:${streamID} label:${current_label} because audio has not finished downloading yet`))
             }
-        })
+
+            const query = {}
+            query.where = {}
+            query.where.streamID = streamID
+            query.where.label = current_label
+            if (transaction) {
+                query.transaction = transaction
+            }
+
+            const update_values = {}
+
+            if (label) {
+                update_values.label = label
+                await StreamAudio.update({ label: label }, query)
+                await uploads_video.renameAudio(stream.titleID, stream.installmentID, stream.label, current_label, label)
+                // when using a transaction it is assumed master file is not written to automatically.
+                if (!transaction) {
+                    await StreamAudio.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
+                }
+            }
+
+            // when upldading will have silent server logging errors
+            let audioData = {}
+            if (mediaInputFilePath) {
+                uploads_video
+                    .getFileAudioDetails(mediaInputFilePath, streamIndex)
+                    .then(async (audioData) => {
+                        if (!audioData) {
+                            throw new Error("could not get audio data from input file")
+                        }
+
+                        update_values.language = audioData?.tags?.language || "und"
+                        update_values.codec_name = audioData.codec_name
+                        update_values.profile = audioData.profile
+                        update_values.sample_fmt = audioData.sample_fmt
+                        update_values.sample_rate = audioData.sample_rate
+                        update_values.channels = audioData.channels
+                        update_values.channel_layout = audioData.channel_layout
+                        update_values.avg_frame_rate = audioData.avg_frame_rate
+                        update_values.start_time = audioData.start_time
+                        update_values.duration = audioData.duration
+                        update_values.bit_rate = audioData.bit_rate
+                        update_values.isDownloaded = false
+
+                        await uploads_video.deleteAudio(stream.titleID, stream.installmentID, stream.label, current_label)
+
+                        await StreamAudio.update(update_values, query)
+                        const streamAudio = await StreamAudio.findAll({
+                            where: { streamID: streamID, label: label ? label : current_label },
+                            transaction: transaction,
+                        })
+
+                        if (!streamAudio[0]) {
+                            throw new Error(`could not get ${StreamAudio.name} with streamID:${streamID} label:${label ? label : current_label}`)
+                        }
+
+                        uploads_video
+                            .writeAudio(
+                                label ? label : current_label,
+                                mediaInputFilePath,
+                                stream.titleID,
+                                stream.installmentID,
+                                stream.label,
+                                label ? label : current_label,
+                                streamIndex,
+                                (progress) => {
+                                    StreamAudio.#OnRenderCycle(progress, streamAudio[0])
+                                    onProgress(progress)
+                                    return
+                                },
+                                () => StreamAudio.#OnRenderCycleComplete(streamAudio[0])
+                            )
+                            .then(async () => {
+                                // when using a transaction it is assumed master file is not written to automatically.
+                                if (!transaction) {
+                                    await StreamAudio.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
+                                }
+                            })
+                            .catch((err) => {
+                                Logging.LogError(`${err.message}`)
+                            })
+
+                        // when using a transaction it is assumed master file is not written to automatically.
+                        if (!transaction) {
+                            await StreamAudio.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
+                        }
+                    })
+                    .catch((err) => {
+                        Logging.LogError(`${err.message}`)
+                    })
+            }
+
+            return
+        } catch (err) {
+            Logging.LogError(`could not update ${StreamAudio.name} in database ${streamID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
     static RemoveFromDB(streamID, label) {
         return new Promise(async (resolve, reject) => {
             try {
-                if (await StreamAudio.#Exists(streamID, label)) {
+                if (await StreamAudio.Exists(streamID, label)) {
                     const stream = await StreamAudio.#models.TitleInstallmentStream.GetByID(streamID)
                     await uploads_video.deleteAudio(label, stream.titleID, stream.installmentID, stream.label, label)
 
@@ -303,7 +330,7 @@ class StreamAudio extends ModelExtension {
     static GetByStreamIDAndLabel(streamID, label, transaction = null) {
         return new Promise(async (resolve, reject) => {
             try {
-                if (await this.#Exists(streamID, label)) {
+                if (await this.Exists(streamID, label)) {
                     const default_query = {
                         where: {
                             streamID: streamID,
@@ -314,19 +341,23 @@ class StreamAudio extends ModelExtension {
                         default_query.transaction = transaction
                     }
 
-                    const original_stream_audio_data = await StreamAudio.findOne({
+                    const original_stream_audio_data = await StreamAudio.findAll({
                         ...default_query,
                         attributes: {
                             exclude: ["createdAt", "updatedAt"],
                         },
                     })
 
-                    resolve(original_stream_audio_data.toJSON())
+                    if (!original_stream_audio_data[0]) {
+                        reject(new Error(`could not get ${StreamAudio.name} with id:${streamID} and label ${label}`))
+                    }
+
+                    resolve(original_stream_audio_data[0].toJSON())
                 } else {
-                    reject(new Error(`could not get ${StreamAudio.name} with id:${streamID}`))
+                    reject(new Error(`could not get ${StreamAudio.name} with id:${streamID} and label ${label}`))
                 }
             } catch (err) {
-                Logging.LogError(`could not get ${StreamAudio.name} with id:${streamID} --- ${err.message}`)
+                Logging.LogError(`could not get ${StreamAudio.name} with id:${streamID} and label ${label} --- ${err.message}`)
                 reject(new Error(errormsg.fallback))
             }
         })

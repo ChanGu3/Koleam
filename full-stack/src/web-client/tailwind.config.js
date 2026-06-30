@@ -17,6 +17,12 @@ export default {
                 "s-error": "var(--color-s-error)",
                 "s-success": "var(--color-s-success)",
             },
+            boxShadow: {
+                // You can name these whatever makes sense for your project
+                sharp: "4px 4px 0px 0px rgba(0,0,0,1)",
+                "sharp-lg": "8px 8px 0px 0px rgba(0,0,0,1)",
+                "sharp-left": "-4px 4px 0px 0px rgba(0,0,0,1)",
+            },
             backgroundImage: {
                 vignette: "radial-gradient(ellipse at center, #00000000 0%, #0F0F0F 100%)",
             },

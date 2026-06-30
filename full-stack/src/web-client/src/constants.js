@@ -1,10 +1,5 @@
 export const COPYRIGHT_NAME = "Koleam"
 
-export const ACCESS_TYPE = Object.freeze({
-    LOCAL: "LOCAL", // LOCAL IS FOR ADMIN DASHBOARD
-    PUBLIC: "PUBLIC", // PUBLIC IS FOR STREAMING AND MEMBER DASHBOARD
-})
-
 export const BASE_ROUTES = Object.freeze({
     DISCOVER: "discover",
     AUTH: "auth",

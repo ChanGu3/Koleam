@@ -47,7 +47,6 @@ jobs:
         run: |
           rm -rf ./$RELEASES_PATH
           mkdir -p ./$RELEASES_PATH
-          "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
           zip -r ./$RELEASES_PATH/${{ github.ref_name }}d${{ env.CURRENT_DATE }}.zip ./$BUILD_PATH
         
       - name: create release

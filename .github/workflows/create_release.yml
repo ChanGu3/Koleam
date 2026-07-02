@@ -1,7 +1,7 @@
 name: Create Release on Main using Tag
 run-name: ${{ github.ref_name }} Release ran by ${{ github.actor }}
 env:
-  BUILD_PATH: ${{ vars.BUILD_PATH }}
+  BUILD_PATH: ${{ vars.SRC_PATH }}
   RELEASES_PATH: ${{ vars.RELEASES_PATH }}
   CURRENT_DATE: UND
 
@@ -41,7 +41,7 @@ jobs:
         
       - name: building "web app and api server" as a bundle
         run: npm run build:all
-        working-directory: ${{ env.BUILD_PATH }}
+        working-directory: ./${{ env.BUILD_PATH }}
         
       - name: zipping "web app and api server" as a bundle
         run: |

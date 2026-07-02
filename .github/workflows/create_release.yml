@@ -38,6 +38,10 @@ jobs:
 
       - name: getting current time
         run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: installing npm packages
+        run: npm install
+        working-directory: ./${{ env.BUILD_PATH }}
         
       - name: building "web app and api server" as a bundle
         run: npm run build:all

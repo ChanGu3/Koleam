@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query"
 import { FetchTitleBySearchQuery, FetchTitleByID, DeleteTitleByID, AddTitle, UpdateTitle } from "../services/Titles/FetchTitle.js"
-import { FetchMemberRatingOfTitle, MemberUpdateRatingOfTitle, FetchMemberFavoriteOfTitle, MemberUpdateFavoriteOfTitle } from "../services/account/member.js"
+import {
+    FetchMemberRatingOfTitle,
+    MemberUpdateRatingOfTitle,
+    FetchMemberFavoriteOfTitle,
+    MemberUpdateFavoriteOfTitle,
+} from "../services/account/member.js"
 
 export function useGetTitleByID(titleID) {
     return useQuery({
@@ -28,7 +33,8 @@ export function useGetTitles(searchGetLimit, newSearchQuery) {
     return useInfiniteQuery({
         queryKey: ["TITLE", "ALL", searchGetLimit, newSearchQuery],
         queryFn: async ({ pageParam = 0 }) => await FetchTitleBySearchQuery(newSearchQuery, searchGetLimit, pageParam),
-        getNextPageParam: (lastPage, allPages) => (lastPage && lastPage.length === searchGetLimit ? allPages.length * searchGetLimit : undefined),
+        getNextPageParam: (lastPage, allPages) =>
+            lastPage && lastPage.length === searchGetLimit ? allPages.length * searchGetLimit : undefined,
     })
 }
 
@@ -49,8 +55,30 @@ export function useAddTitle({ onError, onSuccess }) {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["TITLE", "ADD"],
-        mutationFn: async ({ label, originalTranslation, description, copyright, filmSuitability, filmAgeMin, genres, otherTranslations, contentAdvisories, titleCover }) =>
-            await AddTitle({ label, originalTranslation, description, copyright, filmSuitability, filmAgeMin, genres, otherTranslations, contentAdvisories, titleCover }),
+        mutationFn: async ({
+            label,
+            originalTranslation,
+            description,
+            copyright,
+            filmSuitability,
+            filmAgeMin,
+            genres,
+            otherTranslations,
+            contentAdvisories,
+            titleCover,
+        }) =>
+            await AddTitle({
+                label,
+                originalTranslation,
+                description,
+                copyright,
+                filmSuitability,
+                filmAgeMin,
+                genres,
+                otherTranslations,
+                contentAdvisories,
+                titleCover,
+            }),
         onSuccess: async (data, variables, onMutateResult, context) => {
             await queryClient.invalidateQueries({ queryKey: ["TITLE", "ADMINISTRATION", "SEARCH"] })
             await queryClient.invalidateQueries({ queryKey: ["TITLE", "ALL"] })

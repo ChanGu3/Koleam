@@ -28,7 +28,20 @@ function TitleStream() {
     const { streamID, label } = useParams()
     const navigate = useNavigate()
     const {
-        video: { isAutoPlay, quality, audio, subtitle, volume, muted, SetIsAutoPlay, SetQuality, SetAudio, SetSubtitle, SetVolume, SetMuted },
+        video: {
+            isAutoPlay,
+            quality,
+            audio,
+            subtitle,
+            volume,
+            muted,
+            SetIsAutoPlay,
+            SetQuality,
+            SetAudio,
+            SetSubtitle,
+            SetVolume,
+            SetMuted,
+        },
     } = useLocalStorage()
     const isAutoPlayRef = useRef(isAutoPlay)
     const qualityRef = useRef(quality)
@@ -81,7 +94,11 @@ function TitleStream() {
 
     const { data: title, error: isErrorTitle, isLoading: isLoadingTitle } = useGetTitleByID(stream?.titleID)
 
-    const { data: installments, error: isErrorTitleInstallments, isLoading: isLoadingTitleInstallments } = useGetIntallmentsByTitleID(stream?.titleID)
+    const {
+        data: installments,
+        error: isErrorTitleInstallments,
+        isLoading: isLoadingTitleInstallments,
+    } = useGetIntallmentsByTitleID(stream?.titleID)
 
     useEffect(() => {
         document.title = `${label}`
@@ -98,8 +115,12 @@ function TitleStream() {
             const currentInstallment = installments[index]
             SetInstallment(currentInstallment)
 
-            const prevStream = installments[index].TitleInstallmentStreams.find((s) => s.order_number_by_release_date === stream.order_number_by_release_date - 1)
-            const nextStream = installments[index].TitleInstallmentStreams.find((s) => s.order_number_by_release_date === stream.order_number_by_release_date + 1)
+            const prevStream = installments[index].TitleInstallmentStreams.find(
+                (s) => s.order_number_by_release_date === stream.order_number_by_release_date - 1
+            )
+            const nextStream = installments[index].TitleInstallmentStreams.find(
+                (s) => s.order_number_by_release_date === stream.order_number_by_release_date + 1
+            )
 
             if (prevStream) {
                 SetPrevStream(prevStream)
@@ -282,7 +303,11 @@ function TitleStream() {
                                         isMovie={!prevStreamInstallment.isSeason}
                                         streamTitle={prevStream.label}
                                         streamImageSrc={`${`/api/title/stream/${prevStream.id}/thumbnail.jpg`}`}
-                                        dateReleased={new Date(prevStream.releaseDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                                        dateReleased={new Date(prevStream.releaseDate).toLocaleDateString("en-US", {
+                                            year: "numeric",
+                                            month: "short",
+                                            day: "numeric",
+                                        })}
                                         href={FILLED_ROUTES.STREAM_PAGE(prevStream.id, prevStream.label)}
                                         episodeNum={prevStream.order_number_by_release_date}
                                         flipBottomText={true}
@@ -303,7 +328,11 @@ function TitleStream() {
                                         isMovie={!nextStreamInstallment.isSeason}
                                         streamTitle={nextStream.label}
                                         streamImageSrc={`${`/api/title/stream/${nextStream.id}/thumbnail.jpg`}`}
-                                        dateReleased={new Date(nextStream.releaseDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                                        dateReleased={new Date(nextStream.releaseDate).toLocaleDateString("en-US", {
+                                            year: "numeric",
+                                            month: "short",
+                                            day: "numeric",
+                                        })}
                                         href={FILLED_ROUTES.STREAM_PAGE(nextStream.id, nextStream.label)}
                                         episodeNum={nextStream.order_number_by_release_date}
                                     />

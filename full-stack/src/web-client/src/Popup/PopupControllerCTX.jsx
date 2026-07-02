@@ -28,5 +28,9 @@ export function PopupControllerCTX({ children }) {
         }
     }, [PopPopupStack])
 
-    return <PopupControllerContext.Provider value={{ popupCount, SetPopupCount, popupStack, SetPopupStack, PopPopupStack }}>{children}</PopupControllerContext.Provider>
+    return (
+        <PopupControllerContext.Provider value={{ popupCount, SetPopupCount, popupStack, SetPopupStack, PopPopupStack }}>
+            {children}
+        </PopupControllerContext.Provider>
+    )
 }

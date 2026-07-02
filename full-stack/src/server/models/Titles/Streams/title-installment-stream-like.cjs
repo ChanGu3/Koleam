@@ -123,7 +123,9 @@ class TitleInstallmentStreamLike extends ModelExtension {
 
                 resolve()
             } catch (err) {
-                Logging.LogError(`could not remove ${TitleInstallmentStreamLike.name} from database ${email}|${streamID} --- ${err.message}`)
+                Logging.LogError(
+                    `could not remove ${TitleInstallmentStreamLike.name} from database ${email}|${streamID} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })
@@ -151,7 +153,9 @@ class TitleInstallmentStreamLike extends ModelExtension {
                     reject(new Error(`no likes exist for the streamID:${streamID}`))
                 }
             } catch (err) {
-                Logging.LogError(`could not get list of ${TitleInstallmentStreamLike.name} from database using streamID:${streamID} --- ${err.message}`)
+                Logging.LogError(
+                    `could not get list of ${TitleInstallmentStreamLike.name} from database using streamID:${streamID} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })
@@ -172,7 +176,9 @@ class TitleInstallmentStreamLike extends ModelExtension {
                     reject(new Error(`no likes exist for the streamID:${streamID}`))
                 }
             } catch (err) {
-                Logging.LogError(`could not get list of ${TitleInstallmentStreamLike.name} from database using streamID:${streamID} --- ${err.message}`)
+                Logging.LogError(
+                    `could not get list of ${TitleInstallmentStreamLike.name} from database using streamID:${streamID} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })
@@ -194,7 +200,9 @@ class TitleInstallmentStreamLike extends ModelExtension {
                     reject(new Error(`email:${email} doesn't have streamID:${streamID} liked`))
                 }
             } catch (err) {
-                Logging.LogError(`could not get ${TitleInstallmentStreamLike.name} from database using email:${email}|streamID:${streamID} --- ${err.message}`)
+                Logging.LogError(
+                    `could not get ${TitleInstallmentStreamLike.name} from database using email:${email}|streamID:${streamID} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })

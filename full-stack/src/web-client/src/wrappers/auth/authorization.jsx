@@ -1,4 +1,4 @@
-const {isMemberAuthorized, isAdminAuthorized} = require("../../services/auth/authorization.js")
+const { isMemberAuthorized, isAdminAuthorized } = require("../../services/auth/authorization.js")
 import { Navigate } from "react-router-dom"
 
 function MemberAccess({ children, redirectURL = "/404" }) {
@@ -12,12 +12,15 @@ function MemberAccess({ children, redirectURL = "/404" }) {
     /* Loading Time */
     if (auth === null) {
         return <div></div> // TODO: Add Loading Spinner
-    } 
-    else if (auth) {
+    } else if (auth) {
         return children
-    } 
-    else {
-        return <Navigate to={redirectURL} replace />
+    } else {
+        return (
+            <Navigate
+                to={redirectURL}
+                replace
+            />
+        )
     }
 }
 
@@ -32,12 +35,15 @@ function AdminAccess({ children, redirectURL = "/404" }) {
     /* Loading Time */
     if (auth === null) {
         return <div></div> // TODO: Add Loading Spinner
-    } 
-    else if (auth) {
+    } else if (auth) {
         return children
-    } 
-    else {
-        return <Navigate to={redirectURL} replace />
+    } else {
+        return (
+            <Navigate
+                to={redirectURL}
+                replace
+            />
+        )
     }
 }
 

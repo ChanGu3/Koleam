@@ -10,7 +10,13 @@ import ImageUI from "../components/ImageUI.jsx"
 import { FileQuestionMark, Funnel, Play, Triangle } from "lucide-react"
 import { DefaultSpinner } from "../components/Spinners.jsx"
 import { useGetIntallmentsByTitleID } from "../hooks/useInstallment.jsx"
-import { useGetTitleByID, useMemberGetRating, useMemberUpdateRating, useGetTitleCoverVersion, getCoverTitleURL } from "../hooks/useTitle.jsx"
+import {
+    useGetTitleByID,
+    useMemberGetRating,
+    useMemberUpdateRating,
+    useGetTitleCoverVersion,
+    getCoverTitleURL,
+} from "../hooks/useTitle.jsx"
 import { FILLED_ROUTES, FULL_ROUTES } from "../constants.js"
 import { Link } from "react-router-dom"
 import RatingStars from "../components/title/RatingStars.jsx"
@@ -23,11 +29,19 @@ function TitleDetailsPage() {
 
     // Member Data
     const { memberIsSignedIn } = useMember()
-    const { data: memberRating, error: isErrorMemberRating, isLoading: isLoadingMemberRating } = useMemberGetRating(titleID, memberIsSignedIn)
+    const {
+        data: memberRating,
+        error: isErrorMemberRating,
+        isLoading: isLoadingMemberRating,
+    } = useMemberGetRating(titleID, memberIsSignedIn)
     const { mutate: SetCurrentRating } = useMemberUpdateRating(titleID)
     // Title Data
     const { data: title, error: isErrorTitle, isLoading: isLoadingTitle } = useGetTitleByID(titleID)
-    const { data: installments, error: isErrorTitleInstallments, isLoading: isLoadingTitleInstallments } = useGetIntallmentsByTitleID(titleID)
+    const {
+        data: installments,
+        error: isErrorTitleInstallments,
+        isLoading: isLoadingTitleInstallments,
+    } = useGetIntallmentsByTitleID(titleID)
     const [mostRecentWatchedStreamData, SetMostRecentWatchedStreamData] = useState(null)
 
     const [currentInstallmentIndex, SetCurrentInstallmentIndex] = useState(0)
@@ -74,9 +88,17 @@ function TitleDetailsPage() {
 
     function SortByToggled(streamList) {
         if (isOldest) {
-            SetStreamListGrid([...streamList].sort((titleStreamA, titleStreamB) => new Date(titleStreamB.releaseDate) - new Date(titleStreamA.releaseDate)))
+            SetStreamListGrid(
+                [...streamList].sort(
+                    (titleStreamA, titleStreamB) => new Date(titleStreamB.releaseDate) - new Date(titleStreamA.releaseDate)
+                )
+            )
         } else {
-            SetStreamListGrid([...streamList].sort((titleStreamA, titleStreamB) => new Date(titleStreamA.releaseDate) - new Date(titleStreamB.releaseDate)))
+            SetStreamListGrid(
+                [...streamList].sort(
+                    (titleStreamA, titleStreamB) => new Date(titleStreamA.releaseDate) - new Date(titleStreamB.releaseDate)
+                )
+            )
         }
     }
 
@@ -114,8 +136,12 @@ function TitleDetailsPage() {
                     </div>
 
                     {/* Rating & Title Label*/}
-                    <div className={`absolute justify-center items-center px-16 md:w-auto top-20 md:left-20 md:top-20 flex flex-row md:flex-col w-full gap-4 md:gap-3`}>
-                        <p className="text-lg md:text-4xl text-s-white font-bold my-0.5 text-center bg-black/30 rounded-sm px-4 py-2">{title ? `${title.label}` : ``}</p>
+                    <div
+                        className={`absolute justify-center items-center px-16 md:w-auto top-20 md:left-20 md:top-20 flex flex-row md:flex-col w-full gap-4 md:gap-3`}
+                    >
+                        <p className="text-lg md:text-4xl text-s-white font-bold my-0.5 text-center bg-black/30 rounded-sm px-4 py-2">
+                            {title ? `${title.label}` : ``}
+                        </p>
 
                         <div className="flex flex-col items-center gap-4">
                             {/* Star Ratings */}
@@ -130,7 +156,17 @@ function TitleDetailsPage() {
                             <RatingDropdown
                                 total_rating_count={title ? title.rating_count : 0}
                                 rating_average={title ? title.rating_average : 0}
-                                ratings_count={title ? [title.rating_1_count, title.rating_2_count, title.rating_3_count, title.rating_4_count, title.rating_5_count] : []}
+                                ratings_count={
+                                    title
+                                        ? [
+                                              title.rating_1_count,
+                                              title.rating_2_count,
+                                              title.rating_3_count,
+                                              title.rating_4_count,
+                                              title.rating_5_count,
+                                          ]
+                                        : []
+                                }
                             />
                         </div>
                     </div>
@@ -140,7 +176,9 @@ function TitleDetailsPage() {
                     {/* Description */}
                     <div className="mt-16 md:mx-4 flex flex-col md:w-[85%]">
                         <p className="text-s-secondary text-sm font-semibold py-1 underline underline-offset-4">Description:</p>
-                        <p className={`whitespace-pre-wrap text-s-white text-xs w-[100%] ${isShowingDetails ? "" : "line-clamp-4"}`}>{title ? title.description : ""}</p>
+                        <p className={`whitespace-pre-wrap text-s-white text-xs w-[100%] ${isShowingDetails ? "" : "line-clamp-4"}`}>
+                            {title ? title.description : ""}
+                        </p>
 
                         {/* DIVIDER */}
                         <div className={`border-2 border-s-dark-secondary w-45 self-center my-8 ${isShowingDetails ? "" : "hidden"}`}></div>
@@ -247,7 +285,12 @@ function TitleDetailsPage() {
                             {/* CW */}
                             {mostRecentWatchedStreamData && (
                                 <Link
-                                    to={{ pathname: FILLED_ROUTES.STREAM_PAGE(mostRecentWatchedStreamData.stream.id, mostRecentWatchedStreamData.stream.label) }}
+                                    to={{
+                                        pathname: FILLED_ROUTES.STREAM_PAGE(
+                                            mostRecentWatchedStreamData.stream.id,
+                                            mostRecentWatchedStreamData.stream.label
+                                        ),
+                                    }}
                                     className={`px-2 w-full md:w-fit flex flex-row justify-start items-center gap-2 bg-s-secondary py-1 group ${mostRecentWatchedStreamData ? "" : "hidden"}`}
                                 >
                                     <Play

@@ -113,7 +113,9 @@ class TitleContentAdvisory extends ModelExtension {
                     })
                 )
             } catch (err) {
-                Logging.LogError(`could not get list of ${TitleContentAdvisory.name} from database using titleID:${titleID} --- ${err.message}`)
+                Logging.LogError(
+                    `could not get list of ${TitleContentAdvisory.name} from database using titleID:${titleID} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })
@@ -160,7 +162,9 @@ class TitleContentAdvisory extends ModelExtension {
                 const deleted = await TitleContentAdvisory.destroy(query)
                 resolve()
             } catch (err) {
-                Logging.LogError(`could not remove ${TitleContentAdvisory.name} from database by titleID ${titleID} and contentAdvisory ${contentAdvisory} --- ${err.message}`)
+                Logging.LogError(
+                    `could not remove ${TitleContentAdvisory.name} from database by titleID ${titleID} and contentAdvisory ${contentAdvisory} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })

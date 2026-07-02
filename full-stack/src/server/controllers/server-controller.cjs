@@ -108,7 +108,18 @@ async function UpdateEnvVariableColor(color_key, hex) {
 async function UpdateEnvColorsForWebsite(req, res) {
     const {
         COLORS: {
-            LIGHT_MODE: { S_WHITE, S_PRIMARY, S_SECONDARY, S_TERTIARY, S_DARK_PRIMARY, S_DARK_SECONDARY, S_DARK_TERTIARY, S_LINK_VISITED, S_ERROR, S_SUCCESS },
+            LIGHT_MODE: {
+                S_WHITE,
+                S_PRIMARY,
+                S_SECONDARY,
+                S_TERTIARY,
+                S_DARK_PRIMARY,
+                S_DARK_SECONDARY,
+                S_DARK_TERTIARY,
+                S_LINK_VISITED,
+                S_ERROR,
+                S_SUCCESS,
+            },
             DARK_MODE,
         },
     } = req.body

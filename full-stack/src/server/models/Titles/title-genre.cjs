@@ -217,7 +217,9 @@ class TitleGenre extends ModelExtension {
                 const deleted = await TitleGenre.destroy(query)
                 resolve()
             } catch (err) {
-                Logging.LogError(`could not remove ${TitleGenre.name} from database by titleID ${titleID} and genre ${genre} --- ${err.message}`)
+                Logging.LogError(
+                    `could not remove ${TitleGenre.name} from database by titleID ${titleID} and genre ${genre} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })

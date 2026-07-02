@@ -23,7 +23,11 @@ function SafeSpacePage() {
     const { memberIsSignedIn } = useMember()
     const navigate = useNavigate()
 
-    const { data: dataWatchHistory, error: isErrorWatchHistory, isLoading: isLoadingWatchHistory } = useMemberGetWatchHistory(12, 0, memberIsSignedIn)
+    const {
+        data: dataWatchHistory,
+        error: isErrorWatchHistory,
+        isLoading: isLoadingWatchHistory,
+    } = useMemberGetWatchHistory(12, 0, memberIsSignedIn)
 
     useEffect(() => {
         document.title = "Safe Space"
@@ -88,7 +92,9 @@ function SafeSpacePage() {
                     <HorizontalQueryScrollable
                         queryKey={["USER", "FAVORITES"]}
                         queryFn={async ({ pageParam = 0 }) => await FetchMemberFavorites(FavoritesLoadingMax, pageParam)}
-                        getNextPageParam={(lastPage, allPages) => (lastPage.length === FavoritesLoadingMax ? allPages.length * FavoritesLoadingMax : undefined)}
+                        getNextPageParam={(lastPage, allPages) =>
+                            lastPage.length === FavoritesLoadingMax ? allPages.length * FavoritesLoadingMax : undefined
+                        }
                         pxCutoffHeight={null}
                         pxCutoffWidth={null}
                         ItemRenderer={({ index, dataItem }) => {

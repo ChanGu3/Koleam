@@ -27,7 +27,12 @@ function HomePage() {
         queryFn: async () => await FetchGetCarousel(7, 0),
     })
 
-    const { data: dataWatchHistory, error: isErrorWatchHistory, isLoading: isLoadingWatchHistory, refetch: refetchWatchHistory } = useMemberGetWatchHistory(0, 12, memberisSignedIn)
+    const {
+        data: dataWatchHistory,
+        error: isErrorWatchHistory,
+        isLoading: isLoadingWatchHistory,
+        refetch: refetchWatchHistory,
+    } = useMemberGetWatchHistory(0, 12, memberisSignedIn)
 
     const {
         data: dataShuffle,

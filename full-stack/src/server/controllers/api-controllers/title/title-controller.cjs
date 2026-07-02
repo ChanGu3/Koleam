@@ -364,7 +364,12 @@ async function AddStream(req, res) {
             streamData.releaseDate
         )
 
-        await uploads_image.uploadTitleInstallmentStreamThumbnail(stream.titleID, stream.installmentID, stream.label, streamThumbnail.buffer)
+        await uploads_image.uploadTitleInstallmentStreamThumbnail(
+            stream.titleID,
+            stream.installmentID,
+            stream.label,
+            streamThumbnail.buffer
+        )
 
         res.status(200).json({ success: "successfully added stream" })
     } catch (err) {
@@ -400,7 +405,12 @@ async function UpdateStream(req, res) {
         )
 
         if (streamThumbnail) {
-            await uploads_image.uploadTitleInstallmentStreamThumbnail(stream.titleID, stream.installmentID, stream.label, streamThumbnail.buffer)
+            await uploads_image.uploadTitleInstallmentStreamThumbnail(
+                stream.titleID,
+                stream.installmentID,
+                stream.label,
+                streamThumbnail.buffer
+            )
         }
 
         if (t) t.commit()
@@ -440,7 +450,10 @@ async function AddStreamVideo(req, res) {
         }
 
         const tempUpload = await db.models.TempUpload.GetByID(tempFileID)
-        const tempUploadFilename = db.models.TempUpload.GetFilename(tempUpload.id, db.models.TempUpload.GetExtension(tempUpload.originalFilename))
+        const tempUploadFilename = db.models.TempUpload.GetFilename(
+            tempUpload.id,
+            db.models.TempUpload.GetExtension(tempUpload.originalFilename)
+        )
 
         await db.models.StreamVideo.AddToDB(uploads.temp.getTempPath(tempUploadFilename), { streamID: streamID })
 
@@ -465,9 +478,15 @@ async function AddStreamAudio(req, res) {
         }
 
         const tempUpload = await db.models.TempUpload.GetByID(tempFileID)
-        const tempUploadFilename = db.models.TempUpload.GetFilename(tempUpload.id, db.models.TempUpload.GetExtension(tempUpload.originalFilename))
+        const tempUploadFilename = db.models.TempUpload.GetFilename(
+            tempUpload.id,
+            db.models.TempUpload.GetExtension(tempUpload.originalFilename)
+        )
 
-        await db.models.StreamAudio.AddToDB(uploads.temp.getTempPath(tempUploadFilename), streamIndexAudioOnly, { streamID: streamID, label: label })
+        await db.models.StreamAudio.AddToDB(uploads.temp.getTempPath(tempUploadFilename), streamIndexAudioOnly, {
+            streamID: streamID,
+            label: label,
+        })
 
         res.status(200).json({ success: `Attempting to add stream audio process for ${streamID} with label ${label}` })
     } catch (err) {
@@ -490,9 +509,16 @@ async function AddStreamSubtitle(req, res) {
         }
 
         const tempUpload = await db.models.TempUpload.GetByID(tempFileID)
-        const tempUploadFilename = db.models.TempUpload.GetFilename(tempUpload.id, db.models.TempUpload.GetExtension(tempUpload.originalFilename))
+        const tempUploadFilename = db.models.TempUpload.GetFilename(
+            tempUpload.id,
+            db.models.TempUpload.GetExtension(tempUpload.originalFilename)
+        )
 
-        await db.models.StreamSubtitle.AddToDB(uploads.temp.getTempPath(tempUploadFilename), streamIndexSubtitleOnly, { streamID: streamID, label: label, isCC: isCC })
+        await db.models.StreamSubtitle.AddToDB(uploads.temp.getTempPath(tempUploadFilename), streamIndexSubtitleOnly, {
+            streamID: streamID,
+            label: label,
+            isCC: isCC,
+        })
 
         res.status(200).json({ success: `Attempting to add stream subtitle process for ${streamID} with label ${label}` })
     } catch (err) {
@@ -553,7 +579,10 @@ async function UpdateStreamVideo(req, res) {
         }
 
         const tempUpload = await db.models.TempUpload.GetByID(tempFileID)
-        const tempUploadFilename = db.models.TempUpload.GetFilename(tempUpload.id, db.models.TempUpload.GetExtension(tempUpload.originalFilename))
+        const tempUploadFilename = db.models.TempUpload.GetFilename(
+            tempUpload.id,
+            db.models.TempUpload.GetExtension(tempUpload.originalFilename)
+        )
 
         await db.models.StreamVideo.UpdateInDB(streamID, uploads.temp.getTempPath(tempUploadFilename))
 
@@ -570,9 +599,17 @@ async function UpdateStreamAudio(req, res) {
 
         if (tempFileID && streamIndexAudioOnly) {
             const tempUpload = await db.models.TempUpload.GetByID(tempFileID)
-            const tempUploadFilename = db.models.TempUpload.GetFilename(tempUpload.id, db.models.TempUpload.GetExtension(tempUpload.originalFilename))
+            const tempUploadFilename = db.models.TempUpload.GetFilename(
+                tempUpload.id,
+                db.models.TempUpload.GetExtension(tempUpload.originalFilename)
+            )
             const mediaPath = uploads.temp.getTempPath(tempUploadFilename)
-            await db.models.StreamAudio.UpdateInDB(streamID, label, { mediaInputFilePath: mediaPath, streamIndex: streamIndexAudioOnly || 0 }, { label: newLabel })
+            await db.models.StreamAudio.UpdateInDB(
+                streamID,
+                label,
+                { mediaInputFilePath: mediaPath, streamIndex: streamIndexAudioOnly || 0 },
+                { label: newLabel }
+            )
         } else if (newLabel) {
             await db.models.StreamAudio.UpdateInDB(streamID, label, {}, { label: newLabel })
         }
@@ -597,7 +634,10 @@ async function UpdateStreamSubtitle(req, res) {
 
         if (tempFileID) {
             const tempUpload = await db.models.TempUpload.GetByID(tempFileID)
-            const tempUploadFilename = db.models.TempUpload.GetFilename(tempUpload.id, db.models.TempUpload.GetExtension(tempUpload.originalFilename))
+            const tempUploadFilename = db.models.TempUpload.GetFilename(
+                tempUpload.id,
+                db.models.TempUpload.GetExtension(tempUpload.originalFilename)
+            )
             const mediaPath = uploads.temp.getTempPath(tempUploadFilename)
             await db.models.StreamSubtitle.UpdateInDB(
                 streamID,

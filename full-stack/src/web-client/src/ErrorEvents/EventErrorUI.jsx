@@ -54,7 +54,13 @@ function EventErrorUI({ id, message, eventFlag, onClose = (id) => {}, closeCount
     }, [componentCloseCountdown])
 
     const eventName =
-        eventFlag && !!(eventFlag & EVENT_FLAGS.ERROR) ? "ERROR" : !!(eventFlag & EVENT_FLAGS.WARNING) ? "WARNING" : !!(eventFlag & EVENT_FLAGS.SUCCESS) ? "SUCCESS" : ""
+        eventFlag && !!(eventFlag & EVENT_FLAGS.ERROR)
+            ? "ERROR"
+            : !!(eventFlag & EVENT_FLAGS.WARNING)
+              ? "WARNING"
+              : !!(eventFlag & EVENT_FLAGS.SUCCESS)
+                ? "SUCCESS"
+                : ""
     const isEventNonRegular = eventFlag && !(eventFlag & EVENT_FLAGS.REGULAR)
     const backgroundColor =
         eventFlag && !!(eventFlag & EVENT_FLAGS.ERROR)

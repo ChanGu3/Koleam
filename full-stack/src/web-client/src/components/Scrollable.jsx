@@ -55,7 +55,7 @@ export function VerticalQueryScrollable({
 }) {
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
         queryKey,
-        queryFn, 
+        queryFn,
         getNextPageParam,
     })
 

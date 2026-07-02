@@ -3,7 +3,11 @@ import { useMediaQuery } from "react-responsive"
 import { useMemo } from "react"
 import useUIConfig from "../hooks/useUIConfig"
 
-export function DefaultSpinner({ className = "", size = { default: 20, sm: undefined, md: undefined, lg: undefined, xl: undefined }, SpinnerComponent = MoonLoader }) {
+export function DefaultSpinner({
+    className = "",
+    size = { default: 20, sm: undefined, md: undefined, lg: undefined, xl: undefined },
+    SpinnerComponent = MoonLoader,
+}) {
     const { COLORS } = useUIConfig()
 
     const isSm = useMediaQuery({ minWidth: 640 })

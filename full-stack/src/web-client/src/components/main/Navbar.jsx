@@ -86,7 +86,9 @@ function Navbar({ SignOut = () => {} }) {
                                 <VerticalQueryScrollable
                                     queryKey={["navbar", "discover", "genres"]}
                                     queryFn={async ({ pageParam = 0 }) => await GetAllGenres(8, pageParam)}
-                                    getNextPageParam={(lastPage, allPages) => (lastPage && lastPage.length === 8 ? allPages.length * 8 : undefined)}
+                                    getNextPageParam={(lastPage, allPages) =>
+                                        lastPage && lastPage.length === 8 ? allPages.length * 8 : undefined
+                                    }
                                     pxCutoffHeight={128}
                                     pxCutoffWidth={null}
                                     ItemRenderer={({ index, dataItem }) => {
@@ -107,7 +109,8 @@ function Navbar({ SignOut = () => {} }) {
                                 id="other"
                                 className="flex flex-col justify-start w-full px-2"
                             >
-                                <a className="text-s-white font-semibold text-xs pt-1">Other</a> {/* hover:underline href="/discover/other" */}
+                                <a className="text-s-white font-semibold text-xs pt-1">Other</a>{" "}
+                                {/* hover:underline href="/discover/other" */}
                                 <div className="border-s-white border-b-2 h-2 w-full rounded-xs"></div>
                                 <VerticalScrollable
                                     itemCount={1}

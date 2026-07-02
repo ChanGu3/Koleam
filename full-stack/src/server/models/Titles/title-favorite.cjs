@@ -159,7 +159,9 @@ class TitleFavorite extends ModelExtension {
                     reject(new Error(`does not exist in database email:${email}|titleID:${titleID}`))
                 }
             } catch (err) {
-                Logging.LogError(`could not get ${TitleFavorite.name} from database using email:${email}|titleID:${titleID} --- ${err.message}`)
+                Logging.LogError(
+                    `could not get ${TitleFavorite.name} from database using email:${email}|titleID:${titleID} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })

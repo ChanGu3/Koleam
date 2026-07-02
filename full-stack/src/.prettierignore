@@ -1,3 +1,20 @@
 # Ignore artifacts:
 build
 coverage
+node_modules/
+.gitignore
+
+web-client/assets/
+web-client/public/
+web-client/node_modules/
+
+# This Doesn't really have it for now 
+server/node_modules/
+server/dev/
+# This will not exists on repository but when checking personally will want it lol
+server/data/ 
+server/.env
+server/.gitignore
+
+
+

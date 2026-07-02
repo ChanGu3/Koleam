@@ -60,7 +60,9 @@ function SignupPage() {
                 <div className="flex flex-col justify-center items-center space-y-6 w-65 md:w-100">
                     <div className="flex flex-col items-center space-y-1 w-full">
                         <p className="text-s-white font-semibold text-xl">Create An Account</p>
-                        <p className="md:w-[65%] text-center text-s-white font-thin text-sm">Enter your email and create a password to enable watching videos!</p>
+                        <p className="md:w-[65%] text-center text-s-white font-thin text-sm">
+                            Enter your email and create a password to enable watching videos!
+                        </p>
                     </div>
                     <form
                         id="signinForm"

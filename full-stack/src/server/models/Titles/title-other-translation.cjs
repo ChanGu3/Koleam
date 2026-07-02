@@ -116,7 +116,9 @@ class TitleOtherTranslation extends ModelExtension {
 
                 resolve()
             } catch (err) {
-                Logging.LogError(`could not remove ${TitleOtherTranslation.name} from database ${titleID}|${translation} --- ${err.message}`)
+                Logging.LogError(
+                    `could not remove ${TitleOtherTranslation.name} from database ${titleID}|${translation} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })
@@ -162,7 +164,9 @@ class TitleOtherTranslation extends ModelExtension {
                     })
                 )
             } catch (err) {
-                Logging.LogError(`could not get list of ${TitleOtherTranslation.name} from database using titleID:${titleID} --- ${err.message}`)
+                Logging.LogError(
+                    `could not get list of ${TitleOtherTranslation.name} from database using titleID:${titleID} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })
@@ -180,7 +184,9 @@ class TitleOtherTranslation extends ModelExtension {
                 })
                 resolve(titleOtherTranslations)
             } catch (err) {
-                Logging.LogError(`could not get list of ${TitleOtherTranslation.name} from database using translation:${translation} --- ${err.message}`)
+                Logging.LogError(
+                    `could not get list of ${TitleOtherTranslation.name} from database using translation:${translation} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })

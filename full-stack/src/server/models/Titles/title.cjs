@@ -136,7 +136,15 @@ class Title extends ModelExtension {
         })
     }
 
-    static AddToDB(label, description = null, copyright = null, originalTranslation, filmSuitability = null, filmAgeMin = null, transaction = null) {
+    static AddToDB(
+        label,
+        description = null,
+        copyright = null,
+        originalTranslation,
+        filmSuitability = null,
+        filmAgeMin = null,
+        transaction = null
+    ) {
         return new Promise(async (resolve, reject) => {
             try {
                 const title = await Title.build(
@@ -166,7 +174,14 @@ class Title extends ModelExtension {
 
     static UpdateInDB(
         id,
-        { label = undefined, description = undefined, copyright = undefined, originalTranslation = undefined, filmSuitability = undefined, filmAgeMin = undefined } = {},
+        {
+            label = undefined,
+            description = undefined,
+            copyright = undefined,
+            originalTranslation = undefined,
+            filmSuitability = undefined,
+            filmAgeMin = undefined,
+        } = {},
         transaction = null
     ) {
         return new Promise(async (resolve, reject) => {
@@ -443,7 +458,14 @@ class Title extends ModelExtension {
                         group: default_query.group,
                     })
 
-                    const { createdAt: c1, updatedAt: u1, all_other_translations, all_genres, all_content_advisories, ...rest1 } = original_title_data.toJSON()
+                    const {
+                        createdAt: c1,
+                        updatedAt: u1,
+                        all_other_translations,
+                        all_genres,
+                        all_content_advisories,
+                        ...rest1
+                    } = original_title_data.toJSON()
                     const all_title_data = {
                         ...rest1,
                         all_other_translations: all_other_translations ? all_other_translations.split(",") : [],
@@ -528,7 +550,14 @@ class Title extends ModelExtension {
 
                 resolve(
                     original_title_data.map((element, index) => {
-                        const { createdAt: c1, updatedAt: u1, all_other_translations, all_genres, all_content_advisories, ...rest1 } = element.toJSON()
+                        const {
+                            createdAt: c1,
+                            updatedAt: u1,
+                            all_other_translations,
+                            all_genres,
+                            all_content_advisories,
+                            ...rest1
+                        } = element.toJSON()
                         const all_title_data = {
                             ...rest1,
                             all_other_translations: all_other_translations ? all_other_translations.split(",") : [],

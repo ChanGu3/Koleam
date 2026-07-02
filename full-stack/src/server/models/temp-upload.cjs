@@ -180,7 +180,10 @@ class TempUpload extends ModelExtension {
                     reject(new Error(`the expected chunck size is ${instance.chunkSize} but received ${buffer.length}`))
                 }
 
-                await uploads.temp.uploadChuckToTempFile(TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename)), buffer)
+                await uploads.temp.uploadChuckToTempFile(
+                    TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename)),
+                    buffer
+                )
 
                 instance.fileSizeDownloaded += buffer.length
                 instance.chunkNum += 1
@@ -206,17 +209,26 @@ class TempUpload extends ModelExtension {
 
                 // stop all renders using the temp file as input before removing from system
                 uploads.media.VIDEO_RENDERS.forEach((value, key) => {
-                    if (path.basename(value.inputFile) === TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename))) {
+                    if (
+                        path.basename(value.inputFile) ===
+                        TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename))
+                    ) {
                         value.command.kill("SIGINT")
                     }
                 })
                 uploads.media.AUDIO_RENDERS.forEach((value, key) => {
-                    if (path.basename(value.inputFile) === TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename))) {
+                    if (
+                        path.basename(value.inputFile) ===
+                        TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename))
+                    ) {
                         value.command.kill("SIGINT")
                     }
                 })
                 uploads.media.SUBTITLE_RENDERS.forEach((value, key) => {
-                    if (path.basename(value.inputFile) === TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename))) {
+                    if (
+                        path.basename(value.inputFile) ===
+                        TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename))
+                    ) {
                         value.command.kill("SIGINT")
                     }
                 })

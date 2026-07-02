@@ -388,7 +388,9 @@ function VideoPlayer({
 
             hls.on(Hls.Events.ERROR, (event, data) => {
                 const isManifestError =
-                    data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR || data.details === Hls.ErrorDetails.MANIFEST_LOAD_TIMEOUT || data.type === Hls.ErrorTypes.NETWORK_ERROR
+                    data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR ||
+                    data.details === Hls.ErrorDetails.MANIFEST_LOAD_TIMEOUT ||
+                    data.type === Hls.ErrorTypes.NETWORK_ERROR
 
                 if (isManifestError || data.fatal) {
                     setIsLoadingVideoData(false)
@@ -734,7 +736,9 @@ function VideoPlayer({
         // update all time related states
         timeCurrent.current.innerText = formatTime(videoRef.current.currentTime)
         timeLeft.current.innerText = formatTime(videoRef.current.duration - videoRef.current.currentTime)
-        timeEnding.current.innerText = getCalendarDateAndTime(getTimeNowWithSecondChange(videoRef.current.duration - videoRef.current.currentTime))
+        timeEnding.current.innerText = getCalendarDateAndTime(
+            getTimeNowWithSecondChange(videoRef.current.duration - videoRef.current.currentTime)
+        )
     }
 
     function handleTimelineDown(e) {
@@ -931,7 +935,9 @@ function VideoPlayer({
                                 ))}
                             {timeChangedAlertAmount === 0 && currentCountdown && (
                                 <div className="p-3 md:p-4 bg-black/35 hover:bg-black/60 rounded-full cursor-pointer flex items-center justify-center">
-                                    <p className="w-8 h-8 md:w-12 md:h-12 text-s-white/80 text-center text-lg md:text-3xl flex items-center justify-center">{currentCountdown}</p>
+                                    <p className="w-8 h-8 md:w-12 md:h-12 text-s-white/80 text-center text-lg md:text-3xl flex items-center justify-center">
+                                        {currentCountdown}
+                                    </p>
                                 </div>
                             )}
                         </>
@@ -1093,7 +1099,11 @@ function VideoPlayer({
                         onClick={handleVideoOnFullScreen}
                         className="p-1.5 hover:rounded-xs hover:bg-s-tertiary/40 cursor-pointer bg-black/60 rounded-full"
                     >
-                        {isVideoContainerFullScreen ? <Minimize2 className="w-4 h-4 md:h-7 md:w-7 text-s-white" /> : <Maximize2 className="w-4 h-4 md:h-7 md:w-7 text-s-white" />}
+                        {isVideoContainerFullScreen ? (
+                            <Minimize2 className="w-4 h-4 md:h-7 md:w-7 text-s-white" />
+                        ) : (
+                            <Maximize2 className="w-4 h-4 md:h-7 md:w-7 text-s-white" />
+                        )}
                     </button>
                 </div>
             </div>
@@ -1248,7 +1258,9 @@ function VideoPlayerOptions({
     const [currentSubtitleToggle, setCurrentSubtitleToggle] = useState(false)
     const [currentSpeedToggle, setCurrentSpeedToggle] = useState(false)
     return (
-        <div className={`relative ${isHidden ? "hidden" : "min-[320px]:flex hidden"} flex-col bg-s-dark-primary rounded-xs px-1 border border-s-primary py-1`}>
+        <div
+            className={`relative ${isHidden ? "hidden" : "min-[320px]:flex hidden"} flex-col bg-s-dark-primary rounded-xs px-1 border border-s-primary py-1`}
+        >
             {/* All Options Categories */}
             <VerticalScrollable
                 itemCount={5}
@@ -1473,7 +1485,9 @@ function VideoPlayerOptions({
                                         <SubtitleLabel
                                             label={track && track.name}
                                             isCC={
-                                                track.attrs && track.attrs.CHARACTERISTICS && track.attrs.CHARACTERISTICS.includes("public.accessibility.describes-music-and-sound")
+                                                track.attrs &&
+                                                track.attrs.CHARACTERISTICS &&
+                                                track.attrs.CHARACTERISTICS.includes("public.accessibility.describes-music-and-sound")
                                             }
                                         />
                                     }
@@ -1560,7 +1574,12 @@ function VideoPlayerOptionSelectionTemplate({ children, isHover = false, label =
     )
 }
 
-function VideoPlayerOptionSelectionCheckSlider({ label, startingToggled = false, stopOnClickPropagation = false, onClick = (isChecked, toggle) => {} }) {
+function VideoPlayerOptionSelectionCheckSlider({
+    label,
+    startingToggled = false,
+    stopOnClickPropagation = false,
+    onClick = (isChecked, toggle) => {},
+}) {
     const [isChecked, setIsChecked] = useState(startingToggled)
 
     function toggle() {
@@ -1588,7 +1607,9 @@ function VideoPlayerOptionSelectionCheckSlider({ label, startingToggled = false,
                         style={{ width: isChecked ? "100%" : 0 }}
                         className="relative w-full h-full rounded-full bg-s-tertiary"
                     >
-                        <div className={`absolute ${isChecked ? "right-0" : "left-0"} rounded-full w-3.5 h-3.5 md:w-4 md:h-4 bg-s-secondary`}></div>
+                        <div
+                            className={`absolute ${isChecked ? "right-0" : "left-0"} rounded-full w-3.5 h-3.5 md:w-4 md:h-4 bg-s-secondary`}
+                        ></div>
                     </div>
                 </div>
             </div>
@@ -1596,7 +1617,12 @@ function VideoPlayerOptionSelectionCheckSlider({ label, startingToggled = false,
     )
 }
 
-function VideoPlayerOptionSelectionCheckbox({ label, startingToggled = false, onToggle = (isChecked, toggle) => {}, stopOnClickPropagation = false }) {
+function VideoPlayerOptionSelectionCheckbox({
+    label,
+    startingToggled = false,
+    onToggle = (isChecked, toggle) => {},
+    stopOnClickPropagation = false,
+}) {
     const [isChecked, setIsChecked] = useState(startingToggled)
 
     useEffect(() => {
@@ -1634,7 +1660,14 @@ function VideoPlayerOptionSelectionCheckbox({ label, startingToggled = false, on
     )
 }
 
-function VideoPlayerOptionSelectionNext({ label, startingToggled = false, isDefault, selectedLabel, onClick = (isNext, toggle) => {}, stopOnClickPropagation = false }) {
+function VideoPlayerOptionSelectionNext({
+    label,
+    startingToggled = false,
+    isDefault,
+    selectedLabel,
+    onClick = (isNext, toggle) => {},
+    stopOnClickPropagation = false,
+}) {
     const [isNext, setIsNext] = useState(startingToggled)
 
     function toggle() {

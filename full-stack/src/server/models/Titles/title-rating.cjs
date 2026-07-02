@@ -214,7 +214,9 @@ class TitleRating extends ModelExtension {
                     reject(new Error(`email:${email} has not rated titleID:${titleID}`))
                 }
             } catch (err) {
-                Logging.LogError(`could not get ${TitleRating.name} from database using email:${email}|titleID:${titleID} --- ${err.message}`)
+                Logging.LogError(
+                    `could not get ${TitleRating.name} from database using email:${email}|titleID:${titleID} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })

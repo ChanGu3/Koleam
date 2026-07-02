@@ -225,7 +225,20 @@ export async function AddTitle({
 }) {
     const formData = new FormData()
     formData.append("titleCover", titleCover)
-    formData.append("titleData", JSON.stringify({ label, originalTranslation, description, copyright, filmSuitability, filmAgeMin, genres, otherTranslations, contentAdvisories }))
+    formData.append(
+        "titleData",
+        JSON.stringify({
+            label,
+            originalTranslation,
+            description,
+            copyright,
+            filmSuitability,
+            filmAgeMin,
+            genres,
+            otherTranslations,
+            contentAdvisories,
+        })
+    )
 
     let data = null
     try {
@@ -267,7 +280,10 @@ export async function UpdateTitle(
     }
 ) {
     const formData = new FormData()
-    formData.append("titleData", JSON.stringify({ label, originalTranslation, description, copyright, filmSuitability, filmAgeMin, listData }))
+    formData.append(
+        "titleData",
+        JSON.stringify({ label, originalTranslation, description, copyright, filmSuitability, filmAgeMin, listData })
+    )
     if (titleCover) {
         formData.append("titleCover", titleCover)
     }

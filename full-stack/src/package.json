@@ -1,43 +1,43 @@
 {
-  "name": "koleam",
-  "version": "0.0.1",
-  "description": "Self Hosting Video Streaming Application",
-  "scripts": {
-    "build:server": "npm run build --workspace=server",
-    "build:client": "npm run build --workspace=web-client",
-    "clean-build:server": "npm run clean --workspace=server",
-    "clean-build:client": "npm run clean --workspace=web-client",
-    "build-start:install": "npm i --prefix ../dist/server",
-    "build-start:dist": "npm run start --prefix ../dist/server",
-    "---": "---",
-    "dev:start": "concurrently \"npm run dev --workspace=web-client\" \"npm run dev --workspace=server\"",
-    "clean-build:all": "run-s clean-build:server clean-build:client",
-    "build:all": "run-s clean-build:all build:server build:client",
-    "build-start": "run-s build-start:install build-start:dist"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ChanGu3/koleam.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/ChanGu3/koleam/issues"
-  },
-  "homepage": "https://github.com/ChanGu3/koleam#readme",
-  "private": "true",
-  "workspaces": [
-    "web-client",
-    "server"
-  ],
-  "devDependencies": {
-    "concurrently": "^9.1.2",
-    "npm-run-all": "^4.1.5",
-    "prettier": "3.8.3",
-    "rimraf": "^6.0.1"
-  },
-  "dependencies": {
-    "iso-639-1": "^3.1.5"
-  }
+    "name": "koleam",
+    "version": "0.0.1",
+    "description": "Self Hosting Video Streaming Application",
+    "scripts": {
+        "build:server": "npm run build --workspace=server",
+        "build:client": "npm run build --workspace=web-client",
+        "clean-build:server": "npm run clean --workspace=server",
+        "clean-build:client": "npm run clean --workspace=web-client",
+        "build-start:install": "npm i --prefix ../dist/server",
+        "build-start:dist": "npm run start --prefix ../dist/server",
+        "---": "---",
+        "dev:start": "concurrently \"npm run dev --workspace=web-client\" \"npm run dev --workspace=server\"",
+        "clean-build:all": "run-s clean-build:server clean-build:client",
+        "build:all": "run-s clean-build:all build:server build:client",
+        "build-start": "run-s build-start:install build-start:dist"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ChanGu3/koleam.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/ChanGu3/koleam/issues"
+    },
+    "homepage": "https://github.com/ChanGu3/koleam#readme",
+    "private": "true",
+    "workspaces": [
+        "web-client",
+        "server"
+    ],
+    "devDependencies": {
+        "concurrently": "^9.1.2",
+        "npm-run-all": "^4.1.5",
+        "prettier": "3.8.3",
+        "rimraf": "^6.0.1"
+    },
+    "dependencies": {
+        "iso-639-1": "^3.1.5"
+    }
 }

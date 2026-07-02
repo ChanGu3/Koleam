@@ -2,8 +2,18 @@ import ButtonUI from "../ButtonUI"
 
 function ConfirmationPopup({
     label = null,
-    leftButton: { onClick: leftButtonOnClick, label: leftButtonLabel, isLoading: leftButtonIsLoading = false, isImportant: leftButtonIsImportant = false },
-    rightButton: { onClick: rightButtonOnClick, label: rightButtonLabel, isLoading: rightButtonIsLoading = false, isImportant: rightButtonIsImportant = false },
+    leftButton: {
+        onClick: leftButtonOnClick,
+        label: leftButtonLabel,
+        isLoading: leftButtonIsLoading = false,
+        isImportant: leftButtonIsImportant = false,
+    },
+    rightButton: {
+        onClick: rightButtonOnClick,
+        label: rightButtonLabel,
+        isLoading: rightButtonIsLoading = false,
+        isImportant: rightButtonIsImportant = false,
+    },
 }) {
     return (
         <div className="flex flex-col bg-s-dark-primary h-56 w-72 rounded-lg">

@@ -107,7 +107,9 @@ class TitleInstallmentStreamWatchHistory extends ModelExtension {
 
                 resolve(newWatchHistory)
             } catch (err) {
-                Logging.LogError(`could not add ${TitleInstallmentStreamWatchHistory.name} to database ${email}|${streamID} --- ${err.message}`)
+                Logging.LogError(
+                    `could not add ${TitleInstallmentStreamWatchHistory.name} to database ${email}|${streamID} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })
@@ -135,7 +137,9 @@ class TitleInstallmentStreamWatchHistory extends ModelExtension {
 
                 resolve()
             } catch (err) {
-                Logging.LogError(`could not remove ${TitleInstallmentStreamWatchHistory.name} from database ${email}|${streamID} --- ${err.message}`)
+                Logging.LogError(
+                    `could not remove ${TitleInstallmentStreamWatchHistory.name} from database ${email}|${streamID} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })
@@ -169,13 +173,19 @@ class TitleInstallmentStreamWatchHistory extends ModelExtension {
 
                 resolve()
             } catch (err) {
-                Logging.LogError(`could not update date of ${TitleInstallmentStreamWatchHistory.name} with streamID:${streamID} --- ${err.message}`)
+                Logging.LogError(
+                    `could not update date of ${TitleInstallmentStreamWatchHistory.name} with streamID:${streamID} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })
     }
 
-    static GetWatchHistoryByEmail(email, { orderByDescDateLastedWatched = false, latestStreamPerSeries = false, titleID = null, limit = 10, offset = 0 } = {}, transaction = null) {
+    static GetWatchHistoryByEmail(
+        email,
+        { orderByDescDateLastedWatched = false, latestStreamPerSeries = false, titleID = null, limit = 10, offset = 0 } = {},
+        transaction = null
+    ) {
         return new Promise(async (resolve, reject) => {
             try {
                 const default_query = {
@@ -205,7 +215,9 @@ class TitleInstallmentStreamWatchHistory extends ModelExtension {
                         include: [
                             "email",
                             "streamID",
-                            latestStreamPerSeries ? [Sequelize.fn("MAX", Sequelize.col("dateLastWatched")), "dateLastWatched"] : "dateLastWatched",
+                            latestStreamPerSeries
+                                ? [Sequelize.fn("MAX", Sequelize.col("dateLastWatched")), "dateLastWatched"]
+                                : "dateLastWatched",
                             "lastTimeStampInSeconds",
                         ],
                     },
@@ -223,19 +235,26 @@ class TitleInstallmentStreamWatchHistory extends ModelExtension {
                     original_title_installment_watch_history_query.include[0].where.titleID = titleID
                 }
 
-                const original_title_installment_watch_history = await TitleInstallmentStreamWatchHistory.findAll(original_title_installment_watch_history_query)
+                const original_title_installment_watch_history = await TitleInstallmentStreamWatchHistory.findAll(
+                    original_title_installment_watch_history_query
+                )
 
                 resolve(
                     await Promise.all(
                         original_title_installment_watch_history.map(async (element, index) => {
                             const { streamID, ...rest } = element.toJSON()
-                            const streamData = await TitleInstallmentStreamWatchHistory.#models.TitleInstallmentStream.GetByID(streamID, transaction)
+                            const streamData = await TitleInstallmentStreamWatchHistory.#models.TitleInstallmentStream.GetByID(
+                                streamID,
+                                transaction
+                            )
                             return { ...rest, ...streamData }
                         })
                     )
                 )
             } catch (err) {
-                Logging.LogError(`could not get list of ${TitleInstallmentStreamWatchHistory.name} from database by using email:${email} --- ${err.message}`)
+                Logging.LogError(
+                    `could not get list of ${TitleInstallmentStreamWatchHistory.name} from database by using email:${email} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })
@@ -266,7 +285,10 @@ class TitleInstallmentStreamWatchHistory extends ModelExtension {
                     })
 
                     const { streamID: _streamID, ...rest } = original_title_installment_watch_history.toJSON()
-                    const streamData = await TitleInstallmentStreamWatchHistory.#models.TitleInstallmentStream.GetByID(streamID, transaction)
+                    const streamData = await TitleInstallmentStreamWatchHistory.#models.TitleInstallmentStream.GetByID(
+                        streamID,
+                        transaction
+                    )
 
                     resolve({ ...rest, ...streamData })
                 } else {
@@ -275,7 +297,9 @@ class TitleInstallmentStreamWatchHistory extends ModelExtension {
                     reject(new Error(msg))
                 }
             } catch (err) {
-                Logging.LogError(`could not get stream in ${TitleInstallmentStreamWatchHistory.name} from the database ${email}|${streamID} --- ${err.message}`)
+                Logging.LogError(
+                    `could not get stream in ${TitleInstallmentStreamWatchHistory.name} from the database ${email}|${streamID} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })

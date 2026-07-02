@@ -77,7 +77,10 @@ async function MemberGetSingleTitleStreamHistory(req, res) {
     const { streamID } = req.params
 
     try {
-        const streamWatchHistory = await db.models.TitleInstallmentStreamWatchHistory.GetWatchHistoryByEmailANDStreamID(req.session.member.email, streamID)
+        const streamWatchHistory = await db.models.TitleInstallmentStreamWatchHistory.GetWatchHistoryByEmailANDStreamID(
+            req.session.member.email,
+            streamID
+        )
         res.status(200).json(streamWatchHistory)
     } catch (err) {
         res.status(500).json({ error: err.message })
@@ -90,7 +93,9 @@ async function MemberLogStreamWatchedStreamHistory(req, res) {
 
     try {
         if (await db.models.TitleInstallmentStreamWatchHistory.Exists(req.session.member.email, streamID)) {
-            await db.models.TitleInstallmentStreamWatchHistory.UpdateDB(req.session.member.email, streamID, { lastTimeStampInSeconds: lastTimeStampInSeconds })
+            await db.models.TitleInstallmentStreamWatchHistory.UpdateDB(req.session.member.email, streamID, {
+                lastTimeStampInSeconds: lastTimeStampInSeconds,
+            })
             res.status(200).json({ success: "updated the streamID to history" })
         } else {
             await db.models.TitleInstallmentStreamWatchHistory.AddToDB(req.session.member.email, streamID)

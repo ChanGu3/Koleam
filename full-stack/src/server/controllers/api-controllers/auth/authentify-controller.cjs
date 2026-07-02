@@ -15,7 +15,7 @@ async function AttemptMemberSignIn(req, res) {
         const memberJSON = member.toJSON()
         req.session.member = {}
         req.session.member.email = memberJSON.email
-        const newSession = await db.models.Session.AddToDB(req.sessionID, memberJSON.email, db.models.Session.SESSION_ROLES.MEMBER)
+        await db.models.Session.AddToDB(req.sessionID, memberJSON.email, db.models.Session.SESSION_ROLES.MEMBER)
         res.status(200).end()
     } catch (err) {
         res.clearCookie("connect.sid")

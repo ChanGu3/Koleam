@@ -44,7 +44,10 @@ export class TempFileUpload {
             const formData = new FormData()
 
             if (this.#uploadState === TempFileUpload.#UPLOAD_STATES.IN_PROGRESS) {
-                formData.append("chunkData", JSON.stringify({ tempfileID: this.#lastUploadData.id, chunkNum: this.#lastUploadData.chunkNum + 1 }))
+                formData.append(
+                    "chunkData",
+                    JSON.stringify({ tempfileID: this.#lastUploadData.id, chunkNum: this.#lastUploadData.chunkNum + 1 })
+                )
                 const fromSize = this.#chunkSize * this.#lastUploadData.chunkNum
                 const toSize = this.#lastUploadData
                     ? this.#chunkSize * (this.#lastUploadData.chunkNum + 1) > this.#file.size
@@ -54,7 +57,10 @@ export class TempFileUpload {
                 const chunk = this.#file.slice(fromSize, toSize)
                 formData.append("tempChunk", chunk, this.#file.name)
             } else {
-                formData.append("fileData", JSON.stringify({ originalFilename: this.#file.name, fileSize: this.#file.size, bufferSizeHandshake: this.#chunkSize }))
+                formData.append(
+                    "fileData",
+                    JSON.stringify({ originalFilename: this.#file.name, fileSize: this.#file.size, bufferSizeHandshake: this.#chunkSize })
+                )
             }
 
             const response = await fetch(`/api/temp/upload/chunk`, {

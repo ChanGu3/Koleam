@@ -72,7 +72,7 @@ async function AdminGetSingleAdmin(req, res) {
         const admin = await db.models.Admin.GetByUsername(req.session.admin.username)
         res.status(200).json(admin)
     } catch {
-        res.status(500).json({ error: `could not get admin ${username}` })
+        res.status(500).json({ error: `could not get admin` })
     }
 }
 

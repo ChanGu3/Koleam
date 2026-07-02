@@ -13,7 +13,11 @@ export function ShortenCountAsString(value) {
         return value
     }
 
-    return value > 999999 ? (value / 1000000).toFixed(1).toString() + "M" : value > 999 ? (value / 1000).toFixed(1).toString() + "K" : value.toString()
+    return value > 999999
+        ? (value / 1000000).toFixed(1).toString() + "M"
+        : value > 999
+          ? (value / 1000).toFixed(1).toString() + "K"
+          : value.toString()
 }
 
 const DocumentFunction = {

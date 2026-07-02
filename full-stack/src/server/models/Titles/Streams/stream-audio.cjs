@@ -192,14 +192,25 @@ class StreamAudio extends ModelExtension {
         }
     }
 
-    static async UpdateInDB(streamID, current_label, { mediaInputFilePath = null, streamIndex = 0 } = {}, { label } = {}, transaction = null, onProgress = (progress) => {}) {
+    static async UpdateInDB(
+        streamID,
+        current_label,
+        { mediaInputFilePath = null, streamIndex = 0 } = {},
+        { label } = {},
+        transaction = null,
+        onProgress = (progress) => {}
+    ) {
         try {
             const stream = await StreamAudio.#models.TitleInstallmentStream.GetByID(streamID, transaction)
 
             const streamAudioPre = await StreamAudio.GetByStreamIDAndLabel(streamID, current_label, transaction)
 
             if (!streamAudioPre.isDownloaded) {
-                reject(new Error(`cannot update ${StreamAudio.name} with streamID:${streamID} label:${current_label} because audio has not finished downloading yet`))
+                reject(
+                    new Error(
+                        `cannot update ${StreamAudio.name} with streamID:${streamID} label:${current_label} because audio has not finished downloading yet`
+                    )
+                )
             }
 
             const query = {}
@@ -254,7 +265,9 @@ class StreamAudio extends ModelExtension {
                         })
 
                         if (!streamAudio[0]) {
-                            throw new Error(`could not get ${StreamAudio.name} with streamID:${streamID} label:${label ? label : current_label}`)
+                            throw new Error(
+                                `could not get ${StreamAudio.name} with streamID:${streamID} label:${label ? label : current_label}`
+                            )
                         }
 
                         uploads_video

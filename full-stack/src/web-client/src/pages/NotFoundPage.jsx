@@ -19,7 +19,9 @@ function NotFoundPage() {
                     <div className="md:mb-4 flex flex-col justify-between">
                         <div className="py-4">
                             <p className="text-s-white font-bold text-center text-sm md:text-2xl select-none">404 Not Found</p>
-                            <p className="text-s-dark-secondary font-semibold text-center text-xs md:text-lg select-none">you are now lost...</p>
+                            <p className="text-s-dark-secondary font-semibold text-center text-xs md:text-lg select-none">
+                                you are now lost...
+                            </p>
                         </div>
                         <Link
                             className="w-full flex justify-center mb-2 md:mb-8"

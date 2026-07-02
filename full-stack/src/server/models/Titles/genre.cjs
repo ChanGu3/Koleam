@@ -148,7 +148,18 @@ class Genre extends ModelExtension {
                 if (list.length > 0) {
                     resolve(list)
                 } else {
-                    const genres = ["Action", "Adventure", "Comedy", "Drama", "Fantasy", "Romance", "Sports", "Sci-Fi", "Supernatural", "Thriller"]
+                    const genres = [
+                        "Action",
+                        "Adventure",
+                        "Comedy",
+                        "Drama",
+                        "Fantasy",
+                        "Romance",
+                        "Sports",
+                        "Sci-Fi",
+                        "Supernatural",
+                        "Thriller",
+                    ]
 
                     genres.forEach(async (value, index) => {
                         await this.AddToDB(value)

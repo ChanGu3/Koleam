@@ -8,12 +8,20 @@ export function validateUsername(username) {
     return usernameRegex.test(username)
 }
 
-export const validePasswordFailMsg = "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&), and must not contain spaces."
+export const validePasswordFailMsg =
+    "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&), and must not contain spaces."
 /**
  * @param {string} password
  */
 export function validatePassword(password) {
-    if (password.length < 8 || password.includes(" ") || !password.match(/[A-Z]/) || !password.match(/[a-z]/) || !password.match(/[0-9]/) || !password.match(/[@$!%*?&]/)) {
+    if (
+        password.length < 8 ||
+        password.includes(" ") ||
+        !password.match(/[A-Z]/) ||
+        !password.match(/[a-z]/) ||
+        !password.match(/[0-9]/) ||
+        !password.match(/[@$!%*?&]/)
+    ) {
         return false
     }
 

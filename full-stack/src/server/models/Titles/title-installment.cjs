@@ -93,7 +93,9 @@ class TitleInstallment extends ModelExtension {
                 await uploads.mkDir(dirName)
                 resolve(dirName)
             } catch (err) {
-                Logging.LogError(`${TitleInstallment.name} directory creation could not be resolved for id:${titleInstallment.id} --- ${err}`)
+                Logging.LogError(
+                    `${TitleInstallment.name} directory creation could not be resolved for id:${titleInstallment.id} --- ${err}`
+                )
                 reject({ error: err.message })
             }
         })
@@ -106,7 +108,9 @@ class TitleInstallment extends ModelExtension {
                 await uploads.recursiveDirDeleteInTitles(dirName)
                 resolve(dirName)
             } catch (err) {
-                Logging.LogError(`${TitleInstallment.name} directory removal could not be resolved for id:${titleInstallment.id} --- ${err}`)
+                Logging.LogError(
+                    `${TitleInstallment.name} directory removal could not be resolved for id:${titleInstallment.id} --- ${err}`
+                )
                 reject({ error: err.message })
             }
         })
@@ -145,7 +149,9 @@ class TitleInstallment extends ModelExtension {
                 const installment = await TitleInstallment.GetByID(id)
                 if (!(await uploads.doesTitlesPathExist(this.#TitleDirPath(installment)))) {
                     await this.#CreateDirectory(installment)
-                    Logging.LogWarning(`directory does not exist forced re-creation of directory for installment called ${installment.title}`)
+                    Logging.LogWarning(
+                        `directory does not exist forced re-creation of directory for installment called ${installment.title}`
+                    )
                 }
 
                 const updateValues = {}
@@ -175,7 +181,10 @@ class TitleInstallment extends ModelExtension {
 
                     if (installmentNumber > installmentToChangeOldNum) {
                         for (let i = installmentToChangeOldNum + 1; i <= installmentNumber; i++) {
-                            const nextInstallment = await TitleInstallment.GetAll({ titleID: installmentToChange.titleID, installmentNum: i }, transaction)
+                            const nextInstallment = await TitleInstallment.GetAll(
+                                { titleID: installmentToChange.titleID, installmentNum: i },
+                                transaction
+                            )
                             if (nextInstallment[0]) {
                                 const nextUpdateValues = { installmentNum: i - 1 }
                                 const nextQuery = {
@@ -189,7 +198,10 @@ class TitleInstallment extends ModelExtension {
                         }
                     } else if (installmentNumber < installmentToChangeOldNum) {
                         for (let i = installmentToChangeOldNum - 1; i >= installmentNumber; i--) {
-                            const nextInstallment = await TitleInstallment.GetAll({ titleID: installmentToChange.titleID, installmentNum: i })
+                            const nextInstallment = await TitleInstallment.GetAll({
+                                titleID: installmentToChange.titleID,
+                                installmentNum: i,
+                            })
                             if (nextInstallment[0]) {
                                 const nextUpdateValues = { installmentNum: i + 1 }
                                 const nextQuery = {
@@ -227,7 +239,11 @@ class TitleInstallment extends ModelExtension {
                         },
                     })
 
-                    for (let i = installment.installmentNum; i < (await TitleInstallment.count({ where: { titleID: installment.titleID } })); i++) {
+                    for (
+                        let i = installment.installmentNum;
+                        i < (await TitleInstallment.count({ where: { titleID: installment.titleID } }));
+                        i++
+                    ) {
                         const nextInstallment = await TitleInstallment.GetAll({ titleID: installment.titleID, installmentNum: i + 1 })
                         if (nextInstallment[0]) {
                             const updateValues = { installmentNum: i }
@@ -284,17 +300,28 @@ class TitleInstallment extends ModelExtension {
                                 required: false,
                                 attributes: {
                                     exclude: ["createdAt", "updatedAt"],
-                                    include: ["id", "installmentID", "titleID", "label", /* "streamNumber", */ "synopsis", "releaseDate"].concat(
+                                    include: [
+                                        "id",
+                                        "installmentID",
+                                        "titleID",
+                                        "label",
+                                        /* "streamNumber", */ "synopsis",
+                                        "releaseDate",
+                                    ].concat(
                                         TitleInstallment.#models.TitleInstallmentStream.GET_STREAMLIKES_INCLUDE(true),
                                         TitleInstallment.#models.TitleInstallmentStream.GET_WATCHHISTORY_INCLUDE(true),
-                                        TitleInstallment.#models.TitleInstallmentStream.GET_STREAM_ORDER_NUMBER_BY_REALEASE_DATE_INCLUDE(true)
+                                        TitleInstallment.#models.TitleInstallmentStream.GET_STREAM_ORDER_NUMBER_BY_REALEASE_DATE_INCLUDE(
+                                            true
+                                        )
                                     ),
                                 },
                                 order: [[literal("order_number_by_release_date"), "ASC"]],
                             },
                         ],
                         attributes: {
-                            include: ["id", "titleID", "label", "isSeason", "installmentNum"].concat(TitleInstallment.GET_STREAMS_INCLUDE(false)),
+                            include: ["id", "titleID", "label", "isSeason", "installmentNum"].concat(
+                                TitleInstallment.GET_STREAMS_INCLUDE(false)
+                            ),
                         },
                         group: [col("TitleInstallment.id")],
                     })

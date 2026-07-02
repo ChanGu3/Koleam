@@ -1,48 +1,54 @@
-import {AdminSignOut, MemberSignOut} from "../../services/auth/authentification.cjs";
+import { AdminSignOut, MemberSignOut } from "../../services/auth/authentification.cjs"
 import { Navigate } from "react-router-dom"
 
 function AdminSignOut() {
     const [navigatePoint, SetNavigatePoint] = useState(null)
 
-
     useEffect(async () => {
         const hasSignedOut = await AdminSignOut()
 
-        if(hasSignedOut) {
+        if (hasSignedOut) {
             SetNavigatePoint("/auth/signin")
-        }
-        else {
+        } else {
             SetNavigatePoint("/")
         }
     }, [])
 
     if (navigatePoint === null) {
-       return <div>Loading...</div> // TODO: Add Loading Spinner
+        return <div>Loading...</div> // TODO: Add Loading Spinner
     }
 
-    return <Navigate to={navigatePoint} replace />
+    return (
+        <Navigate
+            to={navigatePoint}
+            replace
+        />
+    )
 }
 
 function MemberSignOut() {
     const [navigatePoint, SetNavigatePoint] = useState(null)
 
-
     useEffect(async () => {
         const hasSignedOut = await MemberSignOut()
 
-        if(hasSignedOut) {
+        if (hasSignedOut) {
             SetNavigatePoint("/auth/signin")
-        }
-        else {
+        } else {
             SetNavigatePoint("/")
         }
     }, [])
 
     if (navigatePoint === null) {
-       return <div>Loading...</div> // TODO: Add Loading Spinner
+        return <div>Loading...</div> // TODO: Add Loading Spinner
     }
 
-    return <Navigate to={navigatePoint} replace />
+    return (
+        <Navigate
+            to={navigatePoint}
+            replace
+        />
+    )
 }
 
 module.exports = {

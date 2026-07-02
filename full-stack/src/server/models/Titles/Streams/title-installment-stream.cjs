@@ -149,7 +149,9 @@ class TitleInstallmentStream extends ModelExtension {
                 await uploads.mkDir(dirName)
                 resolve(dirName)
             } catch (err) {
-                Logging.LogError(`${TitleInstallmentStream.name} directory creation could not be resolved for title:${titleStream.title} --- ${err}`)
+                Logging.LogError(
+                    `${TitleInstallmentStream.name} directory creation could not be resolved for title:${titleStream.title} --- ${err}`
+                )
                 reject({ error: err.message })
             }
         })
@@ -163,7 +165,9 @@ class TitleInstallmentStream extends ModelExtension {
                 await uploads.rnDir(oldRelativePath, newRelativePath)
                 resolve(newRelativePath)
             } catch (err) {
-                Logging.LogError(`${TitleInstallmentStream.name} directory renaming could not be resolved for title:${oldTitleStream.title} --- ${err}`)
+                Logging.LogError(
+                    `${TitleInstallmentStream.name} directory renaming could not be resolved for title:${oldTitleStream.title} --- ${err}`
+                )
                 reject({ error: err.message })
             }
         })
@@ -176,7 +180,9 @@ class TitleInstallmentStream extends ModelExtension {
                 await uploads.recursiveDirDeleteInTitles(dirName)
                 resolve(dirName)
             } catch (err) {
-                Logging.LogError(`${TitleInstallmentStream.name} directory removal could not be resolved for title:${titleStream.title} --- ${err}`)
+                Logging.LogError(
+                    `${TitleInstallmentStream.name} directory removal could not be resolved for title:${titleStream.title} --- ${err}`
+                )
                 reject({ error: err.message })
             }
         })
@@ -233,7 +239,14 @@ class TitleInstallmentStream extends ModelExtension {
                     }
                 }
 
-                await uploads_video.writeMasterPlaylist(videoStreams, audioStreams, subtitleStreams, titleStream.titleID, titleStream.installmentID, titleStream.label)
+                await uploads_video.writeMasterPlaylist(
+                    videoStreams,
+                    audioStreams,
+                    subtitleStreams,
+                    titleStream.titleID,
+                    titleStream.installmentID,
+                    titleStream.label
+                )
 
                 resolve()
             } catch (err) {

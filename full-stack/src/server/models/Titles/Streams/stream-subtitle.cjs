@@ -108,7 +108,10 @@ class StreamSubtitle extends ModelExtension {
 
     static #OnRenderCycle(progress, streamSubtitle) {
         const streamSubtitleData = streamSubtitle.toJSON()
-        events.emit(StreamSubtitle.GetSubtitleUpdateProgressEventName(streamSubtitle.streamID, streamSubtitle.label, streamSubtitle.isCC), { progress, streamSubtitleData })
+        events.emit(StreamSubtitle.GetSubtitleUpdateProgressEventName(streamSubtitle.streamID, streamSubtitle.label, streamSubtitle.isCC), {
+            progress,
+            streamSubtitleData,
+        })
     }
 
     static async #OnRenderCycleComplete(streamSubtitle) {
@@ -120,7 +123,13 @@ class StreamSubtitle extends ModelExtension {
         })
     }
 
-    static async AddToDB(mediaInputFilePath, streamIndex, { streamID, label, isCC } = {}, transaction = null, onProgress = (progress) => {}) {
+    static async AddToDB(
+        mediaInputFilePath,
+        streamIndex,
+        { streamID, label, isCC } = {},
+        transaction = null,
+        onProgress = (progress) => {}
+    ) {
         try {
             const stream = await StreamSubtitle.#models.TitleInstallmentStream.GetByID(streamID, transaction)
 
@@ -193,7 +202,11 @@ class StreamSubtitle extends ModelExtension {
             const streamSubtitlePre = await StreamSubtitle.GetByStreamIDAndLabelAndIsCC(streamID, current_label, current_CC, transaction)
 
             if (!streamSubtitlePre.isDownloaded) {
-                reject(new Error(`cannot update ${StreamSubtitle.name} with streamID:${streamID} label:${current_label} because subtitle has not finished downloading yet`))
+                reject(
+                    new Error(
+                        `cannot update ${StreamSubtitle.name} with streamID:${streamID} label:${current_label} because subtitle has not finished downloading yet`
+                    )
+                )
             }
 
             const query = {}
@@ -218,7 +231,14 @@ class StreamSubtitle extends ModelExtension {
                 await StreamSubtitle.update({ ...update_values }, query)
                 update_values = {}
                 if (label) {
-                    await uploads_video.renameSubtitle(stream.titleID, stream.installmentID, stream.label, current_label, label, streamSubtitlePre.codec_name)
+                    await uploads_video.renameSubtitle(
+                        stream.titleID,
+                        stream.installmentID,
+                        stream.label,
+                        current_label,
+                        label,
+                        streamSubtitlePre.codec_name
+                    )
                 }
                 // when using a transaction it is assumed master file is not written to automatically.
                 if (!transaction) {
@@ -246,11 +266,21 @@ class StreamSubtitle extends ModelExtension {
                         update_values.isDownloaded = false
 
                         const subData = await StreamSubtitle.GetByStreamIDAndLabelAndIsCC(streamID, current_label, current_CC, transaction)
-                        await uploads_video.deleteSubtitle(stream.titleID, stream.installmentID, stream.label, subData.label, subData.codec_name)
+                        await uploads_video.deleteSubtitle(
+                            stream.titleID,
+                            stream.installmentID,
+                            stream.label,
+                            subData.label,
+                            subData.codec_name
+                        )
 
                         await StreamSubtitle.update(update_values, query)
                         const streamSubtitle = await StreamSubtitle.findAll({
-                            where: { streamID: streamID, label: label ? label : current_label, isCC: isCC !== undefined && isCC !== null ? isCC : current_CC },
+                            where: {
+                                streamID: streamID,
+                                label: label ? label : current_label,
+                                isCC: isCC !== undefined && isCC !== null ? isCC : current_CC,
+                            },
                             transaction: transaction,
                         })
 
@@ -352,7 +382,9 @@ class StreamSubtitle extends ModelExtension {
                     reject(new Error(`could not get ${StreamSubtitle.name} with id:${streamID}, label ${label}, isCC:${isCC}`))
                 }
             } catch (err) {
-                Logging.LogError(`could not get ${StreamSubtitle.name} with id:${streamID}, label:${label}, isCC:${isCC} --- ${err.message}`)
+                Logging.LogError(
+                    `could not get ${StreamSubtitle.name} with id:${streamID}, label:${label}, isCC:${isCC} --- ${err.message}`
+                )
                 reject(new Error(errormsg.fallback))
             }
         })

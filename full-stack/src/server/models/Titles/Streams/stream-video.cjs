@@ -118,7 +118,10 @@ class StreamVideo extends ModelExtension {
     static async #OnRenderCycleComplete(streamVideo) {
         streamVideo.isDownloaded = true
         await streamVideo.save()
-        events.emit(StreamVideo.GetVideoUpdateProgressEventName(streamVideo.streamID), { progress: { percent: 100, percentAllRes: 100 }, streamVideoData: streamVideo.toJSON() })
+        events.emit(StreamVideo.GetVideoUpdateProgressEventName(streamVideo.streamID), {
+            progress: { percent: 100, percentAllRes: 100 },
+            streamVideoData: streamVideo.toJSON(),
+        })
     }
 
     // TODO: in the future for writing media to disk maybe just get the details before writing the video oh well for now this is something id need to do for each media extension model
@@ -188,7 +191,9 @@ class StreamVideo extends ModelExtension {
             const streamVideoPre = await StreamVideo.GetByStreamID(streamID, transaction)
 
             if (!streamVideoPre.isDownloaded) {
-                reject(new Error(`cannot update ${StreamVideo.name} with streamID:${streamID} because video has not finished downloading yet`))
+                reject(
+                    new Error(`cannot update ${StreamVideo.name} with streamID:${streamID} because video has not finished downloading yet`)
+                )
             }
 
             uploads_video

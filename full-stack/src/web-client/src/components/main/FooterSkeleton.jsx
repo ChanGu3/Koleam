@@ -125,7 +125,9 @@ function FooterSkeleton() {
                     </div>
                     <div className="p-2 w-full flex flex-col items-center">
                         <div className="w-[95%] border-t-1 border-s-white">
-                            <p className="p-1 mt-2 font-semibold text-xs md:text-md text-o-white">&copy; koleam CHANGE THIS TO BE POPULATED BY .env</p>
+                            <p className="p-1 mt-2 font-semibold text-xs md:text-md text-o-white">
+                                &copy; koleam CHANGE THIS TO BE POPULATED BY .env
+                            </p>
                         </div>
                     </div>
                 </div>

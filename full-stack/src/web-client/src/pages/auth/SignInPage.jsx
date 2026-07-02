@@ -85,7 +85,9 @@ function SignInPage() {
                 <div className="flex flex-col justify-center items-center space-y-6 w-65 md:w-100">
                     <div className="flex flex-col items-center space-y-1 w-full">
                         <p className="text-s-white font-semibold text-xl">Sign In</p>
-                        <p className="md:w-[55%] text-center text-s-white font-thin text-sm">Enter Your credentials to access your account!</p>
+                        <p className="md:w-[55%] text-center text-s-white font-thin text-sm">
+                            Enter Your credentials to access your account!
+                        </p>
                     </div>
 
                     {/* Sign In Form */}

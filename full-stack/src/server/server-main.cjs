@@ -12,7 +12,9 @@ async function StartServer() {
         const defaultCreated = await env.CreateDefaultEnvFile(false)
 
         if (defaultCreated) {
-            return Logging.LogDev("please restart the server! the env file has been created and the server needs to be restarted to load the new environment variables")
+            return Logging.LogDev(
+                "please restart the server! the env file has been created and the server needs to be restarted to load the new environment variables"
+            )
         }
     }
 

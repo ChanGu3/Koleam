@@ -2,7 +2,13 @@ const path = require("path")
 const { uploads } = require("./server-uploads.cjs")
 
 async function writeVideo(video_id, inputPath, titleID, installmentID, streamTitle, onProgress, onComplete) {
-    return await uploads.media.generateAllResFromCap(video_id, inputPath, path.join(titleID, installmentID, streamTitle), onProgress, onComplete)
+    return await uploads.media.generateAllResFromCap(
+        video_id,
+        inputPath,
+        path.join(titleID, installmentID, streamTitle),
+        onProgress,
+        onComplete
+    )
 }
 
 async function deleteVideo(video_id, titleID, installmentID, streamTitle) {
@@ -25,7 +31,15 @@ async function getFileVideoDetails(inputPath) {
 }
 
 async function writeAudio(audio_id, inputPath, titleID, installmentID, streamTitle, audioName, streamIndex, onProgress, onComplete) {
-    return await uploads.media.generateAudio(audio_id, inputPath, path.join(titleID, installmentID, streamTitle), streamIndex, audioName, onProgress, onComplete)
+    return await uploads.media.generateAudio(
+        audio_id,
+        inputPath,
+        path.join(titleID, installmentID, streamTitle),
+        streamIndex,
+        audioName,
+        onProgress,
+        onComplete
+    )
 }
 
 async function deleteAudio(audio_id, titleID, installmentID, streamTitle, audioName) {
@@ -52,7 +66,15 @@ async function getFileAudioDetails(inputPath, streamIndex) {
 }
 
 async function writeSubtitle(subtitle_id, inputPath, titleID, installmentID, streamTitle, subName, streamIndex, onProgress, onComplete) {
-    return await uploads.media.generateSubtitle(subtitle_id, inputPath, path.join(titleID, installmentID, streamTitle), streamIndex, subName, onProgress, onComplete)
+    return await uploads.media.generateSubtitle(
+        subtitle_id,
+        inputPath,
+        path.join(titleID, installmentID, streamTitle),
+        streamIndex,
+        subName,
+        onProgress,
+        onComplete
+    )
 }
 
 async function deleteSubtitle(subtitle_id, titleID, installmentID, streamTitle, subName, codecName) {

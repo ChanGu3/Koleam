@@ -1,5 +1,5 @@
-const bcrypt = require("bcrypt");
-const { Logging } = require("../../server-logging.cjs");
+const bcrypt = require("bcrypt")
+const { Logging } = require("../../server-logging.cjs")
 const saltRounds = 12
 
 function HashPassword(password, saltRounds) {

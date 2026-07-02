@@ -52,7 +52,9 @@ function Search() {
                         className=""
                         queryKey={["DISCOVER", "SEARCH", newSearchQuery]}
                         queryFn={async ({ pageParam = 0 }) => await FetchTitleBySearchQuery(newSearchQuery, searchGetLimit, pageParam)}
-                        getNextPageParam={(lastPage, allPages) => (lastPage && lastPage.length === searchGetLimit ? allPages.length * searchGetLimit : undefined)}
+                        getNextPageParam={(lastPage, allPages) =>
+                            lastPage && lastPage.length === searchGetLimit ? allPages.length * searchGetLimit : undefined
+                        }
                         pxCutoffHeight={128}
                         ItemRenderer={({ index, dataItem }) => {
                             return (

@@ -1,4 +1,4 @@
-name: Code Quality Check Main
+name: Web/Server Code Quality Verification in Main
 run-name: ${{ github.ref_name }} Pull Request ran by ${{ github.actor }}
 env:
   BUILD_PATH: ${{ vars.SRC_PATH }}
@@ -6,10 +6,10 @@ env:
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-  check-quality:
+  code-quality-web-server:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,12 +19,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '${{ env.NODE_V }}'
+          node-version: "${{ env.NODE_V }}"
 
       - name: Install dependencies
         run: npm install
         working-directory: ./${{ env.BUILD_PATH }}
-        
+
       - name: Linter run [Logic Errors Verification]
         run: npm run lint:all
         working-directory: ./${{ env.BUILD_PATH }}

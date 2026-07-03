@@ -19,7 +19,7 @@
         "prettier-format:all": "prettier . --write",
         "clean-build:all": "run-s clean-build:server clean-build:client",
         "build:all": "run-s clean-build:all build:server build:client",
-        "build-start": "run-s build-start:install build-start:dist"
+        "start-build": "run-s build-start:install build-start:dist"
     },
     "repository": {
         "type": "git",

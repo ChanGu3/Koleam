@@ -1,0 +1,37 @@
+name: Code Quality Check Main
+run-name: ${{ github.ref_name }} Pull Request ran by ${{ github.actor }}
+env:
+  BUILD_PATH: ${{ vars.SRC_PATH }}
+  NODE_V: ${{ vars.NODE_VERSION }}
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  check-quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '${{ env.NODE_V }}'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Linter run [Logic Errors Verification]
+        run: npm run lint:all
+        working-directory: ./${{ env.BUILD_PATH }}
+
+      - name: Prettier run [Formal Format Verification]
+        run: npm run prettier-verify:all
+        working-directory: ./${{ env.BUILD_PATH }}
+
+      - name: Build "web app and server" [Build Verification]
+        run: npm run build:all
+        working-directory: ./${{ env.BUILD_PATH }}

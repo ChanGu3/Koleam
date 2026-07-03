@@ -1,3 +1,4 @@
 # Builds For Running In Production
-.dist/*
+!dist/README.md
 
+.dist/*

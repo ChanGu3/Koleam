@@ -23,6 +23,7 @@ async function copAndCleanPackageJsonForProduction() {
     delete pkgData.scripts.build
     delete pkgData.scripts.clean
     delete pkgData.scripts.start
+    delete pkgData.scripts.lint
     pkgData.scripts.start = "node server-main.cjs"
 
     await fs.writeFile(pkgBuildPath, JSON.stringify(pkgData, null, 2))

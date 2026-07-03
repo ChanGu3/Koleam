@@ -2,7 +2,7 @@ name: Create Release on Main using Tag
 run-name: ${{ github.ref_name }} Release ran by ${{ github.actor }}
 env:
   BUILD_PATH: ${{ vars.SRC_PATH }}
-  DIST_PATH: ${{ vars.DIST_PATH }}
+  DIST_PATH: ${{ vars.FULLSTACK_DIST_PATH }}
   RELEASES_PATH: ${{ vars.RELEASES_PATH }}
   CURRENT_DATE: UND
 

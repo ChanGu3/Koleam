@@ -2,6 +2,7 @@ name: Create Release on Main using Tag
 run-name: ${{ github.ref_name }} Release ran by ${{ github.actor }}
 env:
   BUILD_PATH: ${{ vars.SRC_PATH }}
+  DIST_PATH: ${{ vars.DIST_PATH }}
   RELEASES_PATH: ${{ vars.RELEASES_PATH }}
   CURRENT_DATE: UND
 
@@ -51,7 +52,7 @@ jobs:
         run: |
           rm -rf ./$RELEASES_PATH
           mkdir -p ./$RELEASES_PATH
-          zip -r ./$RELEASES_PATH/${{ github.ref_name }}d${{ env.CURRENT_DATE }}.zip ./$BUILD_PATH
+          zip -r ./$RELEASES_PATH/koleam-${{ github.ref_name }}d${{ env.CURRENT_DATE }}.zip ./$DIST_PATH
 
       - name: create release
         uses: softprops/action-gh-release@v3

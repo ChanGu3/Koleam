@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useCallback, useRef } from "react"
 import { FileQuestionMark } from "lucide-react"
 import ImageUI from "../ImageUI.jsx"
 import { Link } from "react-router-dom"
@@ -31,7 +31,9 @@ function CarouselItem({ index, item, currCarouselIndex, prevCarouselIndex }) {
         >
             <div className="z-50 absolute left-14 sm:left-18 md:left-28 bottom-24 bg-s-dark-tertiary/40 rounded-sm p-1 w-48 md:w-lg flex flex-col justify-start">
                 <p className="md:p-1 text-s-white font-bold text-lf md:text-4xl">{item.logoImage}</p>
-                <p className="p-0.5 md:p-2 text-s-white/95 font-semibold text-[6px] md:text-xs h-7.5 md:h-18 line-clamp-3 md:line-clamp-4">{item.description}</p>
+                <p className="p-0.5 md:p-2 text-s-white/95 font-semibold text-[6px] md:text-xs h-7.5 md:h-18 line-clamp-3 md:line-clamp-4">
+                    {item.description}
+                </p>
             </div>
             <div className="absolute flex justify-center w-full h-full -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 z-30 mask-[linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)]">
                 <div className="absolute w-full h-full object-cover object-top self-center">

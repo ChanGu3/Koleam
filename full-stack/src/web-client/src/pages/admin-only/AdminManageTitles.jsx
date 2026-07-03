@@ -2,7 +2,7 @@
 // BECOMING MORE DOWNGRAFED IN QUALITY BECAUSE IM GETTING TIRED AND COULDNT CARE LESS TO DO IT UNLESS IM MOTIVATED TO DO SO YEP
 import { useQueryClient } from "@tanstack/react-query"
 import { GridLoader } from "react-spinners"
-import { useState, useEffect, useRef, useId, useMemo } from "react"
+import { useState, useEffect, useRef, useId, useMemo, useCallback } from "react"
 import { HorizontalScrollable, WindowVerticalQueryScrollable } from "../../components/Scrollable.jsx"
 import { FetchTitleBySearchQuery } from "../../services/Titles/FetchTitle.js"
 import ImageUI from "../../components/ImageUI.jsx"
@@ -59,8 +59,6 @@ import {
     useAddSubtitleRender,
     useUpdateSubtitleRender,
     useDeleteSubtitleRender,
-    useStreamAudioRenderInfo,
-    useStreamSubtitleRenderInfo,
     useStreamVideoRenderInfo,
     invalidateAddingStreamQueries,
 } from "../../hooks/useStream.jsx"
@@ -115,8 +113,10 @@ function AdminManageTitles() {
                         className="w-full"
                         queryKey={["TITLE", "ADMINISTRATION", "SEARCH", newSearchQuery]}
                         queryFn={async ({ pageParam = 0 }) => await FetchTitleBySearchQuery(newSearchQuery, searchGetLimit, pageParam)}
-                        getNextPageParam={(lastPage, allPages) => (lastPage && lastPage.length === searchGetLimit ? allPages.length * searchGetLimit : undefined)}
-                        ItemRenderer={({ index, dataItem }) => {
+                        getNextPageParam={(lastPage, allPages) =>
+                            lastPage && lastPage.length === searchGetLimit ? allPages.length * searchGetLimit : undefined
+                        }
+                        ItemRenderer={({ index: _i, dataItem }) => {
                             return (
                                 <TitleSlot
                                     key={dataItem.id}
@@ -188,14 +188,19 @@ function AdminManageTitles() {
     )
 }
 
-function TitleSlot({ titleData: { id, label, seasons_count, stream_episodes_count, stream_movies_count, ...rest }, onEdit = (titleData) => {} }) {
+function TitleSlot({
+    titleData: { id, label, seasons_count, stream_episodes_count, stream_movies_count, ...rest },
+    onEdit = (_titleData) => {},
+}) {
     const { data: coverVersion } = useGetTitleCoverVersion(id)
     const navigate = useNavigate()
 
     const sharedClassName = "rounded-xl"
 
     return (
-        <div className={`${sharedClassName} w-full h-36 md:h-56 relative outline-2 outline-s-tertiary/75 overflow-hidden select-none shadow-lg shadow-black`}>
+        <div
+            className={`${sharedClassName} w-full h-36 md:h-56 relative outline-2 outline-s-tertiary/75 overflow-hidden select-none shadow-lg shadow-black`}
+        >
             <div className={`w-full h-full bg-black/80 relative`}>
                 <ImageUI
                     className={`${sharedClassName} absolute inset w-fit h-fit mask-[linear-gradient(159deg,transparent,rgba(0,0,0,0.3)_25%,black_50%,black_50%,rgba(0,0,0,0.3)_75%,transparent)]`}
@@ -439,7 +444,16 @@ function TitleForm({
     )
 }
 
-function InstallmentInfoForm({ formLabel = "Edit Installment", isLoading = null, onClick = () => {}, label, setLabel, installmentType, setInstallmentType, resetOnClick = false }) {
+function InstallmentInfoForm({
+    formLabel = "Edit Installment",
+    isLoading = null,
+    onClick = () => {},
+    label,
+    setLabel,
+    installmentType,
+    setInstallmentType,
+    resetOnClick = false,
+}) {
     return (
         <div className="flex flex-col gap-2 bg-s-white/20 p-2">
             <p className="flex items-center justify-center text-s-white font-bold text-sm">{formLabel}</p>
@@ -475,18 +489,18 @@ function InstallmentInfoForm({ formLabel = "Edit Installment", isLoading = null,
 function InstallmentForm({
     installments = [],
     formLabel = "Edit Installments",
-    onEditInstallmentOrder = (item, index, newIndex) => true, // true if the installment order is successfully updated, false if not
+    onEditInstallmentOrder = (_item, _index, _newIndex) => true, // true if the installment order is successfully updated, false if not
     isLoadingEditInstallmentOrder = null,
-    onAddInstallment = ({ label, isSeason }) => {},
+    onAddInstallment = ({ _label, _isSeason }) => {},
     isLoadingAddInstallment = null,
-    onEditInstallment = ({ installmentID, label, isSeason }) => {},
+    onEditInstallment = ({ _installmentID, _label, _isSeason }) => {},
     isLoadingEditInstallment = null,
-    onDeleteInstallment = async ({ item }) => true,
+    onDeleteInstallment = async ({ _item }) => true,
     isLoadingDeleteInstallment = null,
-    onDeleteStream = async ({ item }) => {},
+    onDeleteStream = async ({ _item }) => {},
     isLoadingDeleteStream = null,
-    onEditStream = (item, installment) => {},
-    onAddStream = (installment) => {},
+    onEditStream = (_item, _installment) => {},
+    onAddStream = (_installment) => {},
 }) {
     const { PopupComponent } = usePopup()
     const [isDeleteInstallmentConfirmationOpen, setIsDeleteInstallmentConfirmationOpen] = useState(false)
@@ -513,7 +527,9 @@ function InstallmentForm({
 
     // editing installment
     const [selectedInstallmentLabel, setSelectedInstallmentLabel] = useState((selectedInstallment && selectedInstallment.label) || "")
-    const [selectedInstallmentType, setSelectedInstallmentType] = useState(selectedInstallment ? (selectedInstallment.isSeason ? "Season" : "Movie") : "")
+    const [selectedInstallmentType, setSelectedInstallmentType] = useState(
+        selectedInstallment ? (selectedInstallment.isSeason ? "Season" : "Movie") : ""
+    )
 
     // adding installment
     const [newInstallmentLabel, setNewInstallmentLabel] = useState("")
@@ -536,8 +552,12 @@ function InstallmentForm({
                                         <p className="flex flex-row gap-1 w-full h-full text-xs md:text-sm text-s-white justify-between items-center select-none">
                                             <span className="font-bold">{item.label}</span>
                                             <span className="flex flex-row gap-1 text-[10px] font-thin">
-                                                <span className="bg-gray-50/20 p-1 w-12 truncate text-center ">{item.isSeason ? "Season" : "Movie"}</span>
-                                                <span className="bg-gray-50/20 p-1 w-14 truncate text-center hidden lg:flex">Streams: {item.streams_count}</span>
+                                                <span className="bg-gray-50/20 p-1 w-12 truncate text-center ">
+                                                    {item.isSeason ? "Season" : "Movie"}
+                                                </span>
+                                                <span className="bg-gray-50/20 p-1 w-14 truncate text-center hidden lg:flex">
+                                                    Streams: {item.streams_count}
+                                                </span>
                                             </span>
                                         </p>
                                     )
@@ -643,8 +663,8 @@ function InstallmentForm({
                         label={
                             <span>
                                 Are you sure you want to delete this installment{" "}
-                                <span className="font-bold text-s-primary text-lg truncate">{currenInstallmentForDeletion.label}</span>? This will remove all data including streams
-                                and cannot be undone.
+                                <span className="font-bold text-s-primary text-lg truncate">{currenInstallmentForDeletion.label}</span>?
+                                This will remove all data including streams and cannot be undone.
                             </span>
                         }
                         leftButton={{
@@ -681,8 +701,9 @@ function InstallmentForm({
                     <ConfirmationPopup
                         label={
                             <span>
-                                Are you sure you want to delete this stream <span className="font-bold text-s-primary text-lg truncate">{currentStreamForDeletion.label}</span>?
-                                This will remove all data for this stream are you sure?
+                                Are you sure you want to delete this stream{" "}
+                                <span className="font-bold text-s-primary text-lg truncate">{currentStreamForDeletion.label}</span>? This
+                                will remove all data for this stream are you sure?
                             </span>
                         }
                         leftButton={{
@@ -709,7 +730,7 @@ function InstallmentForm({
     )
 }
 
-function InstallmentStreamItem({ item, onEdit = (item) => {}, onDelete = (item) => {} }) {
+function InstallmentStreamItem({ item, onEdit = (_item) => {}, onDelete = (_item) => {} }) {
     const { data: coverVersion } = useGetThumbnailCoverVersion(item.id)
 
     return (
@@ -883,7 +904,7 @@ function MediaContainer({ children, label }) {
     )
 }
 
-function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }, file, fileType, onClose = () => {} }) {
+function UploadMediaForm({ streamID, existingMedia: { video, audios: _a, subtitles: _s }, file, fileType, onClose = () => {} }) {
     const { addError } = useEventError()
     const queryClient = useQueryClient()
     const uploadID = useId()
@@ -908,7 +929,7 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
         }
     }, [file, fileType])
 
-    function CancelUpload() {
+    const CancelUpload = useCallback(() => {
         tempFileUpload.current &&
             tempFileUpload.current
                 .CancelUpload()
@@ -918,7 +939,7 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
                 .catch((err) => {
                     addError(`${err.message}`, 1)
                 })
-    }
+    }, [addError])
 
     const tempFileUpload = useRef(null)
     const isInitialized = useRef(false)
@@ -947,7 +968,17 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
 
                 const array8 = await fetchFile(file)
                 await ffmpeg.writeFile(filename, array8)
-                await ffmpeg.ffprobe(["-v", "error", "-show_format", "-show_streams", "-print_format", "json", filename, "-o", tempJSONFilename])
+                await ffmpeg.ffprobe([
+                    "-v",
+                    "error",
+                    "-show_format",
+                    "-show_streams",
+                    "-print_format",
+                    "json",
+                    filename,
+                    "-o",
+                    tempJSONFilename,
+                ])
 
                 const fileData = await ffmpeg.readFile(tempJSONFilename)
                 const jsonString = new TextDecoder().decode(fileData)
@@ -957,7 +988,7 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
                     await ffmpeg.deleteFile(filename)
                     await ffmpeg.deleteFile(tempJSONFilename)
                 } catch (err) {
-                    // already deleted
+                    console.warn("Error deleting temp files from ffmpeg (possibly already deleted)", err)
                 }
 
                 if (!probeData || !probeData.streams || probeData.streams.length <= 0) {
@@ -969,13 +1000,20 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
                 let tempSubtitleMedia = []
 
                 probeData.streams.forEach((stream, index) => {
-                    const label = stream.tags && (stream.tags.title ? stream.tags.title : stream.tags.language ? stream.tags.language : `${stream.codec_type} ${index + 1}`)
+                    const label =
+                        stream.tags &&
+                        (stream.tags.title
+                            ? stream.tags.title
+                            : stream.tags.language
+                              ? stream.tags.language
+                              : `${stream.codec_type} ${index + 1}`)
                     if (!tempVideoMedia && stream.codec_type === "video") {
                         tempVideoMedia = { videoIndex: 0 }
                     } else if (stream.codec_type === "audio") {
                         tempAudioMedia.push({ audioIndex: tempAudioMedia.length, label: label, probeIndex: index })
                     } else if (stream.codec_type === "subtitle") {
-                        let isCC = stream.disposition && (stream.disposition["captions"] === 1 || stream.disposition["hearing_impaired"] === 1)
+                        let isCC =
+                            stream.disposition && (stream.disposition["captions"] === 1 || stream.disposition["hearing_impaired"] === 1)
                         const title = stream.tags && stream.tags.title ? stream.tags.title.toLowerCase() : ""
                         isCC = isCC || title.includes("sdh") || title.includes("cc") || title.includes("closed caption")
                         tempSubtitleMedia.push({ subtitleIndex: tempSubtitleMedia.length, label: label, isCC: isCC, probeIndex: index })
@@ -1018,28 +1056,34 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
             setMediaFailure(true)
         })
 
+        const ffmpegTemp = ffmpegRef.current
         return () => {
             setMediaFailure(false)
 
             if (tempFileUpload.current) {
                 try {
                     tempFileUpload.current.CancelUpload({ force: false })
-                } catch (e) {}
+                } catch (e) {
+                    console.error("Error cancelling upload on unmount", e)
+                }
                 tempFileUpload.current = null
             }
 
-            const ffmpeg = ffmpegRef.current
-            if (ffmpeg.loaded) {
+            const ffmpeg = ffmpegTemp
+            if (ffmpeg && ffmpeg.loaded) {
                 ffmpeg.terminate()
             }
         }
-    }, [])
+    }, [CancelUpload, addError, file, uploadID])
 
     function isAllInfoFilled() {
         let isAllFilled = true
         if (subtitleMedia) {
             subtitleMedia.forEach((item, index) => {
-                if (selectedSubtitleMedia[index] && (item.label === null || item.label === undefined || item.label === "" || !item.isCC === undefined || item.isCC === null)) {
+                if (
+                    selectedSubtitleMedia[index] &&
+                    (item.label === null || item.label === undefined || item.label === "" || item.isCC === undefined || item.isCC === null)
+                ) {
                     isAllFilled = false
                 }
             })
@@ -1111,7 +1155,9 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
                             label: item.label,
                             tempFileID: tempFileUpload.current.LastUploadData.id,
                         })
-                    } catch (err) {}
+                    } catch (err) {
+                        console.error(err)
+                    }
                 }
             }
         }
@@ -1126,7 +1172,9 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
                             label: item.label,
                             tempFileID: tempFileUpload.current.LastUploadData.id,
                         })
-                    } catch (err) {}
+                    } catch (err) {
+                        console.error(err)
+                    }
                 }
             }
         }
@@ -1138,7 +1186,9 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
                 } else {
                     await addVideoRender({ streamID: streamID, tempFileID: tempFileUpload.current.LastUploadData.id })
                 }
-            } catch (err) {}
+            } catch (err) {
+                console.error(err)
+            }
         }
 
         const audiosToInvalidate = audioMedia ? audioMedia.filter((_, index) => selectedAudioMedia[index]) : []
@@ -1163,9 +1213,9 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
                         {isLoadingMediaFile && !mediaFailure ? (
                             <>
                                 <p className="flex flex-col gap-1 text-center text-s-error md:w-[55lvw]">
-                                    <span className="font-bold">ATTENTION!</span> The media file is currently uploading to the server you must wait until the file has been
-                                    completely uploaded. This warning will disapear once the upload has finished, then you can submit the media you would like to add to this
-                                    stream!
+                                    <span className="font-bold">ATTENTION!</span> The media file is currently uploading to the server you
+                                    must wait until the file has been completely uploaded. This warning will disapear once the upload has
+                                    finished, then you can submit the media you would like to add to this stream!
                                 </p>
                                 <div className="flex flex-col p-8 gap-4">
                                     <DefaultSpinner
@@ -1178,7 +1228,9 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
                                 </div>
                             </>
                         ) : (
-                            <div className={`flex flex-col items-center justify-center gap-4 py-8 rounded-lg ${mediaFailure ? "bg-s-error/15" : "bg-s-success/15"}`}>
+                            <div
+                                className={`flex flex-col items-center justify-center gap-4 py-8 rounded-lg ${mediaFailure ? "bg-s-error/15" : "bg-s-success/15"}`}
+                            >
                                 {mediaFailure ? (
                                     <CircleX
                                         className="text-s-white"
@@ -1201,8 +1253,8 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
                     {!mediaFailure && (
                         <div className="flex flex-col items-center justify-center gap-4 w-full ">
                             <p className={`text-center md:w-[45lvw] text-sm text-s-white px-4 py-1`}>
-                                You may unselect the stream media down below if you don't want to upload it with the others. Some streams may not be auto populated as you want it.
-                                so You may want to modify the attributes while you wait!
+                                You may unselect the stream media down below if you don't want to upload it with the others. Some streams
+                                may not be auto populated as you want it. so You may want to modify the attributes while you wait!
                             </p>
                             {/* VIDEO */}
                             <MediaContainer label="Video Stream Media">
@@ -1306,15 +1358,18 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
                             </MediaContainer>
 
                             <div className="flex flex-row gap-4 items-center justify-center w-full">
-                                {!isPendingAddVideoRender && !isPendingAddAudioRender && !isPendingAddSubtitleRender && !isPendingUpdateVideoRender && (
-                                    <TitleButton
-                                        label={"Cancel Media Upload"}
-                                        onClick={() => {
-                                            CancelUpload()
-                                            onClose()
-                                        }}
-                                    />
-                                )}
+                                {!isPendingAddVideoRender &&
+                                    !isPendingAddAudioRender &&
+                                    !isPendingAddSubtitleRender &&
+                                    !isPendingUpdateVideoRender && (
+                                        <TitleButton
+                                            label={"Cancel Media Upload"}
+                                            onClick={() => {
+                                                CancelUpload()
+                                                onClose()
+                                            }}
+                                        />
+                                    )}
 
                                 {!isLoadingMediaFile && (
                                     <TitleButton
@@ -1322,7 +1377,12 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
                                         onClick={async () => {
                                             await SubmitMedia()
                                         }}
-                                        isLoading={isPendingAddVideoRender || isPendingAddAudioRender || isPendingAddSubtitleRender || isPendingUpdateVideoRender}
+                                        isLoading={
+                                            isPendingAddVideoRender ||
+                                            isPendingAddAudioRender ||
+                                            isPendingAddSubtitleRender ||
+                                            isPendingUpdateVideoRender
+                                        }
                                     />
                                 )}
                             </div>
@@ -1335,8 +1395,10 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
 }
 
 function StreamFormPlusSubtitle({ subtitle, onEdit = () => {}, onDelete = () => {} }) {
-    const [subtitleProgress, setSubtitleProgress] = useState(null)
+    const subtitleProgress = null
     /*
+    const [subtitleProgress, setSubtitleProgress] = useState(null)
+
     Removed To Save Performance 
     const eventSource = useStreamSubtitleRenderInfo(
         subtitle.streamID,
@@ -1399,8 +1461,10 @@ function StreamFormPlusSubtitle({ subtitle, onEdit = () => {}, onDelete = () => 
 }
 
 function StreamFormPlusAudio({ audio, onEdit = () => {}, onDelete = () => {} }) {
-    const [audioProgress, setAudioProgress] = useState(null)
+    const audioProgress = null
     /*
+    const [audioProgress, setAudioProgress] = useState(null)
+
         Removed To Save Performance 
     const eventSource = useStreamAudioRenderInfo(
         audio.streamID,
@@ -1460,7 +1524,7 @@ function StreamFormPlusAudio({ audio, onEdit = () => {}, onDelete = () => {} }) 
 
 function StreamFormPlusVideo({ video, onDelete = () => {} }) {
     const [videoProgress, setVideoProgress] = useState(null)
-    const eventSource = useStreamVideoRenderInfo(
+    useStreamVideoRenderInfo(
         video?.streamID,
         () => {
             setVideoProgress(0)
@@ -1801,7 +1865,8 @@ function StreamFormPlus({
                     <ConfirmationPopup
                         label={
                             <span>
-                                Are you sure you want to delete subtitle<span className="text-s-primary font-bold">{` ${deleteSubtitleData.label} `}</span>for this stream? This
+                                Are you sure you want to delete subtitle
+                                <span className="text-s-primary font-bold">{` ${deleteSubtitleData.label} `}</span>for this stream? This
                                 action cannot be undone.
                             </span>
                         }
@@ -1809,7 +1874,11 @@ function StreamFormPlus({
                         rightButton={{
                             label: "Delete",
                             onClick: async () => {
-                                await deleteSubtitleRender({ streamID: streamData.id, label: deleteSubtitleData.label, isCC: deleteSubtitleData.isCC })
+                                await deleteSubtitleRender({
+                                    streamID: streamData.id,
+                                    label: deleteSubtitleData.label,
+                                    isCC: deleteSubtitleData.isCC,
+                                })
                                 setOpenDeleteSubtitlePopup(false)
                             },
                             isLoading: isPendingDeleteAudioRender,
@@ -1828,7 +1897,8 @@ function StreamFormPlus({
                     <ConfirmationPopup
                         label={
                             <span>
-                                Are you sure you want to delete audio<span className="text-s-primary font-bold">{` ${deleteAudioData.label} `}</span>for this stream? This action
+                                Are you sure you want to delete audio
+                                <span className="text-s-primary font-bold">{` ${deleteAudioData.label} `}</span>for this stream? This action
                                 cannot be undone.
                             </span>
                         }
@@ -1918,7 +1988,11 @@ function StreamFormPlus({
                 >
                     <UploadMediaForm
                         streamID={streamData.id}
-                        existingMedia={{ video: streamData?.StreamVideo, audios: streamData?.StreamAudios, subtitles: streamData?.StreamSubtitles }}
+                        existingMedia={{
+                            video: streamData?.StreamVideo,
+                            audios: streamData?.StreamAudios,
+                            subtitles: streamData?.StreamSubtitles,
+                        }}
                         file={currentMediaFile}
                         fileType={fileType}
                         onClose={() => {
@@ -1933,7 +2007,7 @@ function StreamFormPlus({
     )
 }
 
-function AddTitlePopup({ isOpen, onClose = (isSuccess) => {} }) {
+function AddTitlePopup({ isOpen, onClose = (_isSuccess) => {} }) {
     const [selectedCoverFile, setSelectedCoverFile] = useState(null)
     const [selectedTitleName, setSelectedTitleName] = useState("")
     const [selectedOriginalTranslation, setSelectedOriginalTranslation] = useState("")
@@ -2035,12 +2109,12 @@ function EditTitlePopup({ isOpen, onClose, titleData }) {
 
     // TITLE ONLY FORM
     const [selectedCoverFile, setSelectedCoverFile] = useState(null)
-    const [selectedTitleName, setSelectedTitleName] = useState(titleData.label)
-    const [selectedOriginalTranslation, setSelectedOriginalTranslation] = useState(titleData.originalTranslation || [])
-    const [selectedFilmAgeMinimum, setSelectedFilmAgeMinimum] = useState(titleData.filmAgeMin || [])
-    const [selectedFilmSuitability, setSelectedFilmSuitability] = useState(titleData.filmSuitability || [])
-    const [selectedDescription, setSelectedDescription] = useState(titleData.description || [])
-    const [selectedCopyright, setSelectedCopyright] = useState(titleData.copyright || [])
+    const [selectedTitleName, setSelectedTitleName] = useState(titleData.label || null)
+    const [selectedOriginalTranslation, setSelectedOriginalTranslation] = useState(titleData.originalTranslation || null)
+    const [selectedFilmAgeMinimum, setSelectedFilmAgeMinimum] = useState(titleData.filmAgeMin || null)
+    const [selectedFilmSuitability, setSelectedFilmSuitability] = useState(titleData.filmSuitability || null)
+    const [selectedDescription, setSelectedDescription] = useState(titleData.description || null)
+    const [selectedCopyright, setSelectedCopyright] = useState(titleData.copyright || null)
     const [selectedContentAdvisories, setSelectedContentAdvisories] = useState(titleData.all_content_advisories || [])
     const [selectedOtherTranslations, setSelectedOtherTranslations] = useState(titleData.all_other_translations || [])
     const [selectedGenres, setSelectedGenres] = useState(titleData.all_genres || [])
@@ -2094,7 +2168,11 @@ function EditTitlePopup({ isOpen, onClose, titleData }) {
             filmAgeMin: titleData.filmAgeMin !== selectedFilmAgeMinimum ? selectedFilmAgeMinimum : null,
             listData: {
                 add: { genres: genreData.add, otherTranslations: otherTranslationData.add, contentAdvisories: contentAdvisoryData.add },
-                delete: { genres: genreData.delete, otherTranslations: otherTranslationData.delete, contentAdvisories: contentAdvisoryData.delete },
+                delete: {
+                    genres: genreData.delete,
+                    otherTranslations: otherTranslationData.delete,
+                    contentAdvisories: contentAdvisoryData.delete,
+                },
             },
             titleCover: selectedCoverFile,
         })
@@ -2102,7 +2180,7 @@ function EditTitlePopup({ isOpen, onClose, titleData }) {
     // TITLE ONLY FORM END
 
     // ** INSTALLMENT FORM
-    const { data: installments, error: isErrorTitleInstallments, isLoading: isLoadingTitleInstallments } = useGetIntallmentsByTitleID(titleData.id)
+    const { data: installments } = useGetIntallmentsByTitleID(titleData.id)
     const { mutate: addInstallment, isPending: isPendingAddInstallment } = useAddInstallment({
         onError: (error) => {
             addError(error.message, 1)
@@ -2310,7 +2388,12 @@ function EditTitlePopup({ isOpen, onClose, titleData }) {
                     <ConfirmationPopup
                         label={"Are you sure you want to delete this title?"}
                         leftButton={{ label: "Cancel", onClick: () => setIsConfirmationOpen(false) }}
-                        rightButton={{ label: "Delete", onClick: () => onDeleteTitle(), isLoading: isPendingDeleteTitle, isImportant: true }}
+                        rightButton={{
+                            label: "Delete",
+                            onClick: () => onDeleteTitle(),
+                            isLoading: isPendingDeleteTitle,
+                            isImportant: true,
+                        }}
                     />
                 </PopupComponent>
             )}
@@ -2320,10 +2403,10 @@ function EditTitlePopup({ isOpen, onClose, titleData }) {
                     onClose={() => {
                         setCurrentEditStream(null)
                         setIsEditStreamOpen(false)
-                        setStreamName(null)
-                        setSynopsis(null)
-                        setReleaseDate(null)
-                        setStreamThumbnail(null)
+                        setEditStreamName(null)
+                        setEditSynopsis(null)
+                        setEditReleaseDate(null)
+                        setEditStreamThumbnail(null)
                     }}
                     isOpen={isEditStreamOpen}
                 >
@@ -2347,6 +2430,12 @@ function EditTitlePopup({ isOpen, onClose, titleData }) {
                                 releaseDate: editReleaseDate,
                                 streamThumbnail: editStreamThumbnail,
                             })
+                            const newEditStream = installments
+                                .find((el) => el.id === addOrEditInstallmentID)
+                                .TitleInstallmentStreams.find((el) => el.id === currentEditStream.id)
+                            if (newEditStream) {
+                                setCurrentEditStream(newEditStream)
+                            }
                         }}
                         currentEditStream={currentEditStream}
                     />
@@ -2387,7 +2476,15 @@ function EditTitlePopup({ isOpen, onClose, titleData }) {
     )
 }
 
-function TitleMiscForm({ selectedGenres, setSelectedGenres, unselectedGenres, setUnselectedGenres, submitLabel = "Submit Changes", onSubmit = () => {}, isLoadingSubmit = null }) {
+function TitleMiscForm({
+    selectedGenres,
+    setSelectedGenres,
+    unselectedGenres,
+    setUnselectedGenres,
+    submitLabel = "Submit Changes",
+    onSubmit = () => {},
+    isLoadingSubmit = null,
+}) {
     return (
         <div className="flex flex-col w-full h-full gap-6">
             <PopupTabTitle
@@ -2525,7 +2622,9 @@ function TitleSwitchFormsButton({ Icon, label, onClick, className = "", isLoadin
 
 function PopupTabTitle({ className = "", label }) {
     return (
-        <PopupTab className={`${className} items-center justify-center py-3 bg-s-tertiary inset-shadow-s-dark-tertiary outline-s-dark-tertiary`}>
+        <PopupTab
+            className={`${className} items-center justify-center py-3 bg-s-tertiary inset-shadow-s-dark-tertiary outline-s-dark-tertiary`}
+        >
             <p className="font-bold text-s-white text-center text-2xl text-shadow-xs text-shadow-black">{label}</p>
         </PopupTab>
     )
@@ -2533,7 +2632,9 @@ function PopupTabTitle({ className = "", label }) {
 
 function PopupTab({ className = "", children, label = null }) {
     return (
-        <div className={`${className} bg-s-dark-tertiary inset-shadow-xs inset-shadow-s-white flex flex-col outline-2 outline-s-white rounded-xs p-3`}>
+        <div
+            className={`${className} bg-s-dark-tertiary inset-shadow-xs inset-shadow-s-white flex flex-col outline-2 outline-s-white rounded-xs p-3`}
+        >
             {label && <p className="w-full text-center font-semibold text-s-white bg-s-primary/50 px-2 py-1 rounded-xs">{label}</p>}
             {children}
         </div>
@@ -2542,13 +2643,13 @@ function PopupTab({ className = "", children, label = null }) {
 
 // TODO: NEED TO MOVE THE INPUTS INTO THEIR OWN FILE OR FOLDER IDC RIGHT NOW SO CLOSE TO BEING FINISHED
 
-function InputImageFile({ className = "", originalImageUrl = null, onFileChange = (file) => {}, required = false }) {
+function InputImageFile({ className = "", originalImageUrl = null, onFileChange = (_file) => {}, required = false }) {
     const [selectedFile, setSelectedFile] = useState(null)
     const inputRef = useRef(null)
 
     return (
         <div
-            onClick={(e) => {
+            onClick={() => {
                 inputRef.current.click()
             }}
             className={`${className} flex flex-col gap-2 md:gap-3 items-center justify-center w-full h-full relative`}
@@ -2595,7 +2696,7 @@ function InputImageFile({ className = "", originalImageUrl = null, onFileChange 
     )
 }
 
-function InputMediaFile({ className = "", onClick = (e) => {}, onFileChange = (file) => {} }) {
+function InputMediaFile({ onClick = (_e) => {}, onFileChange = (_file) => {} }) {
     const inputRef = useRef(null)
 
     return (
@@ -2632,7 +2733,16 @@ function InputMediaFile({ className = "", onClick = (e) => {}, onFileChange = (f
     )
 }
 
-function InputText({ className = "", value, onChange, placeholder = "", required = false, numberOnly = false, numberOnlyMin = null, numberOnlyMax = null }) {
+function InputText({
+    className = "",
+    value,
+    onChange,
+    placeholder = "",
+    required = false,
+    numberOnly = false,
+    numberOnlyMin = null,
+    numberOnlyMax = null,
+}) {
     return (
         <div className={`${className} flex flex-col gap-1 w-full relative`}>
             <p className="text-s-white text-xs md:text-sm font-medium">{placeholder}</p>
@@ -2684,7 +2794,17 @@ function InputDatePicker({ className = "", value, onChange, placeholder = "", re
     )
 }
 
-function InputSelect({ className = "", value, onChange, placeholder = "", required = false, allowSelfInput = false, options = [], children, onEnter = (e) => {} }) {
+function InputSelect({
+    className = "",
+    value,
+    onChange,
+    placeholder = "",
+    required = false,
+    allowSelfInput = false,
+    options = [],
+    children,
+    onEnter = (_e) => {},
+}) {
     const datalistId = useId()
 
     return (
@@ -2762,19 +2882,19 @@ function InputSelectMulti({
     setOptions,
     currentSelectedOptions,
     setCurrentSelectedOptions,
-    onError = ({ message }) => {},
-    onClickCurrentSelectedOption = (option, index) => {},
+    onError = ({ message: _m }) => {},
+    onClickCurrentSelectedOption = (_option, _index) => {},
 }) {
     const [value, SetValue] = useState("")
 
     useEffect(() => {
         setOptions((prev) => prev.sort())
-    }, [options])
+    }, [options, setOptions])
 
     useEffect(() => {
         setOptions((prev) => prev.filter((option) => !currentSelectedOptions.includes(option)))
         setCurrentSelectedOptions((prev) => prev.sort())
-    }, [currentSelectedOptions])
+    }, [currentSelectedOptions, setCurrentSelectedOptions, setOptions])
 
     function OnChange(newValue) {
         if (!allowSelfInput) {
@@ -2816,7 +2936,7 @@ function InputSelectMulti({
             allowSelfInput={allowSelfInput}
             options={options}
             onChange={OnChange}
-            onEnter={(e) => {
+            onEnter={() => {
                 onSelectOption(value)
             }}
         >
@@ -2865,7 +2985,7 @@ function InputSelectMulti({
     )
 }
 
-function InputBox({ isChecked, setIsChecked, children, required = false, className = "" }) {
+function InputBox({ isChecked, setIsChecked, children, className = "" }) {
     return (
         <div className={`${className} w-fit flex flex-col md:flex-row items-center justify-between gap-2 p-2 cursor-pointer`}>
             <button onClick={() => setIsChecked(!isChecked)}>
@@ -2894,9 +3014,9 @@ function OrderedList({
     ItemElement,
     items,
     isSelectable = false,
-    onReleaseItem = async (item, index, newIndex) => true, // successful release of item, return false to reset the what you see list back to original
-    onSelectedItem = (item) => {},
-    onRemoveItem = async (item, index) => true,
+    onReleaseItem = async (_item, _index, _newIndex) => true, // successful release of item, return false to reset the what you see list back to original
+    onSelectedItem = (_item) => {},
+    onRemoveItem = async (_item, _index) => true,
     isLoading = null,
 }) {
     const [whatTheySeeItems, setWhatTheySeeItems] = useState(items)
@@ -2910,7 +3030,7 @@ function OrderedList({
         if (currentlySelectedItem) {
             onSelectedItem(currentlySelectedItem)
         }
-    }, [currentlySelectedItem])
+    }, [currentlySelectedItem, onSelectedItem])
 
     const grabbedIndexRef = useRef(null)
     const [currentGrabbedItem, setCurrentGrabbedItem] = useState(null)
@@ -3006,7 +3126,7 @@ function OrderedList({
                         onEnter={(index) => {
                             OnEnterItem(index)
                         }}
-                        onClick={(item, index) => {
+                        onClick={(item, _index) => {
                             if (isSelectable) {
                                 setCurrentlySelectedItem(item)
                             }
@@ -3041,15 +3161,15 @@ function OrderedListItem({
     ItemElement,
     item,
     index,
-    onClick = (item, index) => {},
-    onRemove = (item, index) => {},
+    onClick = (_item, _index) => {},
+    onRemove = (_item, _index) => {},
     isRemoving = false,
     onMoveUp = () => {},
     onMoveDown = () => {},
-    onGrab = (item, index) => {},
-    onRelease = (item, index) => {},
+    onGrab = (_item, _index) => {},
+    onRelease = (_item, _index) => {},
     useArrows = true,
-    onEnter = (index) => {},
+    onEnter = (_index) => {},
     isClickDisabled = false,
 }) {
     const elementRef = useRef(null)
@@ -3061,6 +3181,8 @@ function OrderedListItem({
     const prevUnderElement = useRef(null)
 
     useEffect(() => {
+        const elementRefLocal = elementRef.current
+
         function handleExit() {
             if (isInside) {
                 setIsInside(false)
@@ -3072,8 +3194,8 @@ function OrderedListItem({
         }
 
         return () => {
-            if (elementRef.current) {
-                elementRef.current.removeEventListener("CUSTOM-TOUCHEXIT", handleExit)
+            if (elementRefLocal) {
+                elementRefLocal.removeEventListener("CUSTOM-TOUCHEXIT", handleExit)
             }
         }
     }, [isInside])
@@ -3116,10 +3238,10 @@ function OrderedListItem({
 
     // ON ENTER FOR TOUCH SCREEN END
 
-    function ElementRepositionMouse(e) {
+    const ElementRepositionMouse = useCallback((e) => {
         elementRef.current.style.left = `${e.clientX - 25}px`
         elementRef.current.style.top = `${e.clientY}px`
-    }
+    }, [])
 
     function ElementRepositionTouch(e) {
         const touch = e.touches[0]
@@ -3147,6 +3269,15 @@ function OrderedListItem({
         }
     }, [])
 
+    const OnRelease = useCallback(
+        (e) => {
+            e.preventDefault()
+            setIsGrabbed(false)
+            onRelease(item, index)
+        },
+        [item, index, onRelease]
+    )
+
     useEffect(() => {
         function handleMouseMove(e) {
             ElementRepositionMouse(e)
@@ -3169,7 +3300,7 @@ function OrderedListItem({
             document.removeEventListener("mouseup", OnRelease)
             document.removeEventListener("touchend", OnRelease)
         }
-    }, [isGrabbed, ElementRepositionMouse])
+    }, [isGrabbed, ElementRepositionMouse, OnRelease])
 
     function OnMouseGrab(e) {
         e.preventDefault()
@@ -3185,20 +3316,14 @@ function OrderedListItem({
         onGrab(item, index)
     }
 
-    function OnRelease(e) {
-        e.preventDefault()
-        setIsGrabbed(false)
-        onRelease(item, index)
-    }
-
     return (
         <>
             <div
                 onTouchMove={handleTouchMove}
-                onClick={(e) => {
+                onClick={() => {
                     onClick(item, index)
                 }}
-                onMouseEnter={(e) => {
+                onMouseEnter={() => {
                     onEnter(index)
                 }}
                 ref={elementRef}

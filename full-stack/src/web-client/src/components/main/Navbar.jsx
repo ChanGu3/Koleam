@@ -1,13 +1,13 @@
 import "../../tailwind.css"
 import { useEffect, useState, useRef } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 import useUIConfig from "../../hooks/useUIConfig.jsx"
 import { Search, CircleUser, CircleQuestionMark, Settings } from "lucide-react"
 import useMember from "../../hooks/useMember.jsx"
 import useAdmin from "../../hooks/useAdmin.jsx"
 import { GetAllGenres } from "../../services/Titles/FetchGenre.js"
 import NavbarDropdownTab from "./NavbarComponents/NavbarDropdownTab.jsx"
-import { CircleArrowRight, Bolt, BookHeart, Cloud, ShieldUser } from "lucide-react"
+import { CircleArrowRight, Cloud, ShieldUser } from "lucide-react"
 import NavbarTab from "./NavbarComponents/NavbarTab.jsx"
 import { VerticalQueryScrollable, VerticalScrollable } from "../Scrollable.jsx"
 import { ACCESS_TYPE } from "../../../dev/constants.js"
@@ -86,7 +86,9 @@ function Navbar({ SignOut = () => {} }) {
                                 <VerticalQueryScrollable
                                     queryKey={["navbar", "discover", "genres"]}
                                     queryFn={async ({ pageParam = 0 }) => await GetAllGenres(8, pageParam)}
-                                    getNextPageParam={(lastPage, allPages) => (lastPage && lastPage.length === 8 ? allPages.length * 8 : undefined)}
+                                    getNextPageParam={(lastPage, allPages) =>
+                                        lastPage && lastPage.length === 8 ? allPages.length * 8 : undefined
+                                    }
                                     pxCutoffHeight={128}
                                     pxCutoffWidth={null}
                                     ItemRenderer={({ index, dataItem }) => {
@@ -107,13 +109,14 @@ function Navbar({ SignOut = () => {} }) {
                                 id="other"
                                 className="flex flex-col justify-start w-full px-2"
                             >
-                                <a className="text-s-white font-semibold text-xs pt-1">Other</a> {/* hover:underline href="/discover/other" */}
+                                <a className="text-s-white font-semibold text-xs pt-1">Other</a>{" "}
+                                {/* hover:underline href="/discover/other" */}
                                 <div className="border-s-white border-b-2 h-2 w-full rounded-xs"></div>
                                 <VerticalScrollable
                                     itemCount={1}
                                     pxCutoffHeight={40}
                                     pxCutoffWidth={null}
-                                    ItemRenderer={({ index }) => {
+                                    ItemRenderer={({ _index }) => {
                                         return (
                                             <Category
                                                 categoryName="Browse [A-Z]"

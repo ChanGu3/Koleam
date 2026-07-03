@@ -1,4 +1,4 @@
-function HomeSignOutLocalPage({}) {
+function HomeSignOutLocalPage() {
     return (
         <div className="w-full h-screen flex flex-col items-center justify-center gap-y-4">
             <p className="text-s-white text-2xl font-bold">You are signed out</p>

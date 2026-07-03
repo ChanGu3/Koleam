@@ -46,11 +46,13 @@ export async function FetchSavedColorTheme() {
 
         const serverColors = data.COLORS.LIGHT_MODE
         for (const key in serverColors) {
-            if (serverColors.hasOwnProperty(key)) {
+            if (Object.prototype.hasOwnProperty.call(serverColors, key)) {
                 COLORS[key] = serverColors[key]
             }
         }
-    } catch (err) {}
+    } catch (err) {
+        console.error(`Error fetching color theme: ${err.message}`)
+    }
 
     return COLORS
 }
@@ -71,7 +73,7 @@ export async function FetchSavedWebsiteName() {
         }
 
         return data.WEBSITE_NAME
-    } catch (err) {
+    } catch {
         return "Koleam" // Default website name if fetch fails
     }
 }
@@ -100,7 +102,7 @@ export async function FetchSavedCurrentAccessType() {
         } else if (data.PUBLIC_PORT) {
             return ACCESS_TYPE.PUBLIC
         }
-    } catch (err) {
+    } catch {
         return "ACCESS_TYPE_UNKNOWN"
     }
 }

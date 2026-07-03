@@ -98,7 +98,7 @@ async function Setup() {
         }
         await Admin.DefaultSetup()
     } catch (err) {
-        //throw new Error(err.message);
+        Logging.LogError(`${err.message}`)
     }
 }
 

@@ -1,5 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { FetchIntallmentsByTitleID, FetchIntallmentByID, DeleteInstallmentByID, AddInstallment, UpdateInstallment } from "../services/Titles/FetchInstallment"
+import {
+    FetchIntallmentsByTitleID,
+    FetchIntallmentByID,
+    DeleteInstallmentByID,
+    AddInstallment,
+    UpdateInstallment,
+} from "../services/Titles/FetchInstallment"
 
 export function useGetIntallmentByID(installmentID) {
     return useQuery({

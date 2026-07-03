@@ -36,7 +36,9 @@ export function EventErrorCTX({ children }) {
                     <div
                         ref={scrollRef}
                         style={{ zIndex: 100000000, width: 256, height: 48 * 2 }}
-                        className={"fixed top-18 left-2 overflow-y-auto flex flex-col gap-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"}
+                        className={
+                            "fixed top-18 left-2 overflow-y-auto flex flex-col gap-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                        }
                     >
                         {errors.map((error) => (
                             <EventErrorUI

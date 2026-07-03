@@ -18,13 +18,25 @@ async function TestUsingMKV(models, animeCloudsSeason1ep1) {
 
     // await models.StreamVideo.RemoveFromDB(animeCloudsSeason1ep1.id)
 
-    await models.StreamAudio.AddToDB("./dev/media/test5.mkv", 0, { streamID: animeCloudsSeason1ep1.id, label: "Real Audio" }, null, (progress) => {
-        Logging.LogDev(`Loading Test Audio: ${progress.percent}%`)
-    })
+    await models.StreamAudio.AddToDB(
+        "./dev/media/test5.mkv",
+        0,
+        { streamID: animeCloudsSeason1ep1.id, label: "Real Audio" },
+        null,
+        (progress) => {
+            Logging.LogDev(`Loading Test Audio: ${progress.percent}%`)
+        }
+    )
 
-    await models.StreamAudio.AddToDB("./dev/media/test5.mkv", 1, { streamID: animeCloudsSeason1ep1.id, label: "Commentary" }, null, (progress) => {
-        Logging.LogDev(`Loading Test Audio: ${progress.percent}%`)
-    })
+    await models.StreamAudio.AddToDB(
+        "./dev/media/test5.mkv",
+        1,
+        { streamID: animeCloudsSeason1ep1.id, label: "Commentary" },
+        null,
+        (progress) => {
+            Logging.LogDev(`Loading Test Audio: ${progress.percent}%`)
+        }
+    )
 
     // UpdateInDB(streamID, current_label, mediaInputFilePath = null, streamIndex , { label } = {}, transaction = null, onProgress = (progress) => {})
 
@@ -43,9 +55,15 @@ async function TestUsingMKV(models, animeCloudsSeason1ep1) {
 
     // await models.StreamAudio.RemoveFromDB(animeCloudsSeason1ep1.id, "BING BONG")
 
-    await models.StreamSubtitle.AddToDB("./dev/media/test5.mkv", 0, { streamID: animeCloudsSeason1ep1.id, label: "NOT SURE", isCC: false }, null, (progress) => {
-        Logging.LogDev(`Loading Test Subtitle: ${progress.percent}%`)
-    })
+    await models.StreamSubtitle.AddToDB(
+        "./dev/media/test5.mkv",
+        0,
+        { streamID: animeCloudsSeason1ep1.id, label: "NOT SURE", isCC: false },
+        null,
+        (progress) => {
+            Logging.LogDev(`Loading Test Subtitle: ${progress.percent}%`)
+        }
+    )
 
     /*
         await models.StreamSubtitle.UpdateInDB(
@@ -60,26 +78,50 @@ async function TestUsingMKV(models, animeCloudsSeason1ep1) {
         )
 */
 
-    await models.StreamSubtitle.AddToDB("./dev/media/test5.mkv", 1, { streamID: animeCloudsSeason1ep1.id, label: "IDK", isCC: false }, null, (progress) => {
-        Logging.LogDev(`Loading Test Subtitle: ${progress.percent}%`)
-    })
+    await models.StreamSubtitle.AddToDB(
+        "./dev/media/test5.mkv",
+        1,
+        { streamID: animeCloudsSeason1ep1.id, label: "IDK", isCC: false },
+        null,
+        (progress) => {
+            Logging.LogDev(`Loading Test Subtitle: ${progress.percent}%`)
+        }
+    )
 
     // await models.StreamSubtitle.RemoveFromDB(animeCloudsSeason1ep1.id, "IDK")
 
-    await models.StreamSubtitle.AddToDB("./dev/media/test5.mkv", 2, { streamID: animeCloudsSeason1ep1.id, label: "HELLO", isCC: true }, null, (progress) => {
-        Logging.LogDev(`Loading Test Subtitle: ${progress.percent}%`)
-    })
+    await models.StreamSubtitle.AddToDB(
+        "./dev/media/test5.mkv",
+        2,
+        { streamID: animeCloudsSeason1ep1.id, label: "HELLO", isCC: true },
+        null,
+        (progress) => {
+            Logging.LogDev(`Loading Test Subtitle: ${progress.percent}%`)
+        }
+    )
 
-    await models.StreamSubtitle.AddToDB("./dev/media/basic-dialogue.ass", 0, { streamID: animeCloudsSeason1ep1.id, label: "ASS", isCC: false }, null, (progress) => {
-        Logging.LogDev(`Loading Test Subtitle ASS: ${progress.timemark}%`)
-    })
+    await models.StreamSubtitle.AddToDB(
+        "./dev/media/basic-dialogue.ass",
+        0,
+        { streamID: animeCloudsSeason1ep1.id, label: "ASS", isCC: false },
+        null,
+        (progress) => {
+            Logging.LogDev(`Loading Test Subtitle ASS: ${progress.timemark}%`)
+        }
+    )
 
-    await models.StreamAudio.AddToDB("./dev/media/audio_test.wav", 0, { streamID: animeCloudsSeason1ep1.id, label: "WAV" }, null, (progress) => {
-        Logging.LogDev(`Loading Test Audio WAV: ${progress.percent}%`)
-    })
+    await models.StreamAudio.AddToDB(
+        "./dev/media/audio_test.wav",
+        0,
+        { streamID: animeCloudsSeason1ep1.id, label: "WAV" },
+        null,
+        (progress) => {
+            Logging.LogDev(`Loading Test Audio WAV: ${progress.percent}%`)
+        }
+    )
 }
 
-async function DevSetup({ sequelize, models }) {
+async function DevSetup({ sequelize: _s, models }) {
     try {
         // Force sync all models to create tables
         await models.Member.sync({ force: true })
@@ -101,21 +143,21 @@ async function DevSetup({ sequelize, models }) {
         await models.StreamAudio.sync({ force: true })
 
         const testMember = await models.Member.AddToDB("test@gmail.com", "Password*0")
-        const test1Member = await models.Member.AddToDB("test1@gmail.com", "Password*0")
-        const test2Member = await models.Member.AddToDB("test2@gmail.com", "Password*0")
-        const test3Member = await models.Member.AddToDB("test3@gmail.com", "Password*0")
-        const test4Member = await models.Member.AddToDB("test4@gmail.com", "Password*0")
-        const test5Member = await models.Member.AddToDB("test5@gmail.com", "Password*0")
-        const test6Member = await models.Member.AddToDB("test6@gmail.com", "Password*0")
-        const test7Member = await models.Member.AddToDB("test7@gmail.com", "Password*0")
-        const test8Member = await models.Member.AddToDB("test8@gmail.com", "Password*0")
-        const test9Member = await models.Member.AddToDB("test9@gmail.com", "Password*0")
-        const test10Member = await models.Member.AddToDB("test10@gmail.com", "Password*0")
-        const test11Member = await models.Member.AddToDB("test11@gmail.com", "Password*0")
-        const test12Member = await models.Member.AddToDB("test12@gmail.com", "Password*0")
+        await models.Member.AddToDB("test1@gmail.com", "Password*0")
+        await models.Member.AddToDB("test2@gmail.com", "Password*0")
+        await models.Member.AddToDB("test3@gmail.com", "Password*0")
+        await models.Member.AddToDB("test4@gmail.com", "Password*0")
+        await models.Member.AddToDB("test5@gmail.com", "Password*0")
+        await models.Member.AddToDB("test6@gmail.com", "Password*0")
+        await models.Member.AddToDB("test7@gmail.com", "Password*0")
+        await models.Member.AddToDB("test8@gmail.com", "Password*0")
+        await models.Member.AddToDB("test9@gmail.com", "Password*0")
+        await models.Member.AddToDB("test10@gmail.com", "Password*0")
+        await models.Member.AddToDB("test11@gmail.com", "Password*0")
+        await models.Member.AddToDB("test12@gmail.com", "Password*0")
 
         // GENRE SETUP
-        const genres = await models.Genre.DefaultSetup()
+        await models.Genre.DefaultSetup()
 
         // CLEAN AN SETUP DEFAULT Titles
         await uploadsDev.clearEntireTitlesFolder()
@@ -131,11 +173,21 @@ async function DevSetup({ sequelize, models }) {
         models.TitleContentAdvisory.AddToDB(animeClouds.id, "Alcohol Use")
 
         await uploadsDev.copyImageFileToTitlePath("clouds.jpg", `${animeClouds.id}/${uploads.COVER_FILENAME}`)
-        const animeCloudsGenre1 = await models.TitleGenre.AddToDB(animeClouds.id, "Action")
+        await models.TitleGenre.AddToDB(animeClouds.id, "Action")
 
         const animeCloudsSeason1 = await models.TitleInstallment.AddToDB(animeClouds.id, "Season 1", true, 1)
-        const animeCloudsSeason1ep1 = await models.TitleInstallmentStream.AddToDB(animeClouds.id, animeCloudsSeason1.id, "The New Cloud 1", 1, lorem, new Date(1990, 0, 1, 0, 0, 0))
-        await uploadsDev.copyImageFileToTitlePath("cloudsep1.jpg", `${animeClouds.id}/${animeCloudsSeason1.id}/${animeCloudsSeason1ep1.label}/${uploads.THUMBNAIL_FILENAME}`)
+        const animeCloudsSeason1ep1 = await models.TitleInstallmentStream.AddToDB(
+            animeClouds.id,
+            animeCloudsSeason1.id,
+            "The New Cloud 1",
+            1,
+            lorem,
+            new Date(1990, 0, 1, 0, 0, 0)
+        )
+        await uploadsDev.copyImageFileToTitlePath(
+            "cloudsep1.jpg",
+            `${animeClouds.id}/${animeCloudsSeason1.id}/${animeCloudsSeason1ep1.label}/${uploads.THUMBNAIL_FILENAME}`
+        )
 
         /*
         await models.StreamVideo.AddToDB("./dev/media/raw_test.mp4", { streamID: animeCloudsSeason1ep1.id }, null, (progress) => {
@@ -148,8 +200,18 @@ async function DevSetup({ sequelize, models }) {
 */
         TestUsingMKV(models, animeCloudsSeason1ep1)
 
-        const animeCloudsSeason1ep2 = await models.TitleInstallmentStream.AddToDB(animeClouds.id, animeCloudsSeason1.id, "The New Cloud 2", 2, lorem, new Date(1990, 0, 7, 0, 0, 0))
-        await uploadsDev.copyImageFileToTitlePath("cloudsep2.jpg", `${animeClouds.id}/${animeCloudsSeason1.id}/${animeCloudsSeason1ep2.label}/${uploads.THUMBNAIL_FILENAME}`)
+        const animeCloudsSeason1ep2 = await models.TitleInstallmentStream.AddToDB(
+            animeClouds.id,
+            animeCloudsSeason1.id,
+            "The New Cloud 2",
+            2,
+            lorem,
+            new Date(1990, 0, 7, 0, 0, 0)
+        )
+        await uploadsDev.copyImageFileToTitlePath(
+            "cloudsep2.jpg",
+            `${animeClouds.id}/${animeCloudsSeason1.id}/${animeCloudsSeason1ep2.label}/${uploads.THUMBNAIL_FILENAME}`
+        )
 
         const animeCloudsSeason1ep3 = await models.TitleInstallmentStream.AddToDB(
             animeClouds.id,
@@ -159,7 +221,10 @@ async function DevSetup({ sequelize, models }) {
             lorem,
             new Date(1990, 0, 14, 0, 0, 0)
         )
-        await uploadsDev.copyImageFileToTitlePath("cloudsep3.jpg", `${animeClouds.id}/${animeCloudsSeason1.id}/${animeCloudsSeason1ep3.label}/${uploads.THUMBNAIL_FILENAME}`)
+        await uploadsDev.copyImageFileToTitlePath(
+            "cloudsep3.jpg",
+            `${animeClouds.id}/${animeCloudsSeason1.id}/${animeCloudsSeason1ep3.label}/${uploads.THUMBNAIL_FILENAME}`
+        )
 
         const animeCloudsSeason1ep4 = await models.TitleInstallmentStream.AddToDB(
             animeClouds.id,
@@ -169,7 +234,10 @@ async function DevSetup({ sequelize, models }) {
             lorem,
             new Date(1990, 0, 21, 0, 0, 0)
         )
-        await uploadsDev.copyImageFileToTitlePath("cloudsep4.jpg", `${animeClouds.id}/${animeCloudsSeason1.id}/${animeCloudsSeason1ep4.label}/${uploads.THUMBNAIL_FILENAME}`)
+        await uploadsDev.copyImageFileToTitlePath(
+            "cloudsep4.jpg",
+            `${animeClouds.id}/${animeCloudsSeason1.id}/${animeCloudsSeason1ep4.label}/${uploads.THUMBNAIL_FILENAME}`
+        )
 
         const animeCloudsSeason1ep5 = await models.TitleInstallmentStream.AddToDB(
             animeClouds.id,
@@ -179,10 +247,23 @@ async function DevSetup({ sequelize, models }) {
             lorem,
             new Date(1990, 0, 28, 0, 0, 0)
         )
-        await uploadsDev.copyImageFileToTitlePath("cloudsep5.jpg", `${animeClouds.id}/${animeCloudsSeason1.id}/${animeCloudsSeason1ep5.label}/${uploads.THUMBNAIL_FILENAME}`)
+        await uploadsDev.copyImageFileToTitlePath(
+            "cloudsep5.jpg",
+            `${animeClouds.id}/${animeCloudsSeason1.id}/${animeCloudsSeason1ep5.label}/${uploads.THUMBNAIL_FILENAME}`
+        )
 
-        const animeCloudsSeason1ep6 = await models.TitleInstallmentStream.AddToDB(animeClouds.id, animeCloudsSeason1.id, "The New Cloud 6", 6, lorem, new Date(1990, 1, 7, 0, 0, 0))
-        await uploadsDev.copyImageFileToTitlePath("cloudsep6.jpg", `${animeClouds.id}/${animeCloudsSeason1.id}/${animeCloudsSeason1ep6.label}/${uploads.THUMBNAIL_FILENAME}`)
+        const animeCloudsSeason1ep6 = await models.TitleInstallmentStream.AddToDB(
+            animeClouds.id,
+            animeCloudsSeason1.id,
+            "The New Cloud 6",
+            6,
+            lorem,
+            new Date(1990, 1, 7, 0, 0, 0)
+        )
+        await uploadsDev.copyImageFileToTitlePath(
+            "cloudsep6.jpg",
+            `${animeClouds.id}/${animeCloudsSeason1.id}/${animeCloudsSeason1ep6.label}/${uploads.THUMBNAIL_FILENAME}`
+        )
 
         const animeCloudsSeason2 = await models.TitleInstallment.AddToDB(animeClouds.id, "Season 2", true)
         const animeCloudsSeason2ep1 = await models.TitleInstallmentStream.AddToDB(
@@ -193,7 +274,10 @@ async function DevSetup({ sequelize, models }) {
             lorem,
             new Date(1990, 0, 1, 0, 0, 0)
         )
-        await uploadsDev.copyImageFileToTitlePath("cloudss2ep1.jpg", `${animeClouds.id}/${animeCloudsSeason2.id}/${animeCloudsSeason2ep1.label}/${uploads.THUMBNAIL_FILENAME}`)
+        await uploadsDev.copyImageFileToTitlePath(
+            "cloudss2ep1.jpg",
+            `${animeClouds.id}/${animeCloudsSeason2.id}/${animeCloudsSeason2ep1.label}/${uploads.THUMBNAIL_FILENAME}`
+        )
 
         const animeCloudsMovie1 = await models.TitleInstallment.AddToDB(animeClouds.id, "Movie: The Cloud Up Above", false)
         const animeCloudsMovie1part1 = await models.TitleInstallmentStream.AddToDB(
@@ -211,15 +295,25 @@ async function DevSetup({ sequelize, models }) {
 
         const anime1 = await models.Title.AddToDB("StarlitHorizon", lorem, "starlit.inc", "Japanese", FILM_RATING.PG, 13)
         await uploadsDev.copyImageFileToTitlePath("starhorizon.jpg", `${anime1.id}/${uploads.COVER_FILENAME}`)
-        const anime1Genre1 = await models.TitleGenre.AddToDB(anime1.id, "Action")
+        await models.TitleGenre.AddToDB(anime1.id, "Action")
 
         const anime1Season1 = await models.TitleInstallment.AddToDB(anime1.id, "Season 1", true, 1)
-        const anime1Season1ep1 = await models.TitleInstallmentStream.AddToDB(anime1.id, anime1Season1.id, "The New Horizon 1", 1, lorem, new Date(1990, 0, 1, 0, 0, 0))
-        await uploadsDev.copyImageFileToTitlePath("starlithorizonep1.jpg", `${anime1.id}/${anime1Season1.id}/${anime1Season1ep1.label}/${uploads.THUMBNAIL_FILENAME}`)
+        const anime1Season1ep1 = await models.TitleInstallmentStream.AddToDB(
+            anime1.id,
+            anime1Season1.id,
+            "The New Horizon 1",
+            1,
+            lorem,
+            new Date(1990, 0, 1, 0, 0, 0)
+        )
+        await uploadsDev.copyImageFileToTitlePath(
+            "starlithorizonep1.jpg",
+            `${anime1.id}/${anime1Season1.id}/${anime1Season1ep1.label}/${uploads.THUMBNAIL_FILENAME}`
+        )
 
         const anime2 = await models.Title.AddToDB("MoonlitSakura", lorem, "sakura.inc", "Japanese", FILM_RATING.PG, 13)
         await uploadsDev.copyImageFileToTitlePath("moonsakura.jpg", `${anime2.id}/${uploads.COVER_FILENAME}`)
-        const anime2Genre1 = await models.TitleGenre.AddToDB(anime2.id, "Action")
+        await models.TitleGenre.AddToDB(anime2.id, "Action")
 
         const anime3 = await models.Title.AddToDB("CrimsonWave", lorem, "crimson.inc", "Japanese", FILM_RATING.PG, 13)
         await uploadsDev.copyImageFileToTitlePath("crimsonwave.jpg", `${anime3.id}/${uploads.COVER_FILENAME}`)
@@ -240,8 +334,8 @@ async function DevSetup({ sequelize, models }) {
         await uploadsDev.copyImageFileToTitlePath("radiantkoi.jpg", `${anime8.id}/${uploads.COVER_FILENAME}`)
 
         // Favorite
-        const testFavorite1 = await models.TitleFavorite.AddToDB(testMember.email, animeClouds.id)
-        const testLike1 = await models.TitleInstallmentStreamLike.AddToDB(testMember.email, animeCloudsSeason1ep1.id)
+        await models.TitleFavorite.AddToDB(testMember.email, animeClouds.id)
+        await models.TitleInstallmentStreamLike.AddToDB(testMember.email, animeCloudsSeason1ep1.id)
         await models.TitleInstallmentStreamWatchHistory.AddToDB(testMember.email, animeCloudsSeason1ep5.id)
         await models.TitleInstallmentStreamWatchHistory.AddToDB(testMember.email, animeCloudsSeason1ep1.id)
         await models.TitleInstallmentStreamWatchHistory.AddToDB(testMember.email, animeCloudsSeason1ep2.id)

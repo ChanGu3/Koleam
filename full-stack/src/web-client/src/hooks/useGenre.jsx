@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query"
 import { GetAllGenres, AddGenre, DeleteGenre } from "../services/Titles/FetchGenre.js"
-import { data } from "react-router-dom"
 
 export function useGetGenres(searchGetLimit) {
     return useInfiniteQuery({
         queryKey: ["GENRE", "ALL", searchGetLimit],
         queryFn: async ({ pageParam = 0 }) => await GetAllGenres(searchGetLimit, pageParam),
-        getNextPageParam: (lastPage, allPages) => (lastPage && lastPage.length === searchGetLimit ? allPages.length * searchGetLimit : undefined),
+        getNextPageParam: (lastPage, allPages) =>
+            lastPage && lastPage.length === searchGetLimit ? allPages.length * searchGetLimit : undefined,
     })
 }
 

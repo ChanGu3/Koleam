@@ -28,7 +28,21 @@ const FILE_TYPES = Object.freeze({
 })
 
 if (typeof module !== "undefined" && module.exports) {
-    module.exports = { getExtensionFromSubtitleCodec, validateFileExtension, FILE_TYPES, valid_video_extensions, valid_audio_extensions, valid_subtitle_extensions }
+    module.exports = {
+        getExtensionFromSubtitleCodec,
+        validateFileExtension,
+        FILE_TYPES,
+        valid_video_extensions,
+        valid_audio_extensions,
+        valid_subtitle_extensions,
+    }
 }
 
-export { getExtensionFromSubtitleCodec, validateFileExtension, FILE_TYPES, valid_video_extensions, valid_audio_extensions, valid_subtitle_extensions }
+export {
+    getExtensionFromSubtitleCodec,
+    validateFileExtension,
+    FILE_TYPES,
+    valid_video_extensions,
+    valid_audio_extensions,
+    valid_subtitle_extensions,
+}

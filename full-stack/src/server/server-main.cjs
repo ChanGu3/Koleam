@@ -12,7 +12,9 @@ async function StartServer() {
         const defaultCreated = await env.CreateDefaultEnvFile(false)
 
         if (defaultCreated) {
-            return Logging.LogDev("please restart the server! the env file has been created and the server needs to be restarted to load the new environment variables")
+            return Logging.LogDev(
+                "please restart the server! the env file has been created and the server needs to be restarted to load the new environment variables"
+            )
         }
     }
 
@@ -36,7 +38,7 @@ async function StartServer() {
     const private_enviroment_router = require("./routes/private/environment-router.cjs")
 
     // --- DATABASE SETUP DO NOT REMOVE
-    const database = require("./models/database.cjs")
+    require("./models/database.cjs")
     // --- DATABASE SETUP
 
     const public_app = express()

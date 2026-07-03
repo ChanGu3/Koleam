@@ -10,6 +10,5 @@ export const PORTS = Object.freeze({
     PUBLIC: DEFAULT_PORTS.PUBLIC_PORT,
 })
 
-export const DEV_ACCESS_TYPE = ACCESS_TYPE.PUBLIC // CHANGE THIS TO TEST DIFFERENT ACCESS TYPES
-
-export const DEV_PORT = PORTS[DEV_ACCESS_TYPE]
+// eslint-disable-next-line no-undef
+export const DEV_ACCESS_TYPE = __IS_DEV__ ? (__IS_ADMIN_VIEW__ ? ACCESS_TYPE.LOCAL : ACCESS_TYPE.PUBLIC) : undefined

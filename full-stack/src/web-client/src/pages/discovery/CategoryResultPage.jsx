@@ -33,7 +33,7 @@ function CategoryResult({ isGenre = false, isAZ = false }) {
                         navigate("/404")
                     }
                 })
-                .catch((err) => {
+                .catch(() => {
                     navigate("/404")
                 })
 
@@ -41,22 +41,26 @@ function CategoryResult({ isGenre = false, isAZ = false }) {
         } else if (isAZ) {
             document.title = "A-Z"
         }
-    }, [genre])
+    }, [genre, generUPPER, isAZ, isGenre, navigate])
 
     return (
         <>
             <main className="w-full flex justify-center items-center flex-col">
                 <div className="w-full px-8 md:px-12 lg:px-14 xl:px-16 2xl:px-18 mt-8 mb-8 flex flex-col items-center">
-                    <p className="text-s-tertiary text-xl md:text-4xl font-semibold">{isAZ && genre === undefined ? "A-Z" : genre ? generUPPER : "..."}</p>
+                    <p className="text-s-tertiary text-xl md:text-4xl font-semibold">
+                        {isAZ && genre === undefined ? "A-Z" : genre ? generUPPER : "..."}
+                    </p>
                 </div>
                 <div className="w-72 sm:w-132 md:w-180 lg:w-260 xl:w-320">
                     <WindowVerticalQueryScrollable
                         className=""
                         queryKey={queryKey}
                         queryFn={queryFn}
-                        getNextPageParam={(lastPage, allPages) => (lastPage && lastPage.length === categoryGetLimit ? allPages.length * categoryGetLimit : undefined)}
+                        getNextPageParam={(lastPage, allPages) =>
+                            lastPage && lastPage.length === categoryGetLimit ? allPages.length * categoryGetLimit : undefined
+                        }
                         pxCutoffHeight={128}
-                        ItemRenderer={({ index, dataItem }) => {
+                        ItemRenderer={({ _index, dataItem }) => {
                             return (
                                 <SeriesModule
                                     key={dataItem.id}

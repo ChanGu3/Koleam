@@ -1,4 +1,3 @@
-const path = require("path")
 const { DataTypes } = require("sequelize")
 const { Logging, errormsg } = require("../../server-logging.cjs")
 const { ModelExtension } = require("../model-extension.cjs")
@@ -7,7 +6,7 @@ class Genre extends ModelExtension {
     /**
      * @override
      */
-    static async Initialize({ sequelize, models }) {
+    static async Initialize({ sequelize, models: _m }) {
         Genre.init(
             {
                 name: {
@@ -28,7 +27,7 @@ class Genre extends ModelExtension {
     /**
      * @override
      */
-    static async Connect_Associations({ sequelize, models }) {
+    static async Connect_Associations({ sequelize: _s, models }) {
         Genre.hasMany(models.TitleGenre, {
             foreignKey: "genre",
             otherKey: "name",
@@ -50,117 +49,112 @@ class Genre extends ModelExtension {
     // reject --> string: error msg
     // resolve --> instance: created Genre
     //
-    static AddToDB(name) {
-        return new Promise(async (resolve, reject) => {
-            if (await this.Exists(name)) {
-                Logging.LogWarning(`genre exists no need to add ${name} to database with the same name`)
-                reject(`genre exists no need to add ${name} to database with the same name`)
-                return
-            }
+    static async AddToDB(name) {
+        if (await this.Exists(name)) {
+            Logging.LogWarning(`genre exists no need to add ${name} to database with the same name`)
+            throw `genre exists no need to add ${name} to database with the same name`
+        }
 
-            try {
-                const newGenre = Genre.build({
-                    name: name,
-                })
+        try {
+            const newGenre = Genre.build({
+                name: name,
+            })
 
-                await newGenre.validate()
+            await newGenre.validate()
 
-                await newGenre.save()
+            await newGenre.save()
 
-                resolve(newGenre)
-            } catch (err) {
-                Logging.LogError(`could not add genre to database ${name} --- ${err.message}`)
-                reject()
-            }
-        })
+            return newGenre
+        } catch (err) {
+            Logging.LogError(`could not add genre to database ${name} --- ${err.message}`)
+            throw null
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> nothing
     //
-    static RemoveFromDB(name) {
-        return new Promise(async (resolve, reject) => {
-            if (!(await this.Exists(name))) {
-                Logging.LogWarning(`name does not exist`)
-                reject(new Error(`${name} is already a genre in the database`))
-                return
-            }
+    static async RemoveFromDB(name) {
+        if (!(await this.Exists(name))) {
+            Logging.LogWarning(`name does not exist`)
+            throw new Error(`${name} is already a genre in the database`)
+        }
 
-            try {
-                await Genre.destroy({
-                    where: {
-                        name: name,
-                    },
+        try {
+            await Genre.destroy({
+                where: {
+                    name: name,
+                },
+            })
+        } catch (err) {
+            Logging.LogError(`could not remove ${Genre.name} from database ${name} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
+    }
+
+    static async GetByGenre(name) {
+        try {
+            if (await this.Exists(name)) {
+                const existingGenre = await Genre.findByPk(name)
+                const { createdAt: _c, updatedAt: _u, ...rest } = existingGenre.toJSON()
+                return rest
+            } else {
+                Logging.LogError(`could not get genre from database ${name} `)
+                throw new Error(errormsg.genreDoesNotExist)
+            }
+        } catch (err) {
+            Logging.LogError(`could not get genre from database ${name} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
+    }
+
+    static async GetAll({ limit = 10, offset = 0 } = {}) {
+        try {
+            const allGenre = await Genre.findAll({
+                order: [["name", "ASC"]],
+                limit: limit === Infinity ? undefined : limit,
+                offset,
+            })
+            return allGenre.map((element) => {
+                const { createdAt: _c, updatedAt: _u, ...rest } = element.toJSON()
+                return rest
+            })
+        } catch (err) {
+            Logging.LogError(`could not get all genre from database --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
+    }
+
+    static async DefaultSetup() {
+        try {
+            const list = await this.GetAll()
+            if (list.length > 0) {
+                return list
+            } else {
+                const genres = [
+                    "Action",
+                    "Adventure",
+                    "Comedy",
+                    "Drama",
+                    "Fantasy",
+                    "Romance",
+                    "Sports",
+                    "Sci-Fi",
+                    "Supernatural",
+                    "Thriller",
+                ]
+
+                genres.forEach(async (value, _index) => {
+                    await this.AddToDB(value)
                 })
 
-                resolve()
-            } catch (err) {
-                Logging.LogError(`could not remove ${Genre.name} from database ${name} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
+                return await this.GetAll()
             }
-        })
-    }
-
-    static GetByGenre(name) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                if (await this.Exists(name)) {
-                    const existingGenre = await Genre.findByPk(name)
-                    const { createdAt, updatedAt, ...rest } = existingGenre.toJSON()
-                    resolve(rest)
-                } else {
-                    Logging.LogError(`could not get genre from database ${name} --- ${err.message}`)
-                    reject(new Error(errormsg.genreDoesNotExist))
-                }
-            } catch (err) {
-                Logging.LogError(`could not get genre from database ${name} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
-    }
-
-    static GetAll({ limit = 10, offset = 0 } = {}) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const allGenre = await Genre.findAll({
-                    order: [["name", "ASC"]],
-                    limit: limit === Infinity ? undefined : limit,
-                    offset,
-                })
-                resolve(
-                    allGenre.map((element) => {
-                        const { createdAt, updatedAt, ...rest } = element.toJSON()
-                        return rest
-                    })
-                )
-            } catch (err) {
-                Logging.LogError(`could not get all genre from database --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
-    }
-
-    static DefaultSetup() {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const list = await this.GetAll()
-                if (list.length > 0) {
-                    resolve(list)
-                } else {
-                    const genres = ["Action", "Adventure", "Comedy", "Drama", "Fantasy", "Romance", "Sports", "Sci-Fi", "Supernatural", "Thriller"]
-
-                    genres.forEach(async (value, index) => {
-                        await this.AddToDB(value)
-                    })
-
-                    resolve(await this.GetAll())
-                }
-            } catch (err) {
-                Logging.LogError(`could not setup genre properly --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
+        } catch (err) {
+            Logging.LogError(`could not setup genre properly --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 }
 

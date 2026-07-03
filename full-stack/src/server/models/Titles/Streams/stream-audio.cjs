@@ -92,7 +92,7 @@ class StreamAudio extends ModelExtension {
     /**
      * @override
      */
-    static async Connect_Associations({ sequelize, models }) {
+    static async Connect_Associations({ sequelize: _s, models }) {
         StreamAudio.belongsTo(models.TitleInstallmentStream, {
             foreignKey: "streamID",
             sourceKey: "id",
@@ -130,7 +130,10 @@ class StreamAudio extends ModelExtension {
         })
     }
 
-    static async AddToDB(mediaInputFilePath, streamIndex, { streamID, label } = {}, transaction = null, onProgress = (progress) => {}) {
+    /**
+     * @param {(progress: any) => null} onProgress
+     */
+    static async AddToDB(mediaInputFilePath, streamIndex, { streamID, label } = {}, transaction = null, onProgress = () => {}) {
         try {
             const stream = await StreamAudio.#models.TitleInstallmentStream.GetByID(streamID, transaction)
 
@@ -155,7 +158,7 @@ class StreamAudio extends ModelExtension {
 
             await streamAudio.validate()
 
-            const audio = await streamAudio.save()
+            await streamAudio.save()
 
             // when upldading will have silent server logging errors
             uploads_video
@@ -192,14 +195,26 @@ class StreamAudio extends ModelExtension {
         }
     }
 
-    static async UpdateInDB(streamID, current_label, { mediaInputFilePath = null, streamIndex = 0 } = {}, { label } = {}, transaction = null, onProgress = (progress) => {}) {
+    /**
+     * @param {(progress: any) => null} onProgress
+     */
+    static async UpdateInDB(
+        streamID,
+        current_label,
+        { mediaInputFilePath = null, streamIndex = 0 } = {},
+        { label } = {},
+        transaction = null,
+        onProgress = () => {}
+    ) {
         try {
             const stream = await StreamAudio.#models.TitleInstallmentStream.GetByID(streamID, transaction)
 
             const streamAudioPre = await StreamAudio.GetByStreamIDAndLabel(streamID, current_label, transaction)
 
             if (!streamAudioPre.isDownloaded) {
-                reject(new Error(`cannot update ${StreamAudio.name} with streamID:${streamID} label:${current_label} because audio has not finished downloading yet`))
+                throw new Error(
+                    `cannot update ${StreamAudio.name} with streamID:${streamID} label:${current_label} because audio has not finished downloading yet`
+                )
             }
 
             const query = {}
@@ -223,7 +238,6 @@ class StreamAudio extends ModelExtension {
             }
 
             // when upldading will have silent server logging errors
-            let audioData = {}
             if (mediaInputFilePath) {
                 uploads_video
                     .getFileAudioDetails(mediaInputFilePath, streamIndex)
@@ -254,7 +268,9 @@ class StreamAudio extends ModelExtension {
                         })
 
                         if (!streamAudio[0]) {
-                            throw new Error(`could not get ${StreamAudio.name} with streamID:${streamID} label:${label ? label : current_label}`)
+                            throw new Error(
+                                `could not get ${StreamAudio.name} with streamID:${streamID} label:${label ? label : current_label}`
+                            )
                         }
 
                         uploads_video
@@ -300,67 +316,61 @@ class StreamAudio extends ModelExtension {
         }
     }
 
-    static RemoveFromDB(streamID, label) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                if (await StreamAudio.Exists(streamID, label)) {
-                    const stream = await StreamAudio.#models.TitleInstallmentStream.GetByID(streamID)
-                    await uploads_video.deleteAudio(label, stream.titleID, stream.installmentID, stream.label, label)
+    static async RemoveFromDB(streamID, label) {
+        try {
+            if (await StreamAudio.Exists(streamID, label)) {
+                const stream = await StreamAudio.#models.TitleInstallmentStream.GetByID(streamID)
+                await uploads_video.deleteAudio(label, stream.titleID, stream.installmentID, stream.label, label)
 
-                    await StreamAudio.destroy({
-                        where: {
-                            streamID: streamID,
-                            label: label,
-                        },
-                    })
+                await StreamAudio.destroy({
+                    where: {
+                        streamID: streamID,
+                        label: label,
+                    },
+                })
 
-                    await StreamAudio.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
-                } else {
-                    Logging.LogWarning(`${StreamAudio.name} with id:${streamID} does not exists so removing is unnecessary`)
-                }
-
-                resolve()
-            } catch (err) {
-                Logging.LogError(`could not remove ${StreamAudio.name} from database id:${streamID} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
+                await StreamAudio.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
+            } else {
+                Logging.LogWarning(`${StreamAudio.name} with id:${streamID} does not exists so removing is unnecessary`)
             }
-        })
+        } catch (err) {
+            Logging.LogError(`could not remove ${StreamAudio.name} from database id:${streamID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
-    static GetByStreamIDAndLabel(streamID, label, transaction = null) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                if (await this.Exists(streamID, label)) {
-                    const default_query = {
-                        where: {
-                            streamID: streamID,
-                            label: label,
-                        },
-                    }
-                    if (transaction) {
-                        default_query.transaction = transaction
-                    }
-
-                    const original_stream_audio_data = await StreamAudio.findAll({
-                        ...default_query,
-                        attributes: {
-                            exclude: ["createdAt", "updatedAt"],
-                        },
-                    })
-
-                    if (!original_stream_audio_data[0]) {
-                        reject(new Error(`could not get ${StreamAudio.name} with id:${streamID} and label ${label}`))
-                    }
-
-                    resolve(original_stream_audio_data[0].toJSON())
-                } else {
-                    reject(new Error(`could not get ${StreamAudio.name} with id:${streamID} and label ${label}`))
+    static async GetByStreamIDAndLabel(streamID, label, transaction = null) {
+        try {
+            if (await this.Exists(streamID, label)) {
+                const default_query = {
+                    where: {
+                        streamID: streamID,
+                        label: label,
+                    },
                 }
-            } catch (err) {
-                Logging.LogError(`could not get ${StreamAudio.name} with id:${streamID} and label ${label} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
+                if (transaction) {
+                    default_query.transaction = transaction
+                }
+
+                const original_stream_audio_data = await StreamAudio.findAll({
+                    ...default_query,
+                    attributes: {
+                        exclude: ["createdAt", "updatedAt"],
+                    },
+                })
+
+                if (!original_stream_audio_data[0]) {
+                    throw new Error(`could not get ${StreamAudio.name} with id:${streamID} and label ${label}`)
+                }
+
+                return original_stream_audio_data[0].toJSON()
+            } else {
+                throw new Error(`could not get ${StreamAudio.name} with id:${streamID} and label ${label}`)
             }
-        })
+        } catch (err) {
+            Logging.LogError(`could not get ${StreamAudio.name} with id:${streamID} and label ${label} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 }
 

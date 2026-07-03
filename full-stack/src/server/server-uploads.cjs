@@ -4,7 +4,7 @@ const minimist = require("minimist")
 const argv = minimist(process.argv.slice(2))
 const isDev = argv.dev === true || argv.d === true
 
-const { Logging, errormsg } = require("./server-logging.cjs")
+const { Logging } = require("./server-logging.cjs")
 const path = require("path")
 const fs = require("fs").promises
 
@@ -40,10 +40,10 @@ function getTempPath(relativePath) {
 //
 async function doesUploadsPathExist(relativePat = "") {
     try {
-        const fullPath = path.join(pathUploads, relativePath)
+        const fullPath = path.join(pathUploads, relativePat)
         await fs.access(fullPath)
         return true
-    } catch (err) {
+    } catch {
         //Logging.LogWarning(`could not find if path ${dirpath} exists in uploads`);
         return false
     }
@@ -57,8 +57,7 @@ async function doesTitlesPathExist(relativePath = "") {
         const fullPath = path.join(pathTitles, relativePath)
         await fs.access(fullPath)
         return true
-    } catch (err) {
-        //Logging.LogWarning(`could not find if path ${dirpath} exists in uploads`);
+    } catch {
         return false
     }
 }
@@ -74,7 +73,7 @@ async function doesTempFileExist(filename = "") {
         }
         await fs.access(fullPath)
         return true
-    } catch (err) {
+    } catch {
         return false
     }
 }
@@ -106,7 +105,9 @@ async function rnDir(prevRelativePath, relativePath) {
             await fs.rename(oldFullPath, newFullPath)
             return relativePath
         } else {
-            throw new Error(`could not rename directory from ${prevRelativePath} to ${relativePath} --- invalid path or path does not exist`)
+            throw new Error(
+                `could not rename directory from ${prevRelativePath} to ${relativePath} --- invalid path or path does not exist`
+            )
         }
     } catch (err) {
         Logging.LogError(`could not rename directory from ${prevRelativePath} to ${relativePath} ${err}`)
@@ -219,7 +220,7 @@ async function uploadTempFile(filename, buffer) {
             return fullPath
         }
     } catch (err) {
-        Logging.LogError(`could not upload file to relativepath:${relativePath} --- ${err}`)
+        Logging.LogError(`could not upload file to filename:${filename} --- ${err}`)
         throw err
     }
 }
@@ -351,7 +352,18 @@ function getExtensionFromSubtitleCodec(codecName) {
     }
 }
 
-function generateSingleVideo(video_id, inputFile, outputPlaylist, videoIndex = 0, videoResolution = 1080, onProgress = (progress) => {}, onComplete = () => {}) {
+/**
+ * @param {(progress: any) => void} onProgress
+ */
+function generateSingleVideo(
+    video_id,
+    inputFile,
+    outputPlaylist,
+    videoIndex = 0,
+    videoResolution = 1080,
+    onProgress = () => {},
+    onComplete = () => {}
+) {
     return new Promise((resolve, reject) => {
         const outputDir = path.dirname(outputPlaylist)
         const segmentFilename = path.join(outputDir, `segment_video_${videoResolution}_%06d.ts`).replace(/\\/g, "/")
@@ -400,7 +412,10 @@ function generateSingleVideo(video_id, inputFile, outputPlaylist, videoIndex = 0
     })
 }
 
-async function generateAllResFromCap(video_id, inputFile, relativePath, onProgress = (progress) => {}, onComplete = () => {}) {
+/**
+ * @param {(progress: any) => void} onProgress
+ */
+async function generateAllResFromCap(video_id, inputFile, relativePath, onProgress = () => {}, onComplete = () => {}) {
     const metadata = await probeMediaFileInfo(inputFile)
     const streamVideoData = metadata.streams.filter((s) => s.codec_type === "video")[0]
     if (!streamVideoData || !streamVideoData.height) {
@@ -434,12 +449,20 @@ async function generateAllResFromCap(video_id, inputFile, relativePath, onProgre
                 await recursiveDirDeleteInTitles(pathVideoPlaylistDirRelativeComplete)
             }
             await mkDir(pathVideoPlaylistDirRelativeComplete)
-            await generateSingleVideo(video_id, inputFile, path.join(pathVideoPlaylistDir, "video_playlist.m3u8"), 0, videoResolutionsHeight[i], onSingleVideoProgress, () => {
-                videoResCompleted++
-                if (videoResCompleted === videosToGenerateCount) {
-                    onComplete()
+            await generateSingleVideo(
+                video_id,
+                inputFile,
+                path.join(pathVideoPlaylistDir, "video_playlist.m3u8"),
+                0,
+                videoResolutionsHeight[i],
+                onSingleVideoProgress,
+                () => {
+                    videoResCompleted++
+                    if (videoResCompleted === videosToGenerateCount) {
+                        onComplete()
+                    }
                 }
-            })
+            )
         } catch (err) {
             Logging.LogError(`could not generate video at resolution ${videoResolutionsHeight[i]} --- ${err}`)
             throw new Error(`${err}`)
@@ -457,7 +480,10 @@ async function deleteAllRes(relativePath) {
     }
 }
 
-function generateSingleAudio(audio_id, inputFile, outputPlaylist, streamIndex = 0, onProgress = (progress) => {}, onComplete = () => {}) {
+/**
+ * @param {(progress: any) => void} onProgress
+ */
+function generateSingleAudio(audio_id, inputFile, outputPlaylist, streamIndex = 0, onProgress = () => {}, onComplete = () => {}) {
     return new Promise((resolve, reject) => {
         const outputDir = path.dirname(outputPlaylist)
         const segmentFilename = path.join(outputDir, `segment_audio_${streamIndex}_%06d.ts`).replace(/\\/g, "/")
@@ -465,7 +491,18 @@ function generateSingleAudio(audio_id, inputFile, outputPlaylist, streamIndex = 
         probeMediaFileInfo(inputFile)
             .then((metadata) => {
                 const command = ffmpeg(inputFile)
-                    .outputOptions(["-map", `0:a:${streamIndex}`, "-vn", "-sn", "-hls_time", "2", "-hls_list_size", "0", "-hls_segment_filename", segmentFilename])
+                    .outputOptions([
+                        "-map",
+                        `0:a:${streamIndex}`,
+                        "-vn",
+                        "-sn",
+                        "-hls_time",
+                        "2",
+                        "-hls_list_size",
+                        "0",
+                        "-hls_segment_filename",
+                        segmentFilename,
+                    ])
                     .audioCodec("aac")
                     .format("hls")
                     .on("progress", (progress) => onProgress(progress))
@@ -488,7 +525,10 @@ function generateSingleAudio(audio_id, inputFile, outputPlaylist, streamIndex = 
     })
 }
 
-async function generateAudio(audio_id, inputFile, relativePath, streamIndex, audioName, onProgress = (progress) => {}, onComplete = () => {}) {
+/**
+ * @param {(progress: any) => void} onProgress
+ */
+async function generateAudio(audio_id, inputFile, relativePath, streamIndex, audioName, onProgress = () => {}, onComplete = () => {}) {
     const relativePathDirComplete = path.join(relativePath, "audio", audioName)
     if (await doesTitlesPathExist(relativePathDirComplete)) {
         await recursiveDirDeleteInTitles(relativePathDirComplete)
@@ -496,7 +536,14 @@ async function generateAudio(audio_id, inputFile, relativePath, streamIndex, aud
 
     const pathAudioPlaylistDir = path.join(pathTitles, relativePathDirComplete)
     await mkDir(relativePathDirComplete)
-    return await generateSingleAudio(audio_id, inputFile, path.join(pathAudioPlaylistDir, "audio_playlist.m3u8"), streamIndex, onProgress, onComplete)
+    return await generateSingleAudio(
+        audio_id,
+        inputFile,
+        path.join(pathAudioPlaylistDir, "audio_playlist.m3u8"),
+        streamIndex,
+        onProgress,
+        onComplete
+    )
 }
 
 async function deleteAudio(relativePath, audioName) {
@@ -514,7 +561,18 @@ async function renameAudio(relativePath, previousAudioName, audioName) {
     }
 }
 
-function generateSingleSubtitle(subtitle_id, inputFile, outputFolder, subName, streamIndex = 0, onProgress = (progress) => {}, onComplete = () => {}) {
+/**
+ * @param {(progress: any) => void} onProgress
+ */
+function generateSingleSubtitle(
+    subtitle_id,
+    inputFile,
+    outputFolder,
+    subName,
+    streamIndex = 0,
+    onProgress = () => {},
+    onComplete = () => {}
+) {
     return new Promise((resolve, reject) => {
         probeMediaFileInfo(inputFile)
             .then((metadata) => {
@@ -555,7 +613,11 @@ function generateSingleSubtitle(subtitle_id, inputFile, outputFolder, subName, s
     })
 }
 
-async function generateSubtitle(subtitle_id, inputFile, relativePath, streamIndex, subName, onProgress = (progress) => {}, onComplete = () => {}) {
+/**
+ *
+ *  @param {(progress: any) => void} onProgress
+ */
+async function generateSubtitle(subtitle_id, inputFile, relativePath, streamIndex, subName, onProgress = () => {}, onComplete = () => {}) {
     const relativePathDirComplete = path.join(relativePath, "subs")
     const relativePlaylistComplete = path.join(relativePathDirComplete, `${subName}.m3u8`)
 
@@ -575,7 +637,9 @@ async function generateSubtitle(subtitle_id, inputFile, relativePath, streamInde
     try {
         await fs.access(webvttPath)
         hasAccess = true
-    } catch (err) {}
+    } catch (err) {
+        Logging.LogError(`${err.message}`)
+    }
 
     if (hasAccess) {
         const fileContent = await fs.readFile(webvttPath, "utf-8")

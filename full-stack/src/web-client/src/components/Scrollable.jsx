@@ -55,7 +55,7 @@ export function VerticalQueryScrollable({
 }) {
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
         queryKey,
-        queryFn, 
+        queryFn,
         getNextPageParam,
     })
 
@@ -138,6 +138,7 @@ export function VerticalScrollable({
     let rootDivStyle = {}
 
     if (isWindowVirtualizer) {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         rowVirtualizer = useWindowVirtualizer({
             count: rowCount,
             estimateSize: () => (fixedRowHeight ? fixedRowHeight : 50),
@@ -147,6 +148,7 @@ export function VerticalScrollable({
 
         rootDivClassname = "w-full"
     } else {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         rowVirtualizer = useVirtualizer({
             count: rowCount,
             getScrollElement: () => parentRef.current,
@@ -187,7 +189,7 @@ export function VerticalScrollable({
         if (tempCurrentSize !== currentColSize) {
             SetCurrentColSize(tempCurrentSize)
         }
-    }, [isSm, isMd, isLg, isXl, currentColSize])
+    }, [isSm, isMd, isLg, isXl, currentColSize, columnsCount])
 
     if (itemCount === 0) {
         if (EmptyRenderer === null) {
@@ -410,7 +412,7 @@ export function HorizontalScrollable({
         if (tempCurrentSize !== currentRowSize) {
             SetCurrentRowSize(tempCurrentSize)
         }
-    }, [isSm, isMd, isLg, isXl, currentRowSize])
+    }, [isSm, isMd, isLg, isXl, currentRowSize, rowsCount])
 
     if (itemCount === 0) {
         if (EmptyRenderer === null) {

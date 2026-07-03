@@ -1,4 +1,4 @@
-import React, { useState, useEffect, use } from "react"
+import { useState, useEffect } from "react"
 import { VerticalQueryScrollable } from "../../components/Scrollable"
 import { FetchAllMembers } from "../../services/FetchMembers.js"
 import ButtonUI from "../../components/ButtonUI"
@@ -36,15 +36,19 @@ function AdminMembersControl() {
                 className="border-2 border-s-white/25 rounded-sm px-2 md:p-4 mx-6 inset-shadow-sm inset-shadow-s-dark-tertiary"
                 queryKey={["ADMINISTRATION", "MODERATION", "MEMBERS", searchQuery]}
                 queryFn={async ({ pageParam = 0 }) => await FetchAllMembers(MEMBER_FETCH_LIMIT, pageParam, searchQuery)}
-                getNextPageParam={(lastPage, allPages) => (lastPage && lastPage.length === MEMBER_FETCH_LIMIT ? allPages.length * MEMBER_FETCH_LIMIT : undefined)}
+                getNextPageParam={(lastPage, allPages) =>
+                    lastPage && lastPage.length === MEMBER_FETCH_LIMIT ? allPages.length * MEMBER_FETCH_LIMIT : undefined
+                }
                 pxCutoffHeight={500}
                 pxCutoffWidth={null}
-                ItemRenderer={({ index, dataItem }) => {
+                ItemRenderer={({ index: _i, dataItem }) => {
                     return (
                         <AdministrationBarTemplate>
                             <div className="flex flex-row gap-2 justify-between items-center min-w-0 w-full">
                                 <p className="text-xs font-semibold text-s-primary flex flex-col md:flex-row items-start md:items-center flex-1 min-w-0">
-                                    <span className="text-sm md:text-lg font-normal text-s-white/75 truncate w-full md:w-auto text-left">{dataItem.email}</span>
+                                    <span className="text-sm md:text-lg font-normal text-s-white/75 truncate w-full md:w-auto text-left">
+                                        {dataItem.email}
+                                    </span>
                                     <span className="shrink-0">/email</span>
                                 </p>
                                 <ButtonUI
@@ -74,8 +78,9 @@ function AdminMembersControl() {
                     <div className="w-64 flex flex-col">
                         <p className="text-s-white text-sm text-center font-bold">Are you sure you want to delete this member?</p>
                         <p className="text-xs text-center my-3 text-s-error/75 font-semibold">
-                            WARNING: deleting <span className="text-s-primary">{selectedMember && selectedMember.email}</span> removes all the data collected through this
-                            application associated with the account please make sure this ACTION is respected by both you and the member.
+                            WARNING: deleting <span className="text-s-primary">{selectedMember && selectedMember.email}</span> removes all
+                            the data collected through this application associated with the account please make sure this ACTION is
+                            respected by both you and the member.
                         </p>
                     </div>
                     <div className="flex flex-row justify-between mx-8 gap-x-2 py-2">

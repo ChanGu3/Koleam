@@ -81,7 +81,7 @@ class StreamSubtitle extends ModelExtension {
     /**
      * @override
      */
-    static async Connect_Associations({ sequelize, models }) {
+    static async Connect_Associations({ sequelize: _s, models }) {
         StreamSubtitle.belongsTo(models.TitleInstallmentStream, {
             foreignKey: "streamID",
             sourceKey: "id",
@@ -108,7 +108,10 @@ class StreamSubtitle extends ModelExtension {
 
     static #OnRenderCycle(progress, streamSubtitle) {
         const streamSubtitleData = streamSubtitle.toJSON()
-        events.emit(StreamSubtitle.GetSubtitleUpdateProgressEventName(streamSubtitle.streamID, streamSubtitle.label, streamSubtitle.isCC), { progress, streamSubtitleData })
+        events.emit(StreamSubtitle.GetSubtitleUpdateProgressEventName(streamSubtitle.streamID, streamSubtitle.label, streamSubtitle.isCC), {
+            progress,
+            streamSubtitleData,
+        })
     }
 
     static async #OnRenderCycleComplete(streamSubtitle) {
@@ -120,7 +123,10 @@ class StreamSubtitle extends ModelExtension {
         })
     }
 
-    static async AddToDB(mediaInputFilePath, streamIndex, { streamID, label, isCC } = {}, transaction = null, onProgress = (progress) => {}) {
+    /**
+     * @param {(progress: any) => null} onProgress
+     */
+    static async AddToDB(mediaInputFilePath, streamIndex, { streamID, label, isCC } = {}, transaction = null, onProgress = () => {}) {
         try {
             const stream = await StreamSubtitle.#models.TitleInstallmentStream.GetByID(streamID, transaction)
 
@@ -142,7 +148,7 @@ class StreamSubtitle extends ModelExtension {
 
             await streamSubtitle.validate()
 
-            const subtitle = await streamSubtitle.save()
+            await streamSubtitle.save()
 
             uploads_video
                 .writeSubtitle(
@@ -178,6 +184,9 @@ class StreamSubtitle extends ModelExtension {
         }
     }
 
+    /**
+     * @param {(progress: any) => null} onProgress
+     */
     static async UpdateInDB(
         streamID,
         current_label,
@@ -185,7 +194,7 @@ class StreamSubtitle extends ModelExtension {
         { mediaInputFilePath = null, streamIndex = null } = {},
         { label, isCC } = {},
         transaction = null,
-        onProgress = (progress) => {}
+        onProgress = () => {}
     ) {
         try {
             const stream = await StreamSubtitle.#models.TitleInstallmentStream.GetByID(streamID, transaction)
@@ -193,7 +202,9 @@ class StreamSubtitle extends ModelExtension {
             const streamSubtitlePre = await StreamSubtitle.GetByStreamIDAndLabelAndIsCC(streamID, current_label, current_CC, transaction)
 
             if (!streamSubtitlePre.isDownloaded) {
-                reject(new Error(`cannot update ${StreamSubtitle.name} with streamID:${streamID} label:${current_label} because subtitle has not finished downloading yet`))
+                throw new Error(
+                    `cannot update ${StreamSubtitle.name} with streamID:${streamID} label:${current_label} because subtitle has not finished downloading yet`
+                )
             }
 
             const query = {}
@@ -218,15 +229,20 @@ class StreamSubtitle extends ModelExtension {
                 await StreamSubtitle.update({ ...update_values }, query)
                 update_values = {}
                 if (label) {
-                    await uploads_video.renameSubtitle(stream.titleID, stream.installmentID, stream.label, current_label, label, streamSubtitlePre.codec_name)
+                    await uploads_video.renameSubtitle(
+                        stream.titleID,
+                        stream.installmentID,
+                        stream.label,
+                        current_label,
+                        label,
+                        streamSubtitlePre.codec_name
+                    )
                 }
                 // when using a transaction it is assumed master file is not written to automatically.
                 if (!transaction) {
                     await StreamSubtitle.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
                 }
             }
-
-            let subtitleData = {}
 
             if (mediaInputFilePath && streamIndex) {
                 uploads_video
@@ -246,11 +262,21 @@ class StreamSubtitle extends ModelExtension {
                         update_values.isDownloaded = false
 
                         const subData = await StreamSubtitle.GetByStreamIDAndLabelAndIsCC(streamID, current_label, current_CC, transaction)
-                        await uploads_video.deleteSubtitle(stream.titleID, stream.installmentID, stream.label, subData.label, subData.codec_name)
+                        await uploads_video.deleteSubtitle(
+                            stream.titleID,
+                            stream.installmentID,
+                            stream.label,
+                            subData.label,
+                            subData.codec_name
+                        )
 
                         await StreamSubtitle.update(update_values, query)
                         const streamSubtitle = await StreamSubtitle.findAll({
-                            where: { streamID: streamID, label: label ? label : current_label, isCC: isCC !== undefined && isCC !== null ? isCC : current_CC },
+                            where: {
+                                streamID: streamID,
+                                label: label ? label : current_label,
+                                isCC: isCC !== undefined && isCC !== null ? isCC : current_CC,
+                            },
                             transaction: transaction,
                         })
 
@@ -293,69 +319,63 @@ class StreamSubtitle extends ModelExtension {
         }
     }
 
-    static RemoveFromDB(streamID, label, isCC) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                if (await StreamSubtitle.Exists(streamID, label, isCC)) {
-                    const stream = await StreamSubtitle.#models.TitleInstallmentStream.GetByID(streamID)
-                    const subData = await StreamSubtitle.GetByStreamIDAndLabelAndIsCC(streamID, label, isCC)
-                    await uploads_video.deleteSubtitle(label, stream.titleID, stream.installmentID, stream.label, label, subData.codec_name)
+    static async RemoveFromDB(streamID, label, isCC) {
+        try {
+            if (await StreamSubtitle.Exists(streamID, label, isCC)) {
+                const stream = await StreamSubtitle.#models.TitleInstallmentStream.GetByID(streamID)
+                const subData = await StreamSubtitle.GetByStreamIDAndLabelAndIsCC(streamID, label, isCC)
+                await uploads_video.deleteSubtitle(label, stream.titleID, stream.installmentID, stream.label, label, subData.codec_name)
 
-                    await StreamSubtitle.destroy({
-                        where: {
-                            streamID: streamID,
-                            label: label,
-                        },
-                    })
+                await StreamSubtitle.destroy({
+                    where: {
+                        streamID: streamID,
+                        label: label,
+                    },
+                })
 
-                    await StreamSubtitle.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
-                } else {
-                    Logging.LogWarning(`${StreamSubtitle.name} with id:${streamID} does not exists so removing is unnecessary`)
-                }
-
-                resolve()
-            } catch (err) {
-                Logging.LogError(`could not remove ${StreamSubtitle.name} from database id:${streamID} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
+                await StreamSubtitle.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
+            } else {
+                Logging.LogWarning(`${StreamSubtitle.name} with id:${streamID} does not exists so removing is unnecessary`)
             }
-        })
+        } catch (err) {
+            Logging.LogError(`could not remove ${StreamSubtitle.name} from database id:${streamID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
-    static GetByStreamIDAndLabelAndIsCC(streamID, label, isCC, transaction = null) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                if (await StreamSubtitle.Exists(streamID, label, isCC)) {
-                    const default_query = {
-                        where: {
-                            streamID: streamID,
-                            label: label,
-                            isCC: isCC,
-                        },
-                    }
-                    if (transaction) {
-                        default_query.transaction = transaction
-                    }
-
-                    const original_stream_subtitle_data = await StreamSubtitle.findAll({
-                        ...default_query,
-                        attributes: {
-                            exclude: ["createdAt", "updatedAt"],
-                        },
-                    })
-
-                    if (!original_stream_subtitle_data[0]) {
-                        reject(new Error(`could not get ${StreamSubtitle.name} with id:${streamID}, label:${label}, isCC:${isCC}`))
-                    }
-
-                    resolve(original_stream_subtitle_data[0].toJSON())
-                } else {
-                    reject(new Error(`could not get ${StreamSubtitle.name} with id:${streamID}, label ${label}, isCC:${isCC}`))
+    static async GetByStreamIDAndLabelAndIsCC(streamID, label, isCC, transaction = null) {
+        try {
+            if (await StreamSubtitle.Exists(streamID, label, isCC)) {
+                const default_query = {
+                    where: {
+                        streamID: streamID,
+                        label: label,
+                        isCC: isCC,
+                    },
                 }
-            } catch (err) {
-                Logging.LogError(`could not get ${StreamSubtitle.name} with id:${streamID}, label:${label}, isCC:${isCC} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
+                if (transaction) {
+                    default_query.transaction = transaction
+                }
+
+                const original_stream_subtitle_data = await StreamSubtitle.findAll({
+                    ...default_query,
+                    attributes: {
+                        exclude: ["createdAt", "updatedAt"],
+                    },
+                })
+
+                if (!original_stream_subtitle_data[0]) {
+                    throw new Error(`could not get ${StreamSubtitle.name} with id:${streamID}, label:${label}, isCC:${isCC}`)
+                }
+
+                return original_stream_subtitle_data[0].toJSON()
+            } else {
+                throw new Error(`could not get ${StreamSubtitle.name} with id:${streamID}, label ${label}, isCC:${isCC}`)
             }
-        })
+        } catch (err) {
+            Logging.LogError(`could not get ${StreamSubtitle.name} with id:${streamID}, label:${label}, isCC:${isCC} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 }
 

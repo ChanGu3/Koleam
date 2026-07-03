@@ -27,7 +27,12 @@ function HomePage() {
         queryFn: async () => await FetchGetCarousel(7, 0),
     })
 
-    const { data: dataWatchHistory, error: isErrorWatchHistory, isLoading: isLoadingWatchHistory, refetch: refetchWatchHistory } = useMemberGetWatchHistory(0, 12, memberisSignedIn)
+    const {
+        data: dataWatchHistory,
+        error: isErrorWatchHistory,
+        isLoading: isLoadingWatchHistory,
+        refetch: refetchWatchHistory,
+    } = useMemberGetWatchHistory(0, 12, memberisSignedIn)
 
     const {
         data: dataShuffle,
@@ -46,7 +51,7 @@ function HomePage() {
         if (memberisSignedIn) {
             refetchWatchHistory()
         }
-    }, [memberisSignedIn])
+    }, [memberisSignedIn, refetchWatchHistory])
 
     return (
         <>
@@ -80,7 +85,7 @@ function HomePage() {
                     title="Continue Watching"
                     sliderList={
                         dataWatchHistory
-                            ? dataWatchHistory.map((stream, index) => {
+                            ? dataWatchHistory.map((stream, _index) => {
                                   return (
                                       <StreamModule
                                           key={stream.id}
@@ -115,7 +120,7 @@ function HomePage() {
                     title="Titles Shuffle"
                     sliderList={
                         dataShuffle
-                            ? dataShuffle.map((titleItem, index) => {
+                            ? dataShuffle.map((titleItem, _index) => {
                                   return (
                                       <SeriesModule
                                           key={titleItem.id}

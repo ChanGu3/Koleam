@@ -277,7 +277,6 @@ function RestrictIfLocalAdminSignedOut() {
     if (CURRENT_ACCESS_TYPE === ACCESS_TYPE.LOCAL && adminIsSignedIn == null) return <LoadingPage />
 
     if (CURRENT_ACCESS_TYPE === ACCESS_TYPE.LOCAL && !adminIsSignedIn) {
-        console.log("Restricting access to local admin signed out users")
         return (
             <Navigate
                 to="/404"

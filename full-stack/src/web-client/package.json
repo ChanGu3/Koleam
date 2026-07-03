@@ -1,44 +1,46 @@
 {
-  "name": "client",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "clean": "rimraf ../../dist/web-client",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@ffmpeg/core": "^0.12.10",
-    "@ffmpeg/ffmpeg": "^0.12.15",
-    "@ffmpeg/util": "^0.12.2",
-    "@tailwindcss/postcss": "^4.1.10",
-    "@tanstack/react-query": "^5.100.10",
-    "@tanstack/react-virtual": "^3.13.24",
-    "autoprefixer": "^10.4.21",
-    "hls.js": "^1.6.16",
-    "libass-wasm": "^4.1.0",
-    "lucide-react": "^1.16.0",
-    "postcss": "^8.5.6",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-responsive": "^10.0.1",
-    "react-router-dom": "^7.6.3",
-    "react-spinners": "^0.17.0",
-    "tailwindcss": "^4.1.10"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.25.0",
-    "@types/react": "^19.1.2",
-    "@types/react-dom": "^19.1.2",
-    "@vitejs/plugin-react": "^4.4.1",
-    "eslint": "^9.25.0",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.19",
-    "globals": "^16.0.0",
-    "vite": "^6.3.5",
-    "vite-plugin-static-copy": "^4.1.1"
-  }
+    "name": "client",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "dev-member": "vite",
+        "dev-admin": "vite --mode admin",
+        "build": "vite build",
+        "clean": "rimraf ../../dist/web-client",
+        "lint": "eslint .",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "@ffmpeg/core": "^0.12.10",
+        "@ffmpeg/ffmpeg": "^0.12.15",
+        "@ffmpeg/util": "^0.12.2",
+        "@tailwindcss/postcss": "^4.1.10",
+        "@tanstack/react-query": "^5.100.10",
+        "@tanstack/react-virtual": "^3.13.24",
+        "autoprefixer": "^10.4.21",
+        "hls.js": "^1.6.16",
+        "libass-wasm": "^4.1.0",
+        "lucide-react": "^1.16.0",
+        "postcss": "^8.5.6",
+        "react": "^19.1.0",
+        "react-dom": "^19.1.0",
+        "react-responsive": "^10.0.1",
+        "react-router-dom": "^7.6.3",
+        "react-spinners": "^0.17.0",
+        "tailwindcss": "^4.1.10"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.25.0",
+        "@types/react": "^19.1.2",
+        "@types/react-dom": "^19.1.2",
+        "@vitejs/plugin-react": "^4.4.1",
+        "eslint": "^9.25.0",
+        "eslint-plugin-react": "^7.37.5",
+        "eslint-plugin-react-hooks": "^5.2.0",
+        "eslint-plugin-react-refresh": "^0.4.19",
+        "globals": "^16.0.0",
+        "vite": "^6.3.5",
+        "vite-plugin-static-copy": "^4.1.1"
+    }
 }

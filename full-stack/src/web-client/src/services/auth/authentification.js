@@ -24,8 +24,6 @@ export async function SignOut(routeName) {
     } catch (error) {
         throw error
     }
-
-    return false
 }
 
 /**
@@ -73,8 +71,6 @@ export async function MemberSignIn(email, password) {
     } catch (error) {
         throw error
     }
-
-    return false
 }
 
 /**
@@ -96,7 +92,9 @@ export async function MemberSignUp(email, password, passwordAgain) {
             throw new Error("Invalid email format")
         }
         if (validatePassword(password) === false) {
-            throw new Error("password must be at least 8 characters, contain at least one uppercase letter, one lowercase letter, and one number")
+            throw new Error(
+                "password must be at least 8 characters, contain at least one uppercase letter, one lowercase letter, and one number"
+            )
         }
         if (password !== passwordAgain) {
             throw new Error("Passwords do not match")
@@ -118,8 +116,6 @@ export async function MemberSignUp(email, password, passwordAgain) {
     } catch (error) {
         throw error
     }
-
-    return false
 }
 
 /**
@@ -168,6 +164,4 @@ export async function AdminSignIn(username, password) {
     } catch (error) {
         throw error
     }
-
-    return false
 }

@@ -18,7 +18,9 @@ function StreamModule({ isMovie, titleLabel, label, srcIMG, description, dateRel
                     ></img>
                     <div className="absolute top-0 left-0 rounded-xs aspect-video w-full group-active:bg-s-dark-secondary/30"></div>
                     <div className="flex flex-col">
-                        <p className="font-semibold text-[10px] md:text-xs text-s-dark-secondary group-active:underline flex flex-row">{titleLabel}</p>
+                        <p className="font-semibold text-[10px] md:text-xs text-s-dark-secondary group-active:underline flex flex-row">
+                            {titleLabel}
+                        </p>
                         <p className="font-semibold text-[8px] md:text-[10px] text-s-white group-active:underline">
                             <span className="text-s-secondary font-bold w-[80%]">{streamInfo}</span>
                             <span className="text-s-white">{` | `}</span>

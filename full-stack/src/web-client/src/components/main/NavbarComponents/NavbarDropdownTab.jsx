@@ -4,7 +4,15 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 /**
  * @param {vectorOffset} vectorOffset - { x: number, y: number } - This is the offset of the dropdown from the top left of the tab
  */
-function NavbarDropdownTab({ className = "", dropdownClassName = "", label, id, children: dropdown, vectorOffset = { x: 0, y: 0 }, isDropdownStartLeft = true }) {
+function NavbarDropdownTab({
+    className = "",
+    dropdownClassName = "",
+    label,
+    id,
+    children: dropdown,
+    vectorOffset = { x: 0, y: 0 },
+    isDropdownStartLeft = true,
+}) {
     const dropdownRef = useRef(null)
     const tabRef = useRef(null)
     const [isDropped, SetIsDropped] = useState(false)

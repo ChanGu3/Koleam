@@ -1,5 +1,5 @@
 import { CircleX } from "lucide-react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 
 export const EVENT_FLAGS = Object.freeze({
     ERROR: 1,
@@ -9,7 +9,7 @@ export const EVENT_FLAGS = Object.freeze({
     // first 4 bits reserved for type
 })
 
-function EventErrorUI({ id, message, eventFlag, onClose = (id) => {}, closeCountDown = null }) {
+function EventErrorUI({ id, message, eventFlag, onClose = (_id) => {}, closeCountDown = null }) {
     const ENDING_TIME = 1
 
     const component = useRef(null)
@@ -18,17 +18,7 @@ function EventErrorUI({ id, message, eventFlag, onClose = (id) => {}, closeCount
     const [componentCloseCountdown, setComponentCloseCountdown] = useState(closeCountDown)
     const intervalRef = useRef(null)
 
-    function DoCountdown() {
-        return setInterval(() => {
-            if (ENDING_TIME < componentCloseCountdown) {
-                setComponentCloseCountdown((prev) => prev - 1)
-            } else {
-                OnEnd()
-            }
-        }, 1000)
-    }
-
-    function OnEnd() {
+    const OnEnd = useCallback(() => {
         clearInterval(intervalRef.current)
         intervalRef.current = null
         setComponentCloseCountdown(null)
@@ -38,7 +28,17 @@ function EventErrorUI({ id, message, eventFlag, onClose = (id) => {}, closeCount
                 onClose(component_id.current)
             }
         }, 300)
-    }
+    }, [onClose])
+
+    const DoCountdown = useCallback(() => {
+        return setInterval(() => {
+            if (ENDING_TIME < componentCloseCountdown) {
+                setComponentCloseCountdown((prev) => prev - 1)
+            } else {
+                OnEnd()
+            }
+        }, 1000)
+    }, [componentCloseCountdown, OnEnd])
 
     useEffect(() => {
         if (componentCloseCountdown !== null && !intervalRef.current) {
@@ -51,17 +51,23 @@ function EventErrorUI({ id, message, eventFlag, onClose = (id) => {}, closeCount
                 intervalRef.current = null
             }
         }
-    }, [componentCloseCountdown])
+    }, [componentCloseCountdown, DoCountdown])
 
     const eventName =
-        eventFlag && !!(eventFlag & EVENT_FLAGS.ERROR) ? "ERROR" : !!(eventFlag & EVENT_FLAGS.WARNING) ? "WARNING" : !!(eventFlag & EVENT_FLAGS.SUCCESS) ? "SUCCESS" : ""
+        eventFlag && !!(eventFlag & EVENT_FLAGS.ERROR)
+            ? "ERROR"
+            : eventFlag & EVENT_FLAGS.WARNING
+              ? "WARNING"
+              : eventFlag & EVENT_FLAGS.SUCCESS
+                ? "SUCCESS"
+                : ""
     const isEventNonRegular = eventFlag && !(eventFlag & EVENT_FLAGS.REGULAR)
     const backgroundColor =
         eventFlag && !!(eventFlag & EVENT_FLAGS.ERROR)
             ? "bg-pink-800"
-            : !!(eventFlag & EVENT_FLAGS.WARNING)
+            : eventFlag & EVENT_FLAGS.WARNING
               ? "bg-amber-500"
-              : !!(eventFlag & EVENT_FLAGS.SUCCESS)
+              : eventFlag & EVENT_FLAGS.SUCCESS
                 ? "bg-green-600"
                 : "bg-gray-500"
 

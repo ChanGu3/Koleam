@@ -46,7 +46,7 @@ export function MemberCTX({ children }) {
         if (!memberIsSignedIn) {
             queryClient.invalidateQueries({ queryKey: ["USER"] }).then()
         }
-    }, [memberIsSignedIn])
+    }, [memberIsSignedIn, queryClient])
 
     async function memberSignIn(email, password, SetIsFetching = () => {}) {
         SetIsFetching(true)

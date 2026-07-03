@@ -32,7 +32,12 @@ apiRouter.use("/title", authorizeController.AuthorizeAdmin, titleRouter, adminTi
 //
 // - Temp Uploads -
 //
-apiRouter.put("/temp/upload/chunk", authorizeController.AuthorizeAdmin, multerUpload.fields([{ name: "tempChunk", maxCount: 1 }]), uploadsController.UploadChunkToTempFile)
+apiRouter.put(
+    "/temp/upload/chunk",
+    authorizeController.AuthorizeAdmin,
+    multerUpload.fields([{ name: "tempChunk", maxCount: 1 }]),
+    uploadsController.UploadChunkToTempFile
+)
 apiRouter.delete("/temp/upload/chunk", authorizeController.AuthorizeAdmin, uploadsController.DeleteTempFile)
 
 //

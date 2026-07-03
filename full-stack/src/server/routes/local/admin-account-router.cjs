@@ -6,5 +6,4 @@ const adminAccountRouter = express.Router()
 adminAccountRouter.get("/", adminController.AdminGetSingleAdmin)
 adminAccountRouter.put("/password", adminController.AdminUpdatePassword)
 
-
 module.exports = adminAccountRouter

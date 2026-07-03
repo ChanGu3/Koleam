@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 import "../../tailwind.css"
-import { useNavigate } from "react-router-dom"
 // TODO: possibly remove this entirley or use it
 
 function LinksTitle({ titleName }) {
@@ -38,7 +37,6 @@ function LinkTab({ titleName, links }) {
 }
 
 function FooterSkeleton() {
-    const navigate = useNavigate
     const [isMember, SetIsMember] = useState(false)
     const [isAdmin, SetIsAdmin] = useState(false)
 
@@ -125,7 +123,9 @@ function FooterSkeleton() {
                     </div>
                     <div className="p-2 w-full flex flex-col items-center">
                         <div className="w-[95%] border-t-1 border-s-white">
-                            <p className="p-1 mt-2 font-semibold text-xs md:text-md text-o-white">&copy; koleam CHANGE THIS TO BE POPULATED BY .env</p>
+                            <p className="p-1 mt-2 font-semibold text-xs md:text-md text-o-white">
+                                &copy; koleam CHANGE THIS TO BE POPULATED BY .env
+                            </p>
                         </div>
                     </div>
                 </div>

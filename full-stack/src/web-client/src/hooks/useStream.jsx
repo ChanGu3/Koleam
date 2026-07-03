@@ -207,11 +207,6 @@ export function useUpdateVideoRender({ onSuccess = () => {}, onError = () => {},
 
                 // DO NOT await these, as the EventSource queries function never "resolves".
                 queryClient.invalidateQueries({ queryKey: ["STREAM", "VIDEO", streamID, "RENDER_INFO"] })
-                queryClient.invalidateQueries({ queryKey: ["STREAM", streamID, "AUDIO", label, "RENDER_INFO"] })
-                queryClient.invalidateQueries({ queryKey: ["STREAM", streamID, "SUBTITLE", label, isCC, "RENDER_INFO"] })
-
-                // DO NOT await this, as the EventSource query function never "resolves".
-                queryClient.invalidateQueries({ queryKey: ["STREAM", "VIDEO", streamID, "RENDER_INFO"] })
             }
 
             // useStreamVideoRenderInfo hook when the job is complete.
@@ -265,7 +260,8 @@ export function useAddAudioRender({ onSuccess = () => {}, onError = () => {}, in
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["STREAM", "AUDIO", "ADD"],
-        mutationFn: async ({ streamID, label, streamIndexAudioOnly, tempFileID }) => await AddStreamAudio(streamID, label, streamIndexAudioOnly, tempFileID),
+        mutationFn: async ({ streamID, label, streamIndexAudioOnly, tempFileID }) =>
+            await AddStreamAudio(streamID, label, streamIndexAudioOnly, tempFileID),
         onSuccess: async (data, variables, onMutateResult, context) => {
             if (invalidateQueries) {
                 const { streamID, label } = variables
@@ -286,7 +282,8 @@ export function useUpdateAudioRender({ onSuccess = () => {}, onError = () => {} 
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["STREAM", "AUDIO", "UPDATE"],
-        mutationFn: async ({ streamID, label, newFile = null, newLabel = null }) => await UpdateStreamAudio(streamID, label, { newFile, newLabel }),
+        mutationFn: async ({ streamID, label, newFile = null, newLabel = null }) =>
+            await UpdateStreamAudio(streamID, label, { newFile, newLabel }),
         onSuccess: async (data, variables, onMutateResult, context) => {
             const { streamID, label, newFile, newLabel } = variables
             await queryClient.invalidateQueries({ queryKey: ["STREAM", streamID] })
@@ -315,7 +312,15 @@ export function useDeleteAudioRender({ onSuccess = () => {}, onError = () => {} 
     })
 }
 
-export function useStreamAudioRenderInfo(streamID, label, onStartCallback, onMessageCallback, onCompleteCallback, onErrorCallback, isDownloaded) {
+export function useStreamAudioRenderInfo(
+    streamID,
+    label,
+    onStartCallback,
+    onMessageCallback,
+    onCompleteCallback,
+    onErrorCallback,
+    isDownloaded
+) {
     const queryClient = useQueryClient()
     return useQuery({
         queryKey: ["STREAM", streamID, "AUDIO", label, "RENDER_INFO"],
@@ -345,7 +350,8 @@ export function useAddSubtitleRender({ onSuccess = () => {}, onError = () => {},
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["STREAM", "SUBTITLE", "ADD"],
-        mutationFn: async ({ streamID, label, isCC, streamIndexSubtitleOnly, tempFileID }) => await AddStreamSubtitle(streamID, label, isCC, streamIndexSubtitleOnly, tempFileID),
+        mutationFn: async ({ streamID, label, isCC, streamIndexSubtitleOnly, tempFileID }) =>
+            await AddStreamSubtitle(streamID, label, isCC, streamIndexSubtitleOnly, tempFileID),
         onSuccess: async (data, variables, onMutateResult, context) => {
             if (invalidateQueries) {
                 const { streamID, label, isCC } = variables
@@ -396,7 +402,16 @@ export function useDeleteSubtitleRender({ onSuccess = () => {}, onError = () => 
     })
 }
 
-export function useStreamSubtitleRenderInfo(streamID, label, isCC, onStartCallback, onMessageCallback, onCompleteCallback, onErrorCallback, isDownloaded) {
+export function useStreamSubtitleRenderInfo(
+    streamID,
+    label,
+    isCC,
+    onStartCallback,
+    onMessageCallback,
+    onCompleteCallback,
+    onErrorCallback,
+    isDownloaded
+) {
     const queryClient = useQueryClient()
     return useQuery({
         queryKey: ["STREAM", streamID, "SUBTITLE", label, isCC, "RENDER_INFO"],

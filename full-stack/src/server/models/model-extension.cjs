@@ -4,14 +4,14 @@ class ModelExtension extends Model {
     /**
      * @abstract
      */
-    static async Initialize({ sequelize, models }) {
+    static async Initialize({ sequelize: _s, models: _m }) {
         return
     }
 
     /**
      * @abstract
      */
-    static async Connect_Associations({ sequelize, models }) {
+    static async Connect_Associations({ sequelize: _s, models: _m }) {
         return
     }
 }

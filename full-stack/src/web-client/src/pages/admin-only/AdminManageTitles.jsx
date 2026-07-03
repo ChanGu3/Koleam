@@ -2,7 +2,7 @@
 // BECOMING MORE DOWNGRAFED IN QUALITY BECAUSE IM GETTING TIRED AND COULDNT CARE LESS TO DO IT UNLESS IM MOTIVATED TO DO SO YEP
 import { useQueryClient } from "@tanstack/react-query"
 import { GridLoader } from "react-spinners"
-import { useState, useEffect, useRef, useId, useMemo } from "react"
+import { useState, useEffect, useRef, useId, useMemo, useCallback } from "react"
 import { HorizontalScrollable, WindowVerticalQueryScrollable } from "../../components/Scrollable.jsx"
 import { FetchTitleBySearchQuery } from "../../services/Titles/FetchTitle.js"
 import ImageUI from "../../components/ImageUI.jsx"
@@ -59,8 +59,6 @@ import {
     useAddSubtitleRender,
     useUpdateSubtitleRender,
     useDeleteSubtitleRender,
-    useStreamAudioRenderInfo,
-    useStreamSubtitleRenderInfo,
     useStreamVideoRenderInfo,
     invalidateAddingStreamQueries,
 } from "../../hooks/useStream.jsx"
@@ -118,7 +116,7 @@ function AdminManageTitles() {
                         getNextPageParam={(lastPage, allPages) =>
                             lastPage && lastPage.length === searchGetLimit ? allPages.length * searchGetLimit : undefined
                         }
-                        ItemRenderer={({ index, dataItem }) => {
+                        ItemRenderer={({ index: _i, dataItem }) => {
                             return (
                                 <TitleSlot
                                     key={dataItem.id}
@@ -192,7 +190,7 @@ function AdminManageTitles() {
 
 function TitleSlot({
     titleData: { id, label, seasons_count, stream_episodes_count, stream_movies_count, ...rest },
-    onEdit = (titleData) => {},
+    onEdit = (_titleData) => {},
 }) {
     const { data: coverVersion } = useGetTitleCoverVersion(id)
     const navigate = useNavigate()
@@ -491,18 +489,18 @@ function InstallmentInfoForm({
 function InstallmentForm({
     installments = [],
     formLabel = "Edit Installments",
-    onEditInstallmentOrder = (item, index, newIndex) => true, // true if the installment order is successfully updated, false if not
+    onEditInstallmentOrder = (_item, _index, _newIndex) => true, // true if the installment order is successfully updated, false if not
     isLoadingEditInstallmentOrder = null,
-    onAddInstallment = ({ label, isSeason }) => {},
+    onAddInstallment = ({ _label, _isSeason }) => {},
     isLoadingAddInstallment = null,
-    onEditInstallment = ({ installmentID, label, isSeason }) => {},
+    onEditInstallment = ({ _installmentID, _label, _isSeason }) => {},
     isLoadingEditInstallment = null,
-    onDeleteInstallment = async ({ item }) => true,
+    onDeleteInstallment = async ({ _item }) => true,
     isLoadingDeleteInstallment = null,
-    onDeleteStream = async ({ item }) => {},
+    onDeleteStream = async ({ _item }) => {},
     isLoadingDeleteStream = null,
-    onEditStream = (item, installment) => {},
-    onAddStream = (installment) => {},
+    onEditStream = (_item, _installment) => {},
+    onAddStream = (_installment) => {},
 }) {
     const { PopupComponent } = usePopup()
     const [isDeleteInstallmentConfirmationOpen, setIsDeleteInstallmentConfirmationOpen] = useState(false)
@@ -732,7 +730,7 @@ function InstallmentForm({
     )
 }
 
-function InstallmentStreamItem({ item, onEdit = (item) => {}, onDelete = (item) => {} }) {
+function InstallmentStreamItem({ item, onEdit = (_item) => {}, onDelete = (_item) => {} }) {
     const { data: coverVersion } = useGetThumbnailCoverVersion(item.id)
 
     return (
@@ -906,7 +904,7 @@ function MediaContainer({ children, label }) {
     )
 }
 
-function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }, file, fileType, onClose = () => {} }) {
+function UploadMediaForm({ streamID, existingMedia: { video, audios: _a, subtitles: _s }, file, fileType, onClose = () => {} }) {
     const { addError } = useEventError()
     const queryClient = useQueryClient()
     const uploadID = useId()
@@ -931,7 +929,7 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
         }
     }, [file, fileType])
 
-    function CancelUpload() {
+    const CancelUpload = useCallback(() => {
         tempFileUpload.current &&
             tempFileUpload.current
                 .CancelUpload()
@@ -941,7 +939,7 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
                 .catch((err) => {
                     addError(`${err.message}`, 1)
                 })
-    }
+    }, [addError])
 
     const tempFileUpload = useRef(null)
     const isInitialized = useRef(false)
@@ -990,7 +988,7 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
                     await ffmpeg.deleteFile(filename)
                     await ffmpeg.deleteFile(tempJSONFilename)
                 } catch (err) {
-                    // already deleted
+                    console.warn("Error deleting temp files from ffmpeg (possibly already deleted)", err)
                 }
 
                 if (!probeData || !probeData.streams || probeData.streams.length <= 0) {
@@ -1058,22 +1056,25 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
             setMediaFailure(true)
         })
 
+        const ffmpegTemp = ffmpegRef.current
         return () => {
             setMediaFailure(false)
 
             if (tempFileUpload.current) {
                 try {
                     tempFileUpload.current.CancelUpload({ force: false })
-                } catch (e) {}
+                } catch (e) {
+                    console.error("Error cancelling upload on unmount", e)
+                }
                 tempFileUpload.current = null
             }
 
-            const ffmpeg = ffmpegRef.current
-            if (ffmpeg.loaded) {
+            const ffmpeg = ffmpegTemp
+            if (ffmpeg && ffmpeg.loaded) {
                 ffmpeg.terminate()
             }
         }
-    }, [])
+    }, [CancelUpload, addError, file, uploadID])
 
     function isAllInfoFilled() {
         let isAllFilled = true
@@ -1081,7 +1082,7 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
             subtitleMedia.forEach((item, index) => {
                 if (
                     selectedSubtitleMedia[index] &&
-                    (item.label === null || item.label === undefined || item.label === "" || !item.isCC === undefined || item.isCC === null)
+                    (item.label === null || item.label === undefined || item.label === "" || item.isCC === undefined || item.isCC === null)
                 ) {
                     isAllFilled = false
                 }
@@ -1154,7 +1155,9 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
                             label: item.label,
                             tempFileID: tempFileUpload.current.LastUploadData.id,
                         })
-                    } catch (err) {}
+                    } catch (err) {
+                        console.error(err)
+                    }
                 }
             }
         }
@@ -1169,7 +1172,9 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
                             label: item.label,
                             tempFileID: tempFileUpload.current.LastUploadData.id,
                         })
-                    } catch (err) {}
+                    } catch (err) {
+                        console.error(err)
+                    }
                 }
             }
         }
@@ -1181,7 +1186,9 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
                 } else {
                     await addVideoRender({ streamID: streamID, tempFileID: tempFileUpload.current.LastUploadData.id })
                 }
-            } catch (err) {}
+            } catch (err) {
+                console.error(err)
+            }
         }
 
         const audiosToInvalidate = audioMedia ? audioMedia.filter((_, index) => selectedAudioMedia[index]) : []
@@ -1388,8 +1395,10 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios, subtitles }
 }
 
 function StreamFormPlusSubtitle({ subtitle, onEdit = () => {}, onDelete = () => {} }) {
-    const [subtitleProgress, setSubtitleProgress] = useState(null)
+    const subtitleProgress = null
     /*
+    const [subtitleProgress, setSubtitleProgress] = useState(null)
+
     Removed To Save Performance 
     const eventSource = useStreamSubtitleRenderInfo(
         subtitle.streamID,
@@ -1452,8 +1461,10 @@ function StreamFormPlusSubtitle({ subtitle, onEdit = () => {}, onDelete = () => 
 }
 
 function StreamFormPlusAudio({ audio, onEdit = () => {}, onDelete = () => {} }) {
-    const [audioProgress, setAudioProgress] = useState(null)
+    const audioProgress = null
     /*
+    const [audioProgress, setAudioProgress] = useState(null)
+
         Removed To Save Performance 
     const eventSource = useStreamAudioRenderInfo(
         audio.streamID,
@@ -1513,7 +1524,7 @@ function StreamFormPlusAudio({ audio, onEdit = () => {}, onDelete = () => {} }) 
 
 function StreamFormPlusVideo({ video, onDelete = () => {} }) {
     const [videoProgress, setVideoProgress] = useState(null)
-    const eventSource = useStreamVideoRenderInfo(
+    useStreamVideoRenderInfo(
         video?.streamID,
         () => {
             setVideoProgress(0)
@@ -1996,7 +2007,7 @@ function StreamFormPlus({
     )
 }
 
-function AddTitlePopup({ isOpen, onClose = (isSuccess) => {} }) {
+function AddTitlePopup({ isOpen, onClose = (_isSuccess) => {} }) {
     const [selectedCoverFile, setSelectedCoverFile] = useState(null)
     const [selectedTitleName, setSelectedTitleName] = useState("")
     const [selectedOriginalTranslation, setSelectedOriginalTranslation] = useState("")
@@ -2098,12 +2109,12 @@ function EditTitlePopup({ isOpen, onClose, titleData }) {
 
     // TITLE ONLY FORM
     const [selectedCoverFile, setSelectedCoverFile] = useState(null)
-    const [selectedTitleName, setSelectedTitleName] = useState(titleData.label)
-    const [selectedOriginalTranslation, setSelectedOriginalTranslation] = useState(titleData.originalTranslation || [])
-    const [selectedFilmAgeMinimum, setSelectedFilmAgeMinimum] = useState(titleData.filmAgeMin || [])
-    const [selectedFilmSuitability, setSelectedFilmSuitability] = useState(titleData.filmSuitability || [])
-    const [selectedDescription, setSelectedDescription] = useState(titleData.description || [])
-    const [selectedCopyright, setSelectedCopyright] = useState(titleData.copyright || [])
+    const [selectedTitleName, setSelectedTitleName] = useState(titleData.label || null)
+    const [selectedOriginalTranslation, setSelectedOriginalTranslation] = useState(titleData.originalTranslation || null)
+    const [selectedFilmAgeMinimum, setSelectedFilmAgeMinimum] = useState(titleData.filmAgeMin || null)
+    const [selectedFilmSuitability, setSelectedFilmSuitability] = useState(titleData.filmSuitability || null)
+    const [selectedDescription, setSelectedDescription] = useState(titleData.description || null)
+    const [selectedCopyright, setSelectedCopyright] = useState(titleData.copyright || null)
     const [selectedContentAdvisories, setSelectedContentAdvisories] = useState(titleData.all_content_advisories || [])
     const [selectedOtherTranslations, setSelectedOtherTranslations] = useState(titleData.all_other_translations || [])
     const [selectedGenres, setSelectedGenres] = useState(titleData.all_genres || [])
@@ -2169,11 +2180,7 @@ function EditTitlePopup({ isOpen, onClose, titleData }) {
     // TITLE ONLY FORM END
 
     // ** INSTALLMENT FORM
-    const {
-        data: installments,
-        error: isErrorTitleInstallments,
-        isLoading: isLoadingTitleInstallments,
-    } = useGetIntallmentsByTitleID(titleData.id)
+    const { data: installments } = useGetIntallmentsByTitleID(titleData.id)
     const { mutate: addInstallment, isPending: isPendingAddInstallment } = useAddInstallment({
         onError: (error) => {
             addError(error.message, 1)
@@ -2396,10 +2403,10 @@ function EditTitlePopup({ isOpen, onClose, titleData }) {
                     onClose={() => {
                         setCurrentEditStream(null)
                         setIsEditStreamOpen(false)
-                        setStreamName(null)
-                        setSynopsis(null)
-                        setReleaseDate(null)
-                        setStreamThumbnail(null)
+                        setEditStreamName(null)
+                        setEditSynopsis(null)
+                        setEditReleaseDate(null)
+                        setEditStreamThumbnail(null)
                     }}
                     isOpen={isEditStreamOpen}
                 >
@@ -2423,6 +2430,12 @@ function EditTitlePopup({ isOpen, onClose, titleData }) {
                                 releaseDate: editReleaseDate,
                                 streamThumbnail: editStreamThumbnail,
                             })
+                            const newEditStream = installments
+                                .find((el) => el.id === addOrEditInstallmentID)
+                                .TitleInstallmentStreams.find((el) => el.id === currentEditStream.id)
+                            if (newEditStream) {
+                                setCurrentEditStream(newEditStream)
+                            }
                         }}
                         currentEditStream={currentEditStream}
                     />
@@ -2630,13 +2643,13 @@ function PopupTab({ className = "", children, label = null }) {
 
 // TODO: NEED TO MOVE THE INPUTS INTO THEIR OWN FILE OR FOLDER IDC RIGHT NOW SO CLOSE TO BEING FINISHED
 
-function InputImageFile({ className = "", originalImageUrl = null, onFileChange = (file) => {}, required = false }) {
+function InputImageFile({ className = "", originalImageUrl = null, onFileChange = (_file) => {}, required = false }) {
     const [selectedFile, setSelectedFile] = useState(null)
     const inputRef = useRef(null)
 
     return (
         <div
-            onClick={(e) => {
+            onClick={() => {
                 inputRef.current.click()
             }}
             className={`${className} flex flex-col gap-2 md:gap-3 items-center justify-center w-full h-full relative`}
@@ -2683,7 +2696,7 @@ function InputImageFile({ className = "", originalImageUrl = null, onFileChange 
     )
 }
 
-function InputMediaFile({ className = "", onClick = (e) => {}, onFileChange = (file) => {} }) {
+function InputMediaFile({ onClick = (_e) => {}, onFileChange = (_file) => {} }) {
     const inputRef = useRef(null)
 
     return (
@@ -2790,7 +2803,7 @@ function InputSelect({
     allowSelfInput = false,
     options = [],
     children,
-    onEnter = (e) => {},
+    onEnter = (_e) => {},
 }) {
     const datalistId = useId()
 
@@ -2869,19 +2882,19 @@ function InputSelectMulti({
     setOptions,
     currentSelectedOptions,
     setCurrentSelectedOptions,
-    onError = ({ message }) => {},
-    onClickCurrentSelectedOption = (option, index) => {},
+    onError = ({ message: _m }) => {},
+    onClickCurrentSelectedOption = (_option, _index) => {},
 }) {
     const [value, SetValue] = useState("")
 
     useEffect(() => {
         setOptions((prev) => prev.sort())
-    }, [options])
+    }, [options, setOptions])
 
     useEffect(() => {
         setOptions((prev) => prev.filter((option) => !currentSelectedOptions.includes(option)))
         setCurrentSelectedOptions((prev) => prev.sort())
-    }, [currentSelectedOptions])
+    }, [currentSelectedOptions, setCurrentSelectedOptions, setOptions])
 
     function OnChange(newValue) {
         if (!allowSelfInput) {
@@ -2923,7 +2936,7 @@ function InputSelectMulti({
             allowSelfInput={allowSelfInput}
             options={options}
             onChange={OnChange}
-            onEnter={(e) => {
+            onEnter={() => {
                 onSelectOption(value)
             }}
         >
@@ -2972,7 +2985,7 @@ function InputSelectMulti({
     )
 }
 
-function InputBox({ isChecked, setIsChecked, children, required = false, className = "" }) {
+function InputBox({ isChecked, setIsChecked, children, className = "" }) {
     return (
         <div className={`${className} w-fit flex flex-col md:flex-row items-center justify-between gap-2 p-2 cursor-pointer`}>
             <button onClick={() => setIsChecked(!isChecked)}>
@@ -3001,9 +3014,9 @@ function OrderedList({
     ItemElement,
     items,
     isSelectable = false,
-    onReleaseItem = async (item, index, newIndex) => true, // successful release of item, return false to reset the what you see list back to original
-    onSelectedItem = (item) => {},
-    onRemoveItem = async (item, index) => true,
+    onReleaseItem = async (_item, _index, _newIndex) => true, // successful release of item, return false to reset the what you see list back to original
+    onSelectedItem = (_item) => {},
+    onRemoveItem = async (_item, _index) => true,
     isLoading = null,
 }) {
     const [whatTheySeeItems, setWhatTheySeeItems] = useState(items)
@@ -3017,7 +3030,7 @@ function OrderedList({
         if (currentlySelectedItem) {
             onSelectedItem(currentlySelectedItem)
         }
-    }, [currentlySelectedItem])
+    }, [currentlySelectedItem, onSelectedItem])
 
     const grabbedIndexRef = useRef(null)
     const [currentGrabbedItem, setCurrentGrabbedItem] = useState(null)
@@ -3113,7 +3126,7 @@ function OrderedList({
                         onEnter={(index) => {
                             OnEnterItem(index)
                         }}
-                        onClick={(item, index) => {
+                        onClick={(item, _index) => {
                             if (isSelectable) {
                                 setCurrentlySelectedItem(item)
                             }
@@ -3148,15 +3161,15 @@ function OrderedListItem({
     ItemElement,
     item,
     index,
-    onClick = (item, index) => {},
-    onRemove = (item, index) => {},
+    onClick = (_item, _index) => {},
+    onRemove = (_item, _index) => {},
     isRemoving = false,
     onMoveUp = () => {},
     onMoveDown = () => {},
-    onGrab = (item, index) => {},
-    onRelease = (item, index) => {},
+    onGrab = (_item, _index) => {},
+    onRelease = (_item, _index) => {},
     useArrows = true,
-    onEnter = (index) => {},
+    onEnter = (_index) => {},
     isClickDisabled = false,
 }) {
     const elementRef = useRef(null)
@@ -3168,6 +3181,8 @@ function OrderedListItem({
     const prevUnderElement = useRef(null)
 
     useEffect(() => {
+        const elementRefLocal = elementRef.current
+
         function handleExit() {
             if (isInside) {
                 setIsInside(false)
@@ -3179,8 +3194,8 @@ function OrderedListItem({
         }
 
         return () => {
-            if (elementRef.current) {
-                elementRef.current.removeEventListener("CUSTOM-TOUCHEXIT", handleExit)
+            if (elementRefLocal) {
+                elementRefLocal.removeEventListener("CUSTOM-TOUCHEXIT", handleExit)
             }
         }
     }, [isInside])
@@ -3223,10 +3238,10 @@ function OrderedListItem({
 
     // ON ENTER FOR TOUCH SCREEN END
 
-    function ElementRepositionMouse(e) {
+    const ElementRepositionMouse = useCallback((e) => {
         elementRef.current.style.left = `${e.clientX - 25}px`
         elementRef.current.style.top = `${e.clientY}px`
-    }
+    }, [])
 
     function ElementRepositionTouch(e) {
         const touch = e.touches[0]
@@ -3254,6 +3269,15 @@ function OrderedListItem({
         }
     }, [])
 
+    const OnRelease = useCallback(
+        (e) => {
+            e.preventDefault()
+            setIsGrabbed(false)
+            onRelease(item, index)
+        },
+        [item, index, onRelease]
+    )
+
     useEffect(() => {
         function handleMouseMove(e) {
             ElementRepositionMouse(e)
@@ -3276,7 +3300,7 @@ function OrderedListItem({
             document.removeEventListener("mouseup", OnRelease)
             document.removeEventListener("touchend", OnRelease)
         }
-    }, [isGrabbed, ElementRepositionMouse])
+    }, [isGrabbed, ElementRepositionMouse, OnRelease])
 
     function OnMouseGrab(e) {
         e.preventDefault()
@@ -3292,20 +3316,14 @@ function OrderedListItem({
         onGrab(item, index)
     }
 
-    function OnRelease(e) {
-        e.preventDefault()
-        setIsGrabbed(false)
-        onRelease(item, index)
-    }
-
     return (
         <>
             <div
                 onTouchMove={handleTouchMove}
-                onClick={(e) => {
+                onClick={() => {
                     onClick(item, index)
                 }}
-                onMouseEnter={(e) => {
+                onMouseEnter={() => {
                     onEnter(index)
                 }}
                 ref={elementRef}

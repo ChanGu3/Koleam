@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query"
 import { GetAllGenres, AddGenre, DeleteGenre } from "../services/Titles/FetchGenre.js"
-import { data } from "react-router-dom"
 
 export function useGetGenres(searchGetLimit) {
     return useInfiniteQuery({

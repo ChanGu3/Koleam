@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useMediaQuery } from "react-responsive"
 import "../../tailwind.css"
 
@@ -31,14 +31,6 @@ function SliderItem({ index, component, sliderItems }) {
 
 /* Main Slider */
 function Slider({ sliderList, title }) {
-    if (sliderList === undefined) {
-        return null
-    }
-
-    if (sliderList.length === 0) {
-        return null
-    }
-
     const fixedLeftOffset = 60
     const fixedLeftOffsetLG = 120
 
@@ -59,50 +51,57 @@ function Slider({ sliderList, title }) {
 
     const isMD = useMediaQuery({ minWidth: 768 })
 
-    function IsElementInViewport(el) {
-        const sliderOffset = (isMD ? 32 : 16) + 4
+    const IsElementInViewport = useCallback(
+        (el) => {
+            const sliderOffset = (isMD ? 32 : 16) + 4
 
-        const rect = el.getBoundingClientRect()
+            const rect = el.getBoundingClientRect()
 
-        return rect.left >= 0 && rect.right <= document.documentElement.clientWidth - sliderOffset
-    }
+            return rect.left >= 0 && rect.right <= document.documentElement.clientWidth - sliderOffset
+        },
+        [isMD]
+    )
 
-    function DetectCurrentItemWidth() {
-        const el = sliderItems.current[0]
-
-        const style = getComputedStyle(el)
-        const marginLeft = parseFloat(style.marginLeft)
-        const marginRight = parseFloat(style.marginRight)
-        const width = el.getBoundingClientRect().width
-
-        SetLeftOffset({
-            leftOffset: fixedLeftOffset - marginLeft,
-            leftOffsetLG: fixedLeftOffsetLG - marginLeft,
-        })
-        SetTotalWidthOfItems(width + marginLeft + marginRight)
-    }
-
-    function HandleTranistionEnd() {
+    const HandleTranistionEnd = useCallback(() => {
         let isInViewport = false
 
-        sliderItems.current.forEach((element, index) => {
+        sliderItems.current.forEach((element, _index) => {
             isInViewport = IsElementInViewport(element)
             if (isInViewport) {
-                const { overlay, component } = element.getElementsByTagName("div")
+                const { overlay, _component } = element.getElementsByTagName("div")
                 //overlay.classList.remove('p-3');
                 //component.classList.remove('p-3');
                 overlay.classList.remove("hidden")
                 overlay.classList.add("hidden")
             } else {
-                const { overlay, component } = element.getElementsByTagName("div")
+                const { overlay, _component } = element.getElementsByTagName("div")
                 //overlay.classList.add('p-3');
                 //component.classList.add('p-3');
                 overlay.classList.remove("hidden")
             }
         })
-    }
+    }, [IsElementInViewport])
 
     useEffect(() => {
+        function DetectCurrentItemWidth() {
+            const el = sliderItems.current[0]
+
+            if (!el) {
+                return
+            }
+
+            const style = getComputedStyle(el)
+            const marginLeft = parseFloat(style.marginLeft)
+            const marginRight = parseFloat(style.marginRight)
+            const width = el.getBoundingClientRect().width
+
+            SetLeftOffset({
+                leftOffset: fixedLeftOffset - marginLeft,
+                leftOffsetLG: fixedLeftOffsetLG - marginLeft,
+            })
+            SetTotalWidthOfItems(width + marginLeft + marginRight)
+        }
+
         DetectCurrentItemWidth()
 
         window.addEventListener("resize", HandleTranistionEnd)
@@ -110,7 +109,15 @@ function Slider({ sliderList, title }) {
         return () => {
             window.removeEventListener("resize", HandleTranistionEnd)
         }
-    }, [currFirstItemIndex, isMD])
+    }, [currFirstItemIndex, isMD, HandleTranistionEnd])
+
+    if (sliderList === undefined) {
+        return null
+    }
+
+    if (sliderList.length === 0) {
+        return null
+    }
 
     function SlideLeft() {
         currFirstItemIndex !== 0 ? SlideItemsAsFirst(currFirstItemIndex - 1) : SlideItemsAsFirst(sliderList.length - 1)

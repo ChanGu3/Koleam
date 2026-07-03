@@ -22,20 +22,12 @@ function Dropdown({
     iconClassName = "",
     pxCutoffHeight = 50,
 }) {
-    if (optionList.length == 0) {
-        return <></>
-    }
-
     const dropDownComponent = useRef()
     const optionsButtonRef = useRef()
     const optionsRef = useRef()
     const [currSelectedOptionIndex, SetCurrSelectedOptionIndex] = useState(0)
-    const [currOptionText, SetCurrOptionText] = useState()
 
     useEffect(() => {
-        SetCurrSelectedOptionIndex(0)
-        SetCurrOptionText(optionList[0].title)
-
         document.addEventListener("mousedown", OnMouseDown)
 
         return () => {
@@ -43,20 +35,25 @@ function Dropdown({
         }
     }, [])
 
+    if (optionList.length == 0) {
+        return <></>
+    }
+
+    const currOptionText = optionList[currSelectedOptionIndex]?.title || optionList[0]?.title || ""
+
     function OnMouseDown(event) {
         if (!dropDownComponent.current.contains(event.target) && !optionsRef.current.classList.contains("hidden")) {
             ToggleOptions(optionsRef)
         }
     }
 
-    function UnselectOption(optionRef) {
+    function UnselectOption(_optionRef) {
         SetCurrSelectedOptionIndex(null)
     }
 
     function SelectOption(optionRef, index) {
         UnselectOption(currSelectedOptionIndex)
         SetCurrSelectedOptionIndex(index)
-        SetCurrOptionText(optionList[index].title)
         ToggleOptions(optionsRef)
     }
 
@@ -72,7 +69,7 @@ function Dropdown({
                         ToggleOptions(optionsRef)
                     }}
                     type="button"
-                    className="flex flex-row justify-between items-center gap-x-2 cursor-pointer py-3 px-2 max-w-[100%]"
+                    className="flex flex-row justify-between items-center gap-x-2 cursor-pointer py-3 px-2 max-w-full"
                 >
                     <p className="text-s-white font-bold truncate w-full text-start text-sm">{currOptionText}</p>
                     <ToggleIcon className={`${iconClassName} w-4 text-s-white`} />

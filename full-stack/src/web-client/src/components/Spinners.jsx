@@ -1,4 +1,4 @@
-import { MoonLoader, ScaleLoader, FadeLoader, GridLoader } from "react-spinners"
+import { MoonLoader } from "react-spinners"
 import { useMediaQuery } from "react-responsive"
 import { useMemo } from "react"
 import useUIConfig from "../hooks/useUIConfig"

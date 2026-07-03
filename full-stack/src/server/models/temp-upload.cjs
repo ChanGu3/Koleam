@@ -7,7 +7,7 @@ const path = require("path")
 
 class TempUpload extends ModelExtension {
     static GetNewExpDate() {
-        newDate = new Date()
+        const newDate = new Date()
         newDate.setMinutes(newDate.getMinutes() + 5)
         return newDate
     }
@@ -27,7 +27,7 @@ class TempUpload extends ModelExtension {
     /**
      * @override
      */
-    static async Initialize({ sequelize, models }) {
+    static async Initialize({ sequelize, models: _ }) {
         TempUpload.init(
             {
                 id: {
@@ -93,49 +93,45 @@ class TempUpload extends ModelExtension {
     // resolve --> instance: session
     //
     static AddToDB(originalFilename, fileSize, chunkSize) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const newSession = TempUpload.build({
-                    originalFilename: originalFilename,
-                    fileSize: fileSize,
-                    fileSizeDownloaded: 0,
-                    chunkSize: chunkSize,
-                    chunkNum: 0,
-                    expDate: TempUpload.GetNewExpDate(),
-                })
+        try {
+            const newSession = TempUpload.build({
+                originalFilename: originalFilename,
+                fileSize: fileSize,
+                fileSizeDownloaded: 0,
+                chunkSize: chunkSize,
+                chunkNum: 0,
+                expDate: TempUpload.GetNewExpDate(),
+            })
 
-                newSession.validate()
+            newSession.validate()
 
-                newSession.save()
+            newSession.save()
 
-                resolve(newSession)
-            } catch (err) {
-                Logging.LogError(`Could not build temp upload for ${originalFilename} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
+            return newSession
+        } catch (err) {
+            Logging.LogError(`Could not build temp upload for ${originalFilename} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> TempUpload[]: all expired uploads
     //
-    static GetAllExpired() {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const expiredUploads = await TempUpload.findAll({
-                    where: {
-                        expDate: {
-                            [Op.lt]: new Date(),
-                        },
+    static async GetAllExpired() {
+        try {
+            const expiredUploads = await TempUpload.findAll({
+                where: {
+                    expDate: {
+                        [Op.lt]: new Date(),
                     },
-                })
+                },
+            })
 
-                resolve(expiredUploads)
-            } catch (err) {
-                reject(new Error(errormsg.fallback))
-            }
-        })
+            return expiredUploads
+        } catch {
+            throw new Error(errormsg.fallback)
+        }
     }
 
     //
@@ -143,103 +139,97 @@ class TempUpload extends ModelExtension {
     // resolve --> instance: TempUpload
     //
     //
-    static GetByID(id) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const upload = await TempUpload.findByPk(id)
+    static async GetByID(id) {
+        try {
+            const upload = await TempUpload.findByPk(id)
 
-                if (upload) {
-                    resolve(upload.toJSON())
-                } else {
-                    reject(new Error(errormsg.uploadDoesNotExist))
-                }
-            } catch (err) {
-                reject(new Error(errormsg.fallback))
+            if (upload) {
+                return upload.toJSON()
+            } else {
+                throw new Error(errormsg.uploadDoesNotExist)
             }
-        })
+        } catch {
+            throw new Error(errormsg.fallback)
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> instance: TempUpload with updated chunk info
     //
-    static ApplyChunkToDB(id, buffer) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                if (!TempUpload.#Exists(id)) {
-                    reject(new Error(`temp upload with id ${id} does not exist`))
-                }
-
-                const instance = await TempUpload.findByPk(id)
-
-                if (instance.fileSizeDownloaded === instance.fileSize) {
-                    reject(new Error(`upload with id ${id} has already been fully uploaded`))
-                }
-
-                if (buffer.length != instance.chunkSize && instance.fileSizeDownloaded + buffer.length != instance.fileSize) {
-                    reject(new Error(`the expected chunck size is ${instance.chunkSize} but received ${buffer.length}`))
-                }
-
-                await uploads.temp.uploadChuckToTempFile(
-                    TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename)),
-                    buffer
-                )
-
-                instance.fileSizeDownloaded += buffer.length
-                instance.chunkNum += 1
-                instance.expDate = TempUpload.GetNewExpDate()
-
-                await instance.save()
-
-                resolve(instance.toJSON())
-            } catch (err) {
-                reject(new Error(errormsg.fallback))
+    static async ApplyChunkToDB(id, buffer) {
+        try {
+            if (!TempUpload.#Exists(id)) {
+                throw new Error(`temp upload with id ${id} does not exist`)
             }
-        })
+
+            const instance = await TempUpload.findByPk(id)
+
+            if (instance.fileSizeDownloaded === instance.fileSize) {
+                throw new Error(`upload with id ${id} has already been fully uploaded`)
+            }
+
+            if (buffer.length != instance.chunkSize && instance.fileSizeDownloaded + buffer.length != instance.fileSize) {
+                throw new Error(`the expected chunck size is ${instance.chunkSize} but received ${buffer.length}`)
+            }
+
+            await uploads.temp.uploadChuckToTempFile(
+                TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename)),
+                buffer
+            )
+
+            instance.fileSizeDownloaded += buffer.length
+            instance.chunkNum += 1
+            instance.expDate = TempUpload.GetNewExpDate()
+
+            await instance.save()
+
+            return instance.toJSON()
+        } catch {
+            throw new Error(errormsg.fallback)
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> nothing
     //
-    static RemoveByID(id) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const instance = await TempUpload.GetByID(id)
+    static async RemoveByID(id) {
+        try {
+            const instance = await TempUpload.GetByID(id)
 
-                // stop all renders using the temp file as input before removing from system
-                uploads.media.VIDEO_RENDERS.forEach((value, key) => {
-                    if (
-                        path.basename(value.inputFile) ===
-                        TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename))
-                    ) {
-                        value.command.kill("SIGINT")
-                    }
-                })
-                uploads.media.AUDIO_RENDERS.forEach((value, key) => {
-                    if (
-                        path.basename(value.inputFile) ===
-                        TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename))
-                    ) {
-                        value.command.kill("SIGINT")
-                    }
-                })
-                uploads.media.SUBTITLE_RENDERS.forEach((value, key) => {
-                    if (
-                        path.basename(value.inputFile) ===
-                        TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename))
-                    ) {
-                        value.command.kill("SIGINT")
-                    }
-                })
+            // stop all renders using the temp file as input before removing from system
+            uploads.media.VIDEO_RENDERS.forEach((value) => {
+                if (
+                    path.basename(value.inputFile) ===
+                    TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename))
+                ) {
+                    value.command.kill("SIGINT")
+                }
+            })
+            uploads.media.AUDIO_RENDERS.forEach((value) => {
+                if (
+                    path.basename(value.inputFile) ===
+                    TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename))
+                ) {
+                    value.command.kill("SIGINT")
+                }
+            })
+            uploads.media.SUBTITLE_RENDERS.forEach((value) => {
+                if (
+                    path.basename(value.inputFile) ===
+                    TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename))
+                ) {
+                    value.command.kill("SIGINT")
+                }
+            })
 
-                await uploads.temp.deleteTempFile(TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename)))
-                await TempUpload.destroy({ where: { id: id } })
-                resolve()
-            } catch (err) {
-                reject(new Error("could not remove temp upload"))
-            }
-        })
+            await uploads.temp.deleteTempFile(TempUpload.GetFilename(instance.id, TempUpload.GetExtension(instance.originalFilename)))
+            await TempUpload.destroy({ where: { id: id } })
+            return
+        } catch {
+            throw new Error("could not remove temp upload")
+        }
     }
 }
 

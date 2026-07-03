@@ -3,7 +3,7 @@ import { useEffect, useState } from "react"
 import useMember from "../../../hooks/useMember.jsx"
 import { SettingInput } from "../../../components/Settings/SettingInput.jsx"
 
-export function EmailPopupFill({}) {
+export function EmailPopupFill() {
     const [email, SetEmail] = useState("")
     const { memberAccountData, changeEmail } = useMember()
     const [isLoading, SetIsLoading] = useState(false)

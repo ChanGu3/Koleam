@@ -1,5 +1,4 @@
 import "../tailwind.css"
-import { useEffect, useRef, useState } from "react"
 import { Heart } from "lucide-react"
 import { useMemberGetFavorite, useMemberUpdateFavorite } from "../hooks/useTitle.jsx"
 import useMember from "../hooks/useMember.jsx"
@@ -7,7 +6,7 @@ import useMember from "../hooks/useMember.jsx"
 function FavoriteButton({ titleID, className = "" }) {
     const { memberIsSignedIn } = useMember()
 
-    const { data: isFavorite, error: isErrorFavorite, isLoading: isLoadingFavorite } = useMemberGetFavorite(titleID, memberIsSignedIn)
+    const { data: isFavorite } = useMemberGetFavorite(titleID, memberIsSignedIn)
     const { mutate: updateFavorite } = useMemberUpdateFavorite(titleID)
 
     return (

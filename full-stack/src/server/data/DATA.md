@@ -2,11 +2,11 @@
 
 - data such as the sqlite file for the database and the uploaded images and videos will exist in this folder for development
 
-## Database Directory [Contains]
+## Database Directory (Contains)
 
 - sqlite.db (database file)
 
-## Uploads Directory [Contains]
+## Uploads Directory (Contains)
 
 - titles (All Titles)
 - titles/{title_id} (Title Data such as cover.jpg and installments)

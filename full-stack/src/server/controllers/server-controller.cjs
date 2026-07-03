@@ -26,7 +26,7 @@ async function CookieChecker(req, res, next) {
             }
             await db.Session.LogExistingSession(req.sessionID)
             Logging.LogSuccess(`reset session for ${session.loginName}`)
-        } catch (err) {
+        } catch {
             try {
                 await new Promise((resolve, reject) => {
                     req.session.destroy((err) => {
@@ -75,11 +75,11 @@ async function VerifyPrivateAccess(req, res, next) {
     }
 }
 
-async function IsPrivateServerOnline(req, res, next) {
+async function IsPrivateServerOnline(_req, res, _next) {
     res.status(200).json({ success: "Private server is online" })
 }
 
-async function GetEnvColorsForWebsite(req, res) {
+async function GetEnvColorsForWebsite(_req, res) {
     res.status(200).json({
         COLORS: {
             LIGHT_MODE: {
@@ -120,7 +120,6 @@ async function UpdateEnvColorsForWebsite(req, res) {
                 S_ERROR,
                 S_SUCCESS,
             },
-            DARK_MODE,
         },
     } = req.body
 

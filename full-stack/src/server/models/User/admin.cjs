@@ -9,7 +9,7 @@ class Admin extends ModelExtension {
     /**
      * @override
      */
-    static async Initialize({ sequelize, models }) {
+    static async Initialize({ sequelize, models: _ }) {
         Admin.init(
             {
                 username: {
@@ -51,244 +51,216 @@ class Admin extends ModelExtension {
     // reject --> string: error msg
     // resolve --> instance: created Admin
     //
-    static AddToDB(username, password) {
-        return new Promise(async (resolve, reject) => {
-            if (await this.Exists(username)) {
-                Logging.LogError(`${username} is already an admin`)
-                reject(new Error(`${username} is already an admin`))
-                return
-            }
+    static async AddToDB(username, password) {
+        if (await this.Exists(username)) {
+            Logging.LogError(`${username} ${errormsg.usernameExists}`)
+            throw new Error(`${username} is already an admin`)
+        }
 
-            if (validatePassword(password) === false) {
-                reject(new Error("Invalid password format"))
-            }
+        if (validatePassword(password) === false) {
+            throw new Error("Invalid password format")
+        }
 
-            const hash = await HashPassword(password, saltRounds)
+        const hash = await HashPassword(password, saltRounds)
 
-            try {
-                const newAdmin = Admin.build({
-                    username,
-                    password: hash,
-                })
+        try {
+            const newAdmin = Admin.build({
+                username,
+                password: hash,
+            })
 
-                await newAdmin.validate()
+            await newAdmin.validate()
 
-                await newAdmin.save()
+            await newAdmin.save()
 
-                resolve(newAdmin)
-            } catch (err) {
-                Logging.LogError(`Could Not Add Admin To Database ${username} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
+            return newAdmin
+        } catch (err) {
+            Logging.LogError(`Could Not Add Admin To Database ${username} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> nothing
     //
-    static RemoveByUsername(username) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const adminList = await Admin.findAll()
-                if (adminList.length <= 1) {
-                    reject(new Error("Cannot delete the last admin account create a new account before deleting this one"))
-                    return
-                }
-
-                await Admin.destroy({ where: { username: username } })
-                resolve()
-            } catch (err) {
-                reject(new Error(errormsg.fallback))
+    static async RemoveByUsername(username) {
+        try {
+            const adminList = await Admin.findAll()
+            if (adminList.length <= 1) {
+                throw new Error("Cannot delete the last admin account create a new account before deleting this one")
             }
-        })
+
+            await Admin.destroy({ where: { username: username } })
+            return
+        } catch {
+            throw new Error(errormsg.fallback)
+        }
     }
 
-    static GetAll({ limit = 10, offset = 0 }) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const querys = {}
-                if (limit) {
-                    querys.limit = limit
-                }
-                if (offset) {
-                    querys.offset = offset
-                }
-                const admins = await Admin.findAll(querys)
-
-                resolve(
-                    admins.map((element) => {
-                        const { password, ...rest } = element.toJSON()
-                        return rest
-                    })
-                )
-            } catch (err) {
-                Logging.LogError(`could not get all admins --- ${err}`)
-                reject({ error: err.message })
+    static async GetAll({ limit = 10, offset = 0 }) {
+        try {
+            const querys = {}
+            if (limit) {
+                querys.limit = limit
             }
-        })
+            if (offset) {
+                querys.offset = offset
+            }
+            const admins = await Admin.findAll(querys)
+
+            return admins.map((element) => {
+                const { password: _p, ...rest } = element.toJSON()
+                return rest
+            })
+        } catch (err) {
+            Logging.LogError(`could not get all admins --- ${err}`)
+            throw { error: err.message }
+        }
     }
 
     //
     // reject --> null
     // resolve --> instance: Admin
     //
-    static GetByUsername(username) {
-        return new Promise(async (resolve, reject) => {
-            if (await Admin.Exists(username)) {
-                const admin = await Admin.findByPk(username)
-                const { password, ...rest } = admin.toJSON()
-                resolve(rest)
-            } else {
-                reject(null)
-            }
-        })
+    static async GetByUsername(username) {
+        if (await Admin.Exists(username)) {
+            const admin = await Admin.findByPk(username)
+            const { password: _p, ...rest } = admin.toJSON()
+            return rest
+        } else {
+            throw null
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> instance: authenticated Admin
     //
-    static Authentification(username, password) {
-        return new Promise(async (resolve, reject) => {
-            console.log(`Authenticating admin: ${username} ${password}`)
-            if (await Admin.Exists(username)) {
-                const existingAdmin = await Admin.findByPk(username)
-                if (existingAdmin) {
-                    try {
-                        if (await bcrypt.compare(password, existingAdmin.password)) {
-                            resolve(existingAdmin)
-                        } else {
-                            reject(new Error(errormsg.adminAuthentificationFail))
-                        }
-                    } catch (err) {
-                        Logging.LogError(`Could Not Hash ${username} --- ${err.message}`)
-                        reject(new Error(errormsg.fallback))
+    static async Authentification(username, password) {
+        if (await Admin.Exists(username)) {
+            const existingAdmin = await Admin.findByPk(username)
+            if (existingAdmin) {
+                try {
+                    if (await bcrypt.compare(password, existingAdmin.password)) {
+                        return existingAdmin
+                    } else {
+                        throw new Error(errormsg.adminAuthentificationFail)
                     }
-                } else {
-                    reject(new Error(errormsg.adminAuthentificationFail))
+                } catch (err) {
+                    Logging.LogError(`Could Not Hash ${username} --- ${err.message}`)
+                    throw new Error(errormsg.fallback)
                 }
             } else {
-                reject(new Error(errormsg.adminAuthentificationFail))
+                throw new Error(errormsg.adminAuthentificationFail)
             }
-        })
+        } else {
+            throw new Error(errormsg.adminAuthentificationFail)
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> instance: updated Admin
     //
-    static UpdateUsername(oldUsername, newUsername) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                // Check if old username exists to update the correct account
-                if (!(await Admin.Exists(oldUsername))) {
-                    Logging.LogError(`User not found ${oldUsername} to ${newUsername}`)
-                    reject(new Error("User not found"))
-                    return
-                }
+    static async UpdateUsername(oldUsername, newUsername) {
+        try {
+            // Check if old username exists to update the correct account
+            if (!(await Admin.Exists(oldUsername))) {
+                Logging.LogError(`User not found ${oldUsername} to ${newUsername}`)
+                throw new Error("User not found")
+            }
 
-                const existingAdmin = await Admin.findByPk(oldUsername)
+            const existingAdmin = await Admin.findByPk(oldUsername)
 
-                // Check if new username already exists
-                if (await Admin.Exists(newUsername)) {
-                    Logging.LogError(`New username already exists ${oldUsername} to ${newUsername}`)
-                    reject(new Error("New username already exists"))
-                    return
-                }
+            // Check if new username already exists
+            if (await Admin.Exists(newUsername)) {
+                Logging.LogError(`New username already exists ${oldUsername} to ${newUsername}`)
+                throw new Error("New username already exists")
+            }
 
-                // Update email
-                await Admin.update(
-                    {
-                        username: newUsername,
+            // Update email
+            await Admin.update(
+                {
+                    username: newUsername,
+                },
+                {
+                    where: {
+                        username: oldUsername,
                     },
-                    {
-                        where: {
-                            username: oldUsername,
-                        },
-                    }
-                )
+                }
+            )
 
-                existingAdmin.reload()
+            existingAdmin.reload()
 
-                resolve(existingAdmin)
-            } catch (err) {
-                Logging.LogError(`Could not update username ${oldUsername} to ${newUsername} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
+            return existingAdmin
+        } catch (err) {
+            Logging.LogError(`Could not update username ${oldUsername} to ${newUsername} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> instance: updated Admin
     //
-    static UpdatePassword(username, currentPassword, newPassword) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                // Check if user exists
-                if (!(await Admin.Exists(username))) {
-                    reject(new Error("User not found"))
-                    return
-                }
-
-                const existingAdmin = await Admin.findByPk(username)
-
-                // Verify current password
-                if (!(await bcrypt.compare(currentPassword, existingAdmin.password))) {
-                    reject(new Error("Current password is incorrect"))
-                    return
-                }
-
-                if (validatePassword(newPassword) === false) {
-                    reject(new Error("Invalid password format"))
-                    return
-                }
-
-                // Hash new password
-                const newHash = await HashPassword(newPassword, saltRounds)
-
-                // Update password
-                existingAdmin.password = newHash
-                await existingAdmin.save()
-
-                resolve(existingAdmin)
-            } catch (err) {
-                Logging.LogError(`Could Not Update Password for ${username} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
+    static async UpdatePassword(username, currentPassword, newPassword) {
+        try {
+            // Check if user exists
+            if (!(await Admin.Exists(username))) {
+                throw new Error("User not found")
             }
-        })
+
+            const existingAdmin = await Admin.findByPk(username)
+
+            // Verify current password
+            if (!(await bcrypt.compare(currentPassword, existingAdmin.password))) {
+                throw new Error("Current password is incorrect")
+            }
+
+            if (validatePassword(newPassword) === false) {
+                throw new Error("Invalid password format")
+            }
+
+            // Hash new password
+            const newHash = await HashPassword(newPassword, saltRounds)
+
+            // Update password
+            existingAdmin.password = newHash
+            await existingAdmin.save()
+
+            return existingAdmin
+        } catch (err) {
+            Logging.LogError(`Could Not Update Password for ${username} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
-    static UpdatePasswordByAdmin(username, newPassword) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                // Check if user exists
-                if (!(await Admin.Exists(username))) {
-                    reject(new Error("User not found"))
-                    return
-                }
-
-                const existingAdmin = await Admin.findByPk(username)
-
-                if (validatePassword(newPassword) === false) {
-                    reject(new Error("Invalid password format"))
-                    return
-                }
-
-                // Hash new password
-                const newHash = await HashPassword(newPassword, saltRounds)
-
-                // Update password
-                existingAdmin.password = newHash
-                await existingAdmin.save()
-
-                resolve(existingAdmin)
-            } catch (err) {
-                Logging.LogError(`Could Not Update Password for ${username} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
+    static async UpdatePasswordByAdmin(username, newPassword) {
+        try {
+            // Check if user exists
+            if (!(await Admin.Exists(username))) {
+                throw new Error("User not found")
             }
-        })
+
+            const existingAdmin = await Admin.findByPk(username)
+
+            if (validatePassword(newPassword) === false) {
+                throw new Error("Invalid password format")
+            }
+
+            // Hash new password
+            const newHash = await HashPassword(newPassword, saltRounds)
+
+            // Update password
+            existingAdmin.password = newHash
+            await existingAdmin.save()
+
+            return existingAdmin
+        } catch (err) {
+            Logging.LogError(`Could Not Update Password for ${username} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
     static async DefaultSetup() {

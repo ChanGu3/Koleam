@@ -1,4 +1,4 @@
-import React, { useState, useEffect, use } from "react"
+import { useState, useEffect } from "react"
 import { VerticalQueryScrollable } from "../../components/Scrollable"
 import { FetchAllMembers } from "../../services/FetchMembers.js"
 import ButtonUI from "../../components/ButtonUI"
@@ -41,7 +41,7 @@ function AdminMembersControl() {
                 }
                 pxCutoffHeight={500}
                 pxCutoffWidth={null}
-                ItemRenderer={({ index, dataItem }) => {
+                ItemRenderer={({ index: _i, dataItem }) => {
                     return (
                         <AdministrationBarTemplate>
                             <div className="flex flex-row gap-2 justify-between items-center min-w-0 w-full">

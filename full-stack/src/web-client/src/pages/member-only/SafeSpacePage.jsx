@@ -35,7 +35,7 @@ function SafeSpacePage() {
         if (memberIsSignedIn !== null && !memberIsSignedIn) {
             navigate(FULL_ROUTES.NOT_FOUND)
         }
-    }, [])
+    }, [memberIsSignedIn, navigate])
 
     // prevents naviagation when signed in and renders
     if (CURRENT_ACCESS_TYPE === ACCESS_TYPE.PUBLIC && (memberIsSignedIn === null || !memberIsSignedIn)) {
@@ -60,7 +60,7 @@ function SafeSpacePage() {
                         title="Continue Watching"
                         sliderList={
                             dataWatchHistory
-                                ? dataWatchHistory.map((stream, index) => {
+                                ? dataWatchHistory.map((stream, _index) => {
                                       return (
                                           <StreamModule
                                               key={stream.id}
@@ -97,7 +97,7 @@ function SafeSpacePage() {
                         }
                         pxCutoffHeight={null}
                         pxCutoffWidth={null}
-                        ItemRenderer={({ index, dataItem }) => {
+                        ItemRenderer={({ index: _i, dataItem }) => {
                             return (
                                 <SeriesModule
                                     key={dataItem.titleID}

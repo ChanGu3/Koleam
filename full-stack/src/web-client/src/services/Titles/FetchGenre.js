@@ -48,7 +48,7 @@ export async function DeleteGenre(name) {
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 
@@ -75,7 +75,7 @@ export async function AddGenre({ name }) {
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 

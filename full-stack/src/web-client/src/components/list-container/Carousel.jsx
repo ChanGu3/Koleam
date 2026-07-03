@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useCallback, useRef } from "react"
 import { FileQuestionMark } from "lucide-react"
 import ImageUI from "../ImageUI.jsx"
 import { Link } from "react-router-dom"

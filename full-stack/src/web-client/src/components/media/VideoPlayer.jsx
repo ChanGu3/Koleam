@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import Hls from "hls.js"
 import { getCalendarDateAndTime, getTimeNowWithSecondChange, runOnTheMinute } from "../../utils/Time.js"
 import {
@@ -66,10 +66,10 @@ function VideoPlayer({
     Speed = { firstRenderValue: 1, OnValueChange: () => {} },
     startTime = null,
     periodicTimeUpdateInterval = null,
-    onPeriodicTimeUpdateInterval = async (totalTimeElapsedInSeconds) => {},
+    onPeriodicTimeUpdateInterval = async (_totalTimeElapsedInSeconds) => {},
     endCountdown = null,
     onStreamEnd = () => {},
-    onChangeSubtitle = async (currentSubtitle) => null,
+    onChangeSubtitle = async (_currentSubtitle) => null,
 }) {
     const workerUrl = "/libasswasm/subtitles-octopus-worker.js"
     const workerLegacyUrl = "/libasswasm/subtitles-octopus-worker-legacy.js"
@@ -87,23 +87,23 @@ function VideoPlayer({
     const [autoPlay, SetAutoPlay] = useState(AutoPlay.firstRenderValue)
     useEffect(() => {
         AutoPlay.OnValueChange(autoPlay)
-    }, [autoPlay])
+    }, [autoPlay, AutoPlay])
     const [quality, SetQuality] = useState(Quality.firstRenderValue)
     useEffect(() => {
         Quality.OnValueChange(quality)
-    }, [quality])
+    }, [quality, Quality])
     const [audio, SetAudio] = useState(Audio.firstRenderValue)
     useEffect(() => {
         Audio.OnValueChange(audio)
-    }, [audio])
+    }, [audio, Audio])
     const [subtitle, SetSubtitle] = useState(Subtitle.firstRenderValue)
     useEffect(() => {
         Subtitle.OnValueChange(subtitle)
-    }, [subtitle])
+    }, [subtitle, Subtitle])
     const [speed, SetSpeed] = useState(Speed.firstRenderValue)
     useEffect(() => {
         Speed.OnValueChange(speed)
-    }, [speed])
+    }, [speed, Speed])
 
     const [isPlayingVideo, setIsPlayingVideo] = useState(false)
 
@@ -113,32 +113,37 @@ function VideoPlayer({
     const [audios, setAudios] = useState([])
     const [subtitles, SetSubtitles] = useState([])
 
-    function isLoading() {
+    const [isLoadingVideoData, setIsLoadingVideoData] = useState(true)
+    const [isLoadingOctopus, SetIsLoadingOctopus] = useState(true)
+    const isLoading = useCallback(() => {
         return isLoadingVideoData || isLoadingOctopus
-    }
+    }, [isLoadingVideoData, isLoadingOctopus])
 
-    function OnVideoPlayToggle(play = null) {
-        if (isLoading()) {
-            return
-        }
+    const OnVideoPlayToggle = useCallback(
+        (play = null) => {
+            if (isLoading()) {
+                return
+            }
 
-        if (play !== null) {
-            play ? videoRef.current.play() : videoRef.current.pause()
-            setIsPlayingVideo(play)
-            return
-        }
+            if (play !== null) {
+                play ? videoRef.current.play() : videoRef.current.pause()
+                setIsPlayingVideo(play)
+                return
+            }
 
-        if (!isPlayingVideo) {
-            videoRef.current.play()
-            setIsPlayingVideo(true)
-        } else {
-            videoRef.current.pause()
-            setIsPlayingVideo(false)
-        }
-    }
+            if (!isPlayingVideo) {
+                videoRef.current.play()
+                setIsPlayingVideo(true)
+            } else {
+                videoRef.current.pause()
+                setIsPlayingVideo(false)
+            }
+        },
+        [isLoading, isPlayingVideo]
+    )
 
     const videoContainerRef = useRef(null)
-    function handleVideoOnFullScreen() {
+    const handleVideoOnFullScreen = useCallback(() => {
         if (isVideoContainerFullScreen) {
             if (document.exitFullscreen) {
                 document.exitFullscreen()
@@ -162,7 +167,7 @@ function VideoPlayer({
             }
             setIsVideoContainerFullScreen(true)
         }
-    }
+    }, [setIsVideoContainerFullScreen, isVideoContainerFullScreen])
 
     const videoScreenclickTimeoutRef = useRef(null)
     function onVideoMiddleOptionsScreenClick(e) {
@@ -204,7 +209,6 @@ function VideoPlayer({
     /* Subtitles */
     const isAdvancedSubtitleMode = useRef(false)
     const octopusRef = useRef(null)
-    const [isLoadingOctopus, SetIsLoadingOctopus] = useState(true)
     const [octopusError, SetIsOctopusError] = useState(false)
     const [activeCues, setActiveCues] = useState([])
 
@@ -299,7 +303,6 @@ function VideoPlayer({
     }
 
     // HLS video setup
-    const [isLoadingVideoData, setIsLoadingVideoData] = useState(true)
     const [isErrorLoadingVideoData, setIsErrorLoadingVideoData] = useState(false)
     const [fragmentsLoadedList, setFragmentsLoadedList] = useState([])
     const isNonAutoLevelSwitch = useRef(false)
@@ -327,59 +330,210 @@ function VideoPlayer({
         }
     }
 
-    async function handleSubtitleChange(newSubtitle) {
-        const subtitleIndex = hlsRef.current.subtitleTracks.findIndex((s) => s.name === newSubtitle.name)
-        if (hlsRef.current) {
-            hlsRef.current.subtitleTrack = subtitleIndex
+    const handleSubtitleChange = useCallback(
+        async (newSubtitle) => {
+            const subtitleIndex = hlsRef.current.subtitleTracks.findIndex((s) => s.name === newSubtitle.name)
+            if (hlsRef.current) {
+                hlsRef.current.subtitleTrack = subtitleIndex
 
-            SetIsLoadingOctopus(true)
-            const content = await onChangeSubtitle(newSubtitle)
+                SetIsLoadingOctopus(true)
+                const content = await onChangeSubtitle(newSubtitle)
 
-            if (content && !octopusError) {
-                if (isAdvancedSubtitleMode.current) {
-                    octopusRef.current.freeTrack()
+                if (content && !octopusError) {
+                    if (isAdvancedSubtitleMode.current) {
+                        octopusRef.current.freeTrack()
+                    } else {
+                        isAdvancedSubtitleMode.current = true
+                        octopusRef.current.canvas.style.display = "block"
+                    }
+
+                    octopusRef.current.setTrack(content)
                 } else {
-                    isAdvancedSubtitleMode.current = true
-                    octopusRef.current.canvas.style.display = "block"
+                    if (isAdvancedSubtitleMode.current) {
+                        isAdvancedSubtitleMode.current = false
+                        octopusRef.current.freeTrack()
+                        octopusRef.current.canvas.style.display = "none"
+                    }
+                }
+                SetIsLoadingOctopus(false)
+
+                updateUISubtitleInfo()
+            }
+        },
+        [onChangeSubtitle, octopusError]
+    )
+
+    const [volumePercentage, setVolumePercentage] = useState(Volume.firstRenderValue)
+    const [isMuted, setIsMuted] = useState(Muted.firstRenderValue)
+    useEffect(() => {
+        Volume.OnValueChange(volumePercentage)
+    }, [volumePercentage, Volume])
+    const setVolume = useCallback(
+        (percentage) => {
+            if (videoRef.current && volumeBarAmountRef.current) {
+                if (percentage === 0) {
+                    videoRef.current.muted = true
+                    setIsMuted(videoRef.current.muted)
+                } else {
+                    videoRef.current.muted = false
+                    setIsMuted(videoRef.current.muted)
                 }
 
-                octopusRef.current.setTrack(content)
-            } else {
-                if (isAdvancedSubtitleMode.current) {
-                    isAdvancedSubtitleMode.current = false
-                    octopusRef.current.freeTrack()
-                    octopusRef.current.canvas.style.display = "none"
+                videoRef.current.volume = percentage
+                volumeBarAmountRef.current.style.width = `${videoRef.current.volume * 100}%`
+                setVolumePercentage(videoRef.current.volume)
+            }
+        },
+        [setIsMuted, setVolumePercentage]
+    )
+
+    const handleMuteToggle = useCallback(
+        (mute = null) => {
+            if (videoRef.current && volumeBarAmountRef.current) {
+                if (mute !== null) {
+                    videoRef.current.muted = mute
+                } else {
+                    videoRef.current.muted = !videoRef.current.muted
+                }
+
+                setIsMuted(videoRef.current.muted)
+
+                if (!videoRef.current.muted && videoRef.current.volume === 0) {
+                    setVolume(0.45)
                 }
             }
-            SetIsLoadingOctopus(false)
-
-            updateUISubtitleInfo()
-        }
-    }
+        },
+        [setIsMuted, setVolume]
+    )
 
     useEffect(() => {
         const video = videoRef.current
         if (!video) return
 
-        if (periodicTimeUpdateInterval && onPeriodicTimeUpdateInterval) {
-            video.addEventListener("timeupdate", () => {
-                timeElapsedFromPlay.current += video.currentTime - lastCurrentTime.current
-                lastCurrentTime.current = video.currentTime
+        setVolume(Volume.firstRenderValue)
+        handleMuteToggle(Muted.firstRenderValue)
+    }, [Volume.firstRenderValue, Muted.firstRenderValue, setVolume, handleMuteToggle])
 
-                if (timeElapsedFromPlay.current >= periodicTimeUpdateInterval) {
-                    onPeriodicTimeUpdateInterval(lastCurrentTime.current)
-                    timeElapsedFromPlay.current = 0
+    useEffect(() => {
+        const video = videoRef.current
+
+        function TimeUpdateHandler() {
+            timeElapsedFromPlay.current += video.currentTime - lastCurrentTime.current
+            lastCurrentTime.current = video.currentTime
+
+            if (timeElapsedFromPlay.current >= periodicTimeUpdateInterval) {
+                onPeriodicTimeUpdateInterval(lastCurrentTime.current)
+                timeElapsedFromPlay.current = 0
+            }
+        }
+
+        if (periodicTimeUpdateInterval && onPeriodicTimeUpdateInterval && video) {
+            videoRef.current.addEventListener("timeupdate", TimeUpdateHandler)
+        }
+
+        return () => {
+            if (video) {
+                video.removeEventListener("timeupdate", TimeUpdateHandler)
+            }
+        }
+    }, [periodicTimeUpdateInterval, onPeriodicTimeUpdateInterval])
+
+    const SetupNonHLSSupported = useCallback(() => {
+        const video = videoRef.current
+        if (autoPlay) {
+            video.addEventListener("loadedmetadata", () => {
+                if (autoPlay) {
+                    OnVideoPlayToggle(true)
                 }
             })
         }
+    }, [autoPlay, OnVideoPlayToggle])
 
-        setVolume(Volume.firstRenderValue)
-        handleMuteToggle(Muted.firstRenderValue)
+    const onManifestParsed = useCallback(() => {
+        setIsErrorLoadingVideoData(false)
+        setIsLoadingVideoData(false)
+        setFragmentsLoadedList([])
+        setQualities(hlsRef.current.levels || [])
+        if (octopusRef.current) {
+            octopusRef.current.freeTrack()
+        }
+
+        // AUTO SLECTING VALUES BASSED ON LAST VALUE GOING BACK TO DEFAULT VALUES IF THEY DO NOT WORK WITH NEW SET OF VALUES OTHERWISE KEEP THEM THE SAME FOR NEXT VIDEO (keep audio local storage as default but the actual value to what its suppose to be during default)
+        if (autoPlay) {
+            OnVideoPlayToggle(true)
+        }
+
+        handleLevelChange(quality)
+        handleAudioChange(audio)
+        handleSubtitleChange(subtitle)
+    }, [quality, audio, subtitle, OnVideoPlayToggle, autoPlay, handleSubtitleChange])
+
+    const onFragBuffered = useCallback(
+        (_event, data) => {
+            setFragmentsLoadedList((prev) => {
+                const newList = [...prev]
+                newList[data.fragmentIndex] = true
+                return newList
+            })
+            setIsLoadingVideoData(false)
+            if (startTime && lastCurrentTime) {
+                videoRef.current.currentTime = lastCurrentTime.current
+            }
+        },
+        [startTime]
+    )
+    const onLevelSwitched = useCallback(
+        (_event, data) => {
+            const hls = hlsRef.current
+
+            if (isNonAutoLevelSwitch.current) {
+                if (hls.levels[data.level] !== quality) {
+                    const { height } = hls.levels[data.level]
+                    SetQuality({ height: height })
+                }
+                isNonAutoLevelSwitch.current = false
+            }
+        },
+        [quality]
+    )
+    const onAudioTrackSwitched = useCallback(
+        (_event, data) => {
+            const hls = hlsRef.current
+            if (hls.audioTracks[data.id] !== audio) {
+                const { name } = hls.audioTracks[data.id]
+                SetAudio({ name: name })
+            }
+        },
+        [audio]
+    )
+    const onSubtitleTrackSwitched = useCallback(
+        (_event, data) => {
+            const hls = hlsRef.current
+            if (data.id === -1) {
+                if (isAdvancedSubtitleMode.current) {
+                    return
+                }
+                SetSubtitle({ name: "none" })
+            } else if (hls.subtitleTracks[data.id] !== subtitle) {
+                const { name } = hls.subtitleTracks[data.id]
+                SetSubtitle({ name: name })
+            }
+        },
+        [subtitle]
+    )
+
+    useEffect(() => {
+        const video = videoRef.current
+        if (!video) return
 
         let hls
 
         if (Hls.isSupported()) {
             setIsLoadingVideoData(true)
+
+            if (hlsRef.current) {
+                hlsRef.current.destroy()
+            }
 
             hls = new Hls()
             hlsRef.current = hls
@@ -407,91 +561,35 @@ function VideoPlayer({
                 console.error("HLS.js error:", event, data)
             })
 
-            hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-                setIsErrorLoadingVideoData(false)
-                setIsLoadingVideoData(false)
-                setFragmentsLoadedList([])
-                setQualities(hls.levels || [])
-                if (octopusRef.current) {
-                    octopusRef.current.freeTrack()
-                }
+            hls.on(Hls.Events.MANIFEST_PARSED, onManifestParsed)
 
-                // AUTO SLECTING VALUES BASSED ON LAST VALUE GOING BACK TO DEFAULT VALUES IF THEY DO NOT WORK WITH NEW SET OF VALUES OTHERWISE KEEP THEM THE SAME FOR NEXT VIDEO (keep audio local storage as default but the actual value to what its suppose to be during default)
-                if (autoPlay) {
-                    OnVideoPlayToggle(true)
-                }
-
-                handleLevelChange(quality)
-                handleAudioChange(audio)
-                handleSubtitleChange(subtitle)
-            })
-
-            hls.on(Hls.Events.FRAG_BUFFERED, (event, data) => {
-                setFragmentsLoadedList((prev) => {
-                    const newList = [...prev]
-                    newList[data.fragmentIndex] = true
-                    return newList
-                })
-                setIsLoadingVideoData(false)
-                if (startTime && lastCurrentTime) {
-                    video.currentTime = lastCurrentTime.current
-                }
-            })
+            hls.on(Hls.Events.FRAG_BUFFERED, onFragBuffered)
 
             hls.on(Hls.Events.BUFFER_STALLED, () => {
                 setIsLoadingVideoData(true)
             })
 
-            hls.on(Hls.Events.LEVEL_UPDATED, (event, data) => {
+            hls.on(Hls.Events.LEVEL_UPDATED, (_event, data) => {
                 const newList = new Array(data.details.fragments.length).fill(false)
                 setFragmentsLoadedList(newList)
             })
 
-            hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (event, data) => {
+            hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_event, data) => {
                 setAudios(data.audioTracks || [])
             })
 
-            hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, (event, data) => {
+            hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, (_event, data) => {
                 SetSubtitles(data.subtitleTracks || [])
             })
 
-            hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
-                if (isNonAutoLevelSwitch.current) {
-                    if (hls.levels[data.level] !== quality) {
-                        const { height, ...rest } = hls.levels[data.level]
-                        SetQuality({ height: height })
-                    }
-                    isNonAutoLevelSwitch.current = false
-                }
-            })
+            hls.on(Hls.Events.LEVEL_SWITCHED, onLevelSwitched)
 
-            hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, (event, data) => {
-                if (hls.audioTracks[data.id] !== audio) {
-                    const { name, ...rest } = hls.audioTracks[data.id]
-                    SetAudio({ name: name })
-                }
-            })
+            hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, onAudioTrackSwitched)
 
-            hls.on(Hls.Events.SUBTITLE_TRACK_SWITCH, (event, data) => {
-                if (data.id === -1) {
-                    if (isAdvancedSubtitleMode.current) {
-                        return
-                    }
-                    SetSubtitle({ name: "none" })
-                } else if (hls.subtitleTracks[data.id] !== subtitle) {
-                    const { name, ...rest } = hls.subtitleTracks[data.id]
-                    SetSubtitle({ name: name })
-                }
-            })
+            hls.on(Hls.Events.SUBTITLE_TRACK_SWITCH, onSubtitleTrackSwitched)
         } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
             video.src = src
-            if (autoPlay) {
-                video.addEventListener("loadedmetadata", () => {
-                    if (autoPlay) {
-                        OnVideoPlayToggle(true)
-                    }
-                })
-            }
+            SetupNonHLSSupported()
         }
 
         function onVideoWaiting() {
@@ -515,11 +613,17 @@ function VideoPlayer({
                 video.removeEventListener("playing", onVideoPlaying)
             }
         }
+        // The HLS player lifecycle should be tied only to the `src` prop.
+        // The event handlers are defined with `useCallback` but depend on component state,
+        // which causes them to be recreated on re-renders, triggering this effect again.
+        // By only depending on `src`, we avoid infinite loops. The handlers will have stale state, but for this component's logic it seems to be acceptable for most cases.
+        // TODO: Definitely will want to fix this later for better state management, but for now this is a temporary solution to avoid infinite loops.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [src])
 
     // Focusing Video && KeyDown Events
     const [isVideoFocused, setIsVideoFocused] = useState(true)
-    function onVideoScreenClick(e) {
+    function onVideoScreenClick() {
         setIsVideoFocused(true)
 
         if (endCountdownRef.current) {
@@ -565,7 +669,7 @@ function VideoPlayer({
             document.removeEventListener("keydown", handleKeyDown)
             document.removeEventListener("click", onVideoClickOutside)
         }
-    }, [isVideoFocused, videoContainerRef.current, OnVideoPlayToggle])
+    }, [isVideoFocused, OnVideoPlayToggle, handleVideoOnFullScreen])
 
     // Speed of video
     useEffect(() => {
@@ -598,9 +702,10 @@ function VideoPlayer({
             videoRef.current.addEventListener("ended", handleVideoEnded)
         }
 
+        const videoElement = videoRef.current
         return () => {
-            if (videoRef.current) {
-                videoRef.current.removeEventListener("ended", handleVideoEnded)
+            if (videoElement) {
+                videoElement.removeEventListener("ended", handleVideoEnded)
             }
         }
     }, [videoRef, endCountdown, autoPlay])
@@ -647,30 +752,9 @@ function VideoPlayer({
     /*          */
     const volumeBarRef = useRef(null)
     const volumeBarAmountRef = useRef(0)
-    const [volumePercentage, setVolumePercentage] = useState(Volume.firstRenderValue)
-    useEffect(() => {
-        Volume.OnValueChange(volumePercentage)
-    }, [volumePercentage])
-    const [isMuted, setIsMuted] = useState(Muted.firstRenderValue)
     useEffect(() => {
         Muted.OnValueChange(isMuted)
-    }, [isMuted])
-
-    function setVolume(percentage) {
-        if (videoRef.current && volumeBarAmountRef.current) {
-            if (percentage === 0) {
-                videoRef.current.muted = true
-                setIsMuted(videoRef.current.muted)
-            } else {
-                videoRef.current.muted = false
-                setIsMuted(videoRef.current.muted)
-            }
-
-            videoRef.current.volume = percentage
-            volumeBarAmountRef.current.style.width = `${videoRef.current.volume * 100}%`
-            setVolumePercentage(videoRef.current.volume)
-        }
-    }
+    }, [isMuted, Muted])
 
     function handleVolumeDown(e) {
         if (videoRef.current && volumeBarRef.current && volumeBarAmountRef.current) {
@@ -701,22 +785,6 @@ function VideoPlayer({
             window.addEventListener("mouseup", handleRemoveListeners)
             window.addEventListener("touchmove", handleVolumeMove, { passive: false })
             window.addEventListener("touchend", handleRemoveListeners)
-        }
-    }
-
-    function handleMuteToggle(mute = null) {
-        if (videoRef.current && volumeBarAmountRef.current) {
-            if (mute !== null) {
-                videoRef.current.muted = mute
-            } else {
-                videoRef.current.muted = !videoRef.current.muted
-            }
-
-            setIsMuted(videoRef.current.muted)
-
-            if (!videoRef.current.muted && videoRef.current.volume === 0) {
-                setVolume(0.45)
-            }
         }
     }
 
@@ -797,17 +865,20 @@ function VideoPlayer({
     /* Options */
     /*         */
     const [isShowingOptions, setIsShowingOptions] = useState(false)
-    function ToggleGearOptions(show = null) {
-        if (isErrorLoadingVideoData) {
-            return
-        }
+    const ToggleGearOptions = useCallback(
+        (show = null) => {
+            if (isErrorLoadingVideoData) {
+                return
+            }
 
-        if (show !== null) {
-            setIsShowingOptions(show)
-        } else {
-            setIsShowingOptions((prev) => !prev)
-        }
-    }
+            if (show !== null) {
+                setIsShowingOptions(show)
+            } else {
+                setIsShowingOptions((prev) => !prev)
+            }
+        },
+        [isErrorLoadingVideoData, setIsShowingOptions]
+    )
 
     /* Showing UI */
     const [mouseMovingOnVideo, setMouseMovingOnVideo] = useState(false)
@@ -864,7 +935,7 @@ function VideoPlayer({
                 hoverUILastAppearTimerRef.current = null
             }
         }
-    }, [mouseMovingOnVideo])
+    }, [mouseMovingOnVideo, isPlayingVideo, ToggleGearOptions])
 
     return (
         <div
@@ -1578,7 +1649,7 @@ function VideoPlayerOptionSelectionCheckSlider({
     label,
     startingToggled = false,
     stopOnClickPropagation = false,
-    onClick = (isChecked, toggle) => {},
+    onClick = (_isChecked, _toggle) => {},
 }) {
     const [isChecked, setIsChecked] = useState(startingToggled)
 
@@ -1620,7 +1691,7 @@ function VideoPlayerOptionSelectionCheckSlider({
 function VideoPlayerOptionSelectionCheckbox({
     label,
     startingToggled = false,
-    onToggle = (isChecked, toggle) => {},
+    onToggle = (_isChecked, _toggle) => {},
     stopOnClickPropagation = false,
 }) {
     const [isChecked, setIsChecked] = useState(startingToggled)
@@ -1629,7 +1700,7 @@ function VideoPlayerOptionSelectionCheckbox({
         if (startingToggled) {
             onToggle && onToggle(true, toggle)
         }
-    }, [])
+    }, [startingToggled, onToggle])
 
     function toggle() {
         setIsChecked((prev) => !prev)
@@ -1665,7 +1736,7 @@ function VideoPlayerOptionSelectionNext({
     startingToggled = false,
     isDefault,
     selectedLabel,
-    onClick = (isNext, toggle) => {},
+    onClick = (_isNext, _toggle) => {},
     stopOnClickPropagation = false,
 }) {
     const [isNext, setIsNext] = useState(startingToggled)

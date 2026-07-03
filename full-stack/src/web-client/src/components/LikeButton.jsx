@@ -1,5 +1,4 @@
 import "../tailwind.css"
-import { useEffect, useState } from "react"
 import { ShortenCountAsString } from "../utils/DocumentFunction.mjs"
 import useMember from "../hooks/useMember.jsx"
 import { useMemberGetLike, useMemberUpdateLike } from "../hooks/useStream.jsx"
@@ -8,7 +7,7 @@ import { ThumbsUp } from "lucide-react"
 function LikeButton({ streamID, totalLikeCount }) {
     const { memberIsSignedIn } = useMember()
 
-    const { data: memberLike, error: isErrorMemberLike, isLoading: isLoadingMemberLike } = useMemberGetLike(streamID, memberIsSignedIn)
+    const { data: memberLike } = useMemberGetLike(streamID, memberIsSignedIn)
     const { mutate: updateMemberLike } = useMemberUpdateLike(streamID)
 
     if (!memberIsSignedIn || streamID == null || streamID == undefined) {

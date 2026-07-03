@@ -1,4 +1,5 @@
 const db = require("../../../models/database.cjs")
+const { Logging } = require("../../../server-logging.cjs")
 
 async function AuthorizeMember(req, res, next) {
     try {
@@ -8,7 +9,9 @@ async function AuthorizeMember(req, res, next) {
                 return
             }
         }
-    } catch (err) {}
+    } catch (err) {
+        Logging.LogError(`${err.message}`)
+    }
 
     res.status(401).json({ error: "Not Authorized" })
 }
@@ -21,12 +24,14 @@ async function AuthorizeAdmin(req, res, next) {
                 return
             }
         }
-    } catch (err) {}
+    } catch (err) {
+        Logging.LogError(`${err.message}`)
+    }
 
     res.status(401).json({ error: "Not Authorized" })
 }
 
-async function Authorized(req, res, next) {
+async function Authorized(_req, res, _next) {
     res.status(200).json({ success: "Authorized" })
 }
 

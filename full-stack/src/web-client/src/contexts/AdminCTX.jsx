@@ -45,7 +45,7 @@ export function AdminCTX({ children }) {
         if (!adminIsSignedIn) {
             queryClient.invalidateQueries({ queryKey: ["ADMIN"] }).then()
         }
-    }, [adminIsSignedIn])
+    }, [adminIsSignedIn, queryClient])
 
     async function adminSignIn(email, password, SetIsFetching = () => {}) {
         SetIsFetching(true)

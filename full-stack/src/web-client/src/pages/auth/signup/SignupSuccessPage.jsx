@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import TextLink, { TextButton } from "../../../components/text/TextLink.jsx"
+import TextLink from "../../../components/text/TextLink.jsx"
 import useUIConfig from "../../../hooks/useUIConfig.jsx"
 import useMember from "../../../hooks/useMember.jsx"
 import { useLocation, useNavigate } from "react-router-dom"

@@ -21,7 +21,7 @@ async function CreateDefaultEnvFile(isBuild = false) {
         await fs.access(fullPath)
         Logging.LogWarning(`Default .env file already exists in ${path.join(fullPath)} skipping environment variables .env file creation`)
         return false
-    } catch (err) {
+    } catch {
         const privateKey = crypto.randomBytes(32).toString("hex")
         const sessionSecretKey = crypto.randomBytes(32).toString("hex")
 
@@ -71,6 +71,7 @@ async function updateEnvVariable(key, value, isBuild = false) {
         return
     }
 
+    let pathServer = ""
     if (isBuild) {
         const pathDist = path.resolve(__dirname, "..", "..", "dist")
         pathServer = path.join(pathDist, "server")

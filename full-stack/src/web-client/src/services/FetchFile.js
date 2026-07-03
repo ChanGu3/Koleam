@@ -88,8 +88,10 @@ export class TempFileUpload {
             return null
         }
     }
-
-    async StartUpload(onChunkApplied = (percentDownloaded) => {}) {
+    /**
+     * @param {(percentDownloaded) => void} onChunkApplied - callback function that will be called with the percentDownloaded after each chunk is applied
+     */
+    async StartUpload(onChunkApplied = () => {}) {
         this.#checkUploadState()
 
         try {
@@ -158,7 +160,7 @@ export class TempFileUpload {
             })
 
             data = await response.json()
-        } catch (err) {
+        } catch {
             throw Error(ERROR_MESSAGES.SHARED.unexpected)
         }
 

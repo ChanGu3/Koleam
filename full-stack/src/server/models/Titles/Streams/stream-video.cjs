@@ -91,7 +91,7 @@ class StreamVideo extends ModelExtension {
     /**
      * @override
      */
-    static async Connect_Associations({ sequelize, models }) {
+    static async Connect_Associations({ sequelize: _s, models }) {
         StreamVideo.belongsTo(models.TitleInstallmentStream, {
             foreignKey: "streamID",
             sourceKey: "id",
@@ -125,7 +125,10 @@ class StreamVideo extends ModelExtension {
     }
 
     // TODO: in the future for writing media to disk maybe just get the details before writing the video oh well for now this is something id need to do for each media extension model
-    static async AddToDB(mediaInputFilePath, { streamID } = {}, transaction = null, onProgress = (progress) => {}) {
+    /**
+     * @param {(progress: any) => null} onProgress
+     */
+    static async AddToDB(mediaInputFilePath, { streamID } = {}, transaction = null, onProgress = () => {}) {
         try {
             const stream = await StreamVideo.#models.TitleInstallmentStream.GetByID(streamID, transaction)
             const videoData = await uploads_video.getFileVideoDetails(mediaInputFilePath)
@@ -149,7 +152,7 @@ class StreamVideo extends ModelExtension {
 
             await streamVideo.validate()
 
-            const video = await streamVideo.save({ transaction: transaction })
+            await streamVideo.save({ transaction: transaction })
 
             // Defer the execution of the video writing to the next event loop tick
 
@@ -185,14 +188,17 @@ class StreamVideo extends ModelExtension {
         }
     }
 
-    static async UpdateInDB(streamID, mediaInputFilePath, transaction = null, onProgress = (progress) => {}) {
+    /**
+     * @param {(progress: any) => null} onProgress
+     */
+    static async UpdateInDB(streamID, mediaInputFilePath, transaction = null, onProgress = () => {}) {
         try {
             const stream = await StreamVideo.#models.TitleInstallmentStream.GetByID(streamID, transaction)
             const streamVideoPre = await StreamVideo.GetByStreamID(streamID, transaction)
 
             if (!streamVideoPre.isDownloaded) {
-                reject(
-                    new Error(`cannot update ${StreamVideo.name} with streamID:${streamID} because video has not finished downloading yet`)
+                throw new Error(
+                    `cannot update ${StreamVideo.name} with streamID:${streamID} because video has not finished downloading yet`
                 )
             }
 
@@ -271,61 +277,55 @@ class StreamVideo extends ModelExtension {
         }
     }
 
-    static RemoveFromDB(streamID) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                if (await this.Exists(streamID)) {
-                    const stream = await StreamVideo.#models.TitleInstallmentStream.GetByID(streamID)
-                    await uploads_video.deleteVideo(stream.id, stream.titleID, stream.installmentID, stream.label)
+    static async RemoveFromDB(streamID) {
+        try {
+            if (await this.Exists(streamID)) {
+                const stream = await StreamVideo.#models.TitleInstallmentStream.GetByID(streamID)
+                await uploads_video.deleteVideo(stream.id, stream.titleID, stream.installmentID, stream.label)
 
-                    await StreamVideo.destroy({
-                        where: {
-                            streamID: streamID,
-                        },
-                    })
+                await StreamVideo.destroy({
+                    where: {
+                        streamID: streamID,
+                    },
+                })
 
-                    await StreamVideo.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
-                } else {
-                    Logging.LogWarning(`${StreamVideo.name} with id:${streamID} does not exists so removing is unnecessary`)
-                }
-
-                resolve()
-            } catch (err) {
-                Logging.LogError(`could not remove ${StreamVideo.name} from database id:${streamID} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
+                await StreamVideo.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
+            } else {
+                Logging.LogWarning(`${StreamVideo.name} with id:${streamID} does not exists so removing is unnecessary`)
             }
-        })
+        } catch (err) {
+            Logging.LogError(`could not remove ${StreamVideo.name} from database id:${streamID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
-    static GetByStreamID(streamID, transaction = null) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                if (await this.Exists(streamID)) {
-                    const default_query = {
-                        where: {
-                            streamID: streamID,
-                        },
-                    }
-                    if (transaction) {
-                        default_query.transaction = transaction
-                    }
-
-                    const original_stream_video_data = await StreamVideo.findOne({
-                        ...default_query,
-                        attributes: {
-                            exclude: ["createdAt", "updatedAt"],
-                        },
-                    })
-
-                    resolve(original_stream_video_data.toJSON())
-                } else {
-                    reject(new Error(`could not get ${StreamVideo.name} with id:${streamID}`))
+    static async GetByStreamID(streamID, transaction = null) {
+        try {
+            if (await this.Exists(streamID)) {
+                const default_query = {
+                    where: {
+                        streamID: streamID,
+                    },
                 }
-            } catch (err) {
-                Logging.LogError(`could not get ${StreamVideo.name} with id:${streamID} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
+                if (transaction) {
+                    default_query.transaction = transaction
+                }
+
+                const original_stream_video_data = await StreamVideo.findOne({
+                    ...default_query,
+                    attributes: {
+                        exclude: ["createdAt", "updatedAt"],
+                    },
+                })
+
+                return original_stream_video_data.toJSON()
+            } else {
+                throw new Error(`could not get ${StreamVideo.name} with id:${streamID}`)
             }
-        })
+        } catch (err) {
+            Logging.LogError(`could not get ${StreamVideo.name} with id:${streamID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 }
 

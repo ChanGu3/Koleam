@@ -2,7 +2,6 @@ const db = require("../../../models/database.cjs")
 const { uploads_image } = require("../../../server-uploads-image.cjs")
 const { uploads } = require("../../../server-uploads.cjs")
 const events = require("../../../server-events.cjs")
-const { Logging } = require("../../../server-logging.cjs")
 
 async function GetAllTitles(req, res) {
     const query = {}
@@ -111,8 +110,6 @@ async function GetAllInstallments(req, res) {
 }
 
 async function GetSingleInstallment(req, res) {
-    const query = {}
-
     const { installmentID } = req.params
     try {
         const titleInstallment = await db.models.TitleInstallment.GetByID(installmentID)
@@ -126,8 +123,8 @@ async function GetSingleInstallment(req, res) {
 async function GetAllTitleInstallmentStream(req, res) {
     const { installmentID, isReleaseDateDesc, isStreamNumberDesc } = req.query
     const query = {}
-    isReleaseDateDescValue = isReleaseDateDesc ? isReleaseDateDesc : false
-    isStreamNumberDescValue = isStreamNumberDesc ? isStreamNumberDesc : false
+    const isReleaseDateDescValue = isReleaseDateDesc ? isReleaseDateDesc : false
+    const isStreamNumberDescValue = isStreamNumberDesc ? isStreamNumberDesc : false
 
     try {
         const streams = await db.models.TitleInstallmentStream.GetAll(query, installmentID, isReleaseDateDescValue, isStreamNumberDescValue)
@@ -150,6 +147,7 @@ async function GetSingleTitleInstallmentStream(req, res) {
 async function AddTitle(req, res) {
     let uploadedTitleCover = false
     let transaction
+    let title
     try {
         transaction = await db.sequelize.transaction()
 
@@ -161,7 +159,7 @@ async function AddTitle(req, res) {
             return
         }
 
-        const title = await db.models.Title.AddToDB(
+        title = await db.models.Title.AddToDB(
             titleData.label,
             titleData.description,
             titleData.copyright,
@@ -189,9 +187,9 @@ async function AddTitle(req, res) {
         transaction.commit()
 
         res.status(200).json({ success: "successfully added title" })
-    } catch (err) {
+    } catch {
         res.status(400).json({ error: "failed to add title" })
-        if (uploadedTitleCover) {
+        if (uploadedTitleCover && title) {
             await uploads_image.deleteTitleCover(title.id)
         }
         if (transaction) transaction.rollback()
@@ -201,9 +199,8 @@ async function AddTitle(req, res) {
 async function UpdateTitle(req, res) {
     let uploadedTitleCover = false
     let transaction
+    const { titleID } = req.params
     try {
-        const { titleID } = req.params
-
         transaction = await db.sequelize.transaction()
 
         const titleData = JSON.parse(req.body.titleData)
@@ -212,7 +209,7 @@ async function UpdateTitle(req, res) {
             titleCover = req.files["titleCover"][0]
         }
 
-        const title = await db.models.Title.UpdateInDB(
+        await db.models.Title.UpdateInDB(
             titleID,
             {
                 label: titleData.label,
@@ -269,10 +266,10 @@ async function UpdateTitle(req, res) {
         transaction.commit()
 
         res.status(200).json({ success: "successfully updated title" })
-    } catch (err) {
+    } catch {
         res.status(400).json({ error: "failed to update title" })
-        if (uploadedTitleCover) {
-            await uploads_image.deleteTitleCover(title.id)
+        if (uploadedTitleCover && titleID) {
+            await uploads_image.deleteTitleCover(titleID)
         }
         if (transaction) transaction.rollback()
     }
@@ -285,7 +282,7 @@ async function DeleteTitle(req, res) {
         await db.models.Title.RemoveFromDB(titleID)
 
         res.status(200).json({ success: "successfully removed title and its contents" })
-    } catch (err) {
+    } catch {
         res.status(400).json({ error: "failed to remove title and it contents" })
     }
 }
@@ -299,10 +296,10 @@ async function AddInstallment(req, res) {
             return
         }
 
-        const installment = await db.models.TitleInstallment.AddToDB(titleID, label, isSeason)
+        await db.models.TitleInstallment.AddToDB(titleID, label, isSeason)
 
         res.status(200).json({ success: "successfully added installment" })
-    } catch (err) {
+    } catch {
         res.status(400).json({ error: "failed to add installment" })
     }
 }
@@ -314,7 +311,7 @@ async function UpdateInstallment(req, res) {
         const { isSeason, label, installmentNumber } = req.body
 
         t = await db.sequelize.transaction()
-        const installment = await db.models.TitleInstallment.UpdateInDB(
+        await db.models.TitleInstallment.UpdateInDB(
             installmentID,
             {
                 label: label,
@@ -327,7 +324,7 @@ async function UpdateInstallment(req, res) {
         if (t) t.commit()
 
         res.status(200).json({ success: "successfully updated installment" })
-    } catch (err) {
+    } catch {
         res.status(400).json({ error: "failed to update installment" })
         if (t) t.rollback()
     }
@@ -337,10 +334,10 @@ async function DeleteInstallment(req, res) {
     try {
         const { installmentID } = req.params
 
-        const installment = await db.models.TitleInstallment.RemoveFromDB(installmentID)
+        await db.models.TitleInstallment.RemoveFromDB(installmentID)
 
         res.status(200).json({ success: "successfully removed installment" })
-    } catch (err) {
+    } catch {
         res.status(400).json({ error: "failed to remove installment" })
     }
 }
@@ -372,7 +369,7 @@ async function AddStream(req, res) {
         )
 
         res.status(200).json({ success: "successfully added stream" })
-    } catch (err) {
+    } catch {
         res.status(400).json({ error: "failed to add stream" })
     }
 }
@@ -416,7 +413,7 @@ async function UpdateStream(req, res) {
         if (t) t.commit()
 
         res.status(200).json({ success: "successfully updated stream" })
-    } catch (err) {
+    } catch {
         res.status(400).json({ error: "failed to update stream" })
         if (t) t.rollback()
     }
@@ -429,7 +426,7 @@ async function DeleteStream(req, res) {
         await db.models.TitleInstallmentStream.RemoveFromDB(streamID)
 
         res.status(200).json({ success: "successfully removed stream" })
-    } catch (err) {
+    } catch {
         res.status(400).json({ error: "failed to remove stream" })
     }
 }
@@ -533,7 +530,7 @@ async function DeleteStreamVideo(req, res) {
         await db.models.StreamVideo.RemoveFromDB(streamID)
 
         res.status(200).json({ success: "successfully removed stream video" })
-    } catch (err) {
+    } catch {
         res.status(400).json({ error: "failed to remove stream video" })
     }
 }
@@ -545,7 +542,7 @@ async function DeleteStreamAudio(req, res) {
         await db.models.StreamAudio.RemoveFromDB(streamID, label)
 
         res.status(200).json({ success: "successfully removed stream audio" })
-    } catch (err) {
+    } catch {
         res.status(400).json({ error: "failed to remove stream audio" })
     }
 }
@@ -563,7 +560,7 @@ async function DeleteStreamSubtitle(req, res) {
         await db.models.StreamSubtitle.RemoveFromDB(streamID, label, !!isCC)
 
         res.status(200).json({ success: "successfully removed stream subtitle" })
-    } catch (err) {
+    } catch {
         res.status(400).json({ error: "failed to remove stream subtitle" })
     }
 }
@@ -693,9 +690,8 @@ async function StreamVideoRenderInfo(req, res) {
 }
 
 async function StreamAudioRenderInfo(req, res) {
+    const { streamID, label } = req.params
     try {
-        const { streamID, label } = req.params
-
         res.setHeader("Content-Type", "text/event-stream")
         res.setHeader("Cache-Control", "no-cache")
         res.setHeader("Connection", "keep-alive")
@@ -722,7 +718,7 @@ async function StreamAudioRenderInfo(req, res) {
                 res.end()
             })
         }
-    } catch (err) {
+    } catch {
         if (!res.headersSent) {
             res.status(400).json({ error: `failed to retrieve audio render info for streamID ${streamID} with label ${label}` })
         }
@@ -730,9 +726,10 @@ async function StreamAudioRenderInfo(req, res) {
 }
 
 async function StreamSubtitleRenderInfo(req, res) {
-    try {
-        let { streamID, label, isCC } = req.params
+    const { streamID, label } = req.params
+    let { isCC } = req.params
 
+    try {
         if ((isCC && isCC.toLowerCase && isCC.toLowerCase() === "true") || isCC === "1") {
             isCC = true
         } else {
@@ -763,7 +760,7 @@ async function StreamSubtitleRenderInfo(req, res) {
                 res.end()
             })
         }
-    } catch (err) {
+    } catch {
         if (!res.headersSent) {
             res.status(400).json({ error: `failed to retrieve subtitle render info for streamID ${streamID} with label ${label}` })
         }
@@ -771,9 +768,9 @@ async function StreamSubtitleRenderInfo(req, res) {
 }
 
 async function AddGenre(req, res) {
-    try {
-        const { name } = req.body
+    const { name } = req.body
 
+    try {
         if (!name) {
             res.status(400).json({ error: "missing required data within request" })
             return
@@ -783,10 +780,10 @@ async function AddGenre(req, res) {
             res.status(400).json({ error: "genre already exists in the database" })
         }
 
-        const genre = await db.models.Genre.AddToDB(name)
+        await db.models.Genre.AddToDB(name)
 
         res.status(200).json({ success: "successfully added genre" })
-    } catch (err) {
+    } catch {
         res.status(400).json({ error: "failed to add genre" })
     }
 }
@@ -795,10 +792,10 @@ async function DeleteGenre(req, res) {
     try {
         const { name } = req.params
 
-        const genre = await db.models.Genre.RemoveFromDB(name)
+        await db.models.Genre.RemoveFromDB(name)
 
         res.status(200).json({ success: "successfully removed genre" })
-    } catch (err) {
+    } catch {
         res.status(400).json({ error: "failed to remove genre" })
     }
 }

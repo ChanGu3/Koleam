@@ -57,7 +57,7 @@ class TitleInstallmentStreamWatchHistory extends ModelExtension {
     /**
      * @override
      */
-    static async Connect_Associations({ sequelize, models }) {
+    static async Connect_Associations({ sequelize: _s, models }) {
         TitleInstallmentStreamWatchHistory.belongsTo(models.Member, {
             foreignKey: "email",
             targetKey: "email",
@@ -87,222 +87,199 @@ class TitleInstallmentStreamWatchHistory extends ModelExtension {
     // reject --> string: error msg
     // resolve --> instance: created TitleWatchHistory
     //
-    static AddToDB(email, streamID) {
-        return new Promise(async (resolve, reject) => {
-            if (await this.Exists(email, streamID)) {
-                Logging.LogWarning(`email, streamID pair exists`)
-                reject(new Error(`${email} already has ${streamID} added`))
-                return
-            }
+    static async AddToDB(email, streamID) {
+        if (await this.Exists(email, streamID)) {
+            Logging.LogWarning(`email, streamID pair exists`)
+            throw new Error(`${email} already has ${streamID} added`)
+        }
 
-            try {
-                const newWatchHistory = await TitleInstallmentStreamWatchHistory.build({
-                    email: email,
-                    streamID: streamID,
-                })
+        try {
+            const newWatchHistory = await TitleInstallmentStreamWatchHistory.build({
+                email: email,
+                streamID: streamID,
+            })
 
-                await newWatchHistory.validate()
+            await newWatchHistory.validate()
 
-                await newWatchHistory.save()
+            await newWatchHistory.save()
 
-                resolve(newWatchHistory)
-            } catch (err) {
-                Logging.LogError(
-                    `could not add ${TitleInstallmentStreamWatchHistory.name} to database ${email}|${streamID} --- ${err.message}`
-                )
-                reject(new Error(errormsg.fallback))
-            }
-        })
+            return newWatchHistory
+        } catch (err) {
+            Logging.LogError(`could not add ${TitleInstallmentStreamWatchHistory.name} to database ${email}|${streamID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> nothing
     //
-    static RemoveFromDB(email, streamID) {
-        return new Promise(async (resolve, reject) => {
-            if (!(await this.Exists(email, streamID))) {
-                Logging.LogWarning(`email, streamID, pair does not exist`)
-                reject(new Error(`${email} has not watched stream with id:${streamID}`))
-                return
-            }
+    static async RemoveFromDB(email, streamID) {
+        if (!(await this.Exists(email, streamID))) {
+            Logging.LogWarning(`email, streamID, pair does not exist`)
+            throw new Error(`${email} has not watched stream with id:${streamID}`)
+        }
 
-            try {
-                await TitleInstallmentStreamWatchHistory.destroy({
-                    where: {
-                        email: email,
-                        streamID: streamID,
-                    },
-                })
-
-                resolve()
-            } catch (err) {
-                Logging.LogError(
-                    `could not remove ${TitleInstallmentStreamWatchHistory.name} from database ${email}|${streamID} --- ${err.message}`
-                )
-                reject(new Error(errormsg.fallback))
-            }
-        })
+        try {
+            await TitleInstallmentStreamWatchHistory.destroy({
+                where: {
+                    email: email,
+                    streamID: streamID,
+                },
+            })
+        } catch (err) {
+            Logging.LogError(
+                `could not remove ${TitleInstallmentStreamWatchHistory.name} from database ${email}|${streamID} --- ${err.message}`
+            )
+            throw new Error(errormsg.fallback)
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> instance: updated StreamWatchHistory
     //
-    static UpdateDB(email, streamID, { lastTimeStampInSeconds = undefined } = {}) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                if (await this.Exists(email, streamID)) {
-                    await TitleInstallmentStreamWatchHistory.update(
-                        {
-                            dateLastWatched: new Date(),
-                            lastTimeStampInSeconds,
-                        },
-                        {
-                            where: {
-                                email: email,
-                                streamID: streamID,
-                            },
-                        }
-                    )
-                } else {
-                    const msg = `could not update date of ${TitleInstallmentStreamWatchHistory.name} with streamID:${streamID} does not exist`
-                    Logging.LogError(msg)
-                    reject(new Error(msg))
-                }
-
-                resolve()
-            } catch (err) {
-                Logging.LogError(
-                    `could not update date of ${TitleInstallmentStreamWatchHistory.name} with streamID:${streamID} --- ${err.message}`
-                )
-                reject(new Error(errormsg.fallback))
-            }
-        })
-    }
-
-    static GetWatchHistoryByEmail(
-        email,
-        { orderByDescDateLastedWatched = false, latestStreamPerSeries = false, titleID = null, limit = 10, offset = 0 } = {},
-        transaction = null
-    ) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const default_query = {
-                    where: {
-                        email: email,
+    static async UpdateDB(email, streamID, { lastTimeStampInSeconds = undefined } = {}) {
+        try {
+            if (await this.Exists(email, streamID)) {
+                await TitleInstallmentStreamWatchHistory.update(
+                    {
+                        dateLastWatched: new Date(),
+                        lastTimeStampInSeconds,
                     },
-                    limit: limit,
-                    offset: offset,
-                }
-
-                let orderList = latestStreamPerSeries || orderByDescDateLastedWatched ? ["dateLastWatched", "DESC"] : undefined
-                if (orderList) {
-                    default_query.order = [orderList]
-                }
-
-                // get a single stream that was the most recently watched of that title series
-                if (latestStreamPerSeries) {
-                    default_query.group = ["titleID"]
-                }
-
-                const original_title_installment_watch_history_query = {
-                    where: default_query.where,
-                    group: default_query.group,
-                    order: default_query.order,
-                    attributes: {
-                        exclude: ["createdAt", "updatedAt", "email"],
-                        include: [
-                            "email",
-                            "streamID",
-                            latestStreamPerSeries
-                                ? [Sequelize.fn("MAX", Sequelize.col("dateLastWatched")), "dateLastWatched"]
-                                : "dateLastWatched",
-                            "lastTimeStampInSeconds",
-                        ],
-                    },
-                    include: [
-                        {
-                            model: TitleInstallmentStreamWatchHistory.#models.TitleInstallmentStream,
-                            required: true,
-                            attributes: [],
-                        },
-                    ],
-                }
-
-                // if titleID is provided we can get the watch history of specific titles
-                if (titleID) {
-                    original_title_installment_watch_history_query.include[0].where.titleID = titleID
-                }
-
-                const original_title_installment_watch_history = await TitleInstallmentStreamWatchHistory.findAll(
-                    original_title_installment_watch_history_query
-                )
-
-                resolve(
-                    await Promise.all(
-                        original_title_installment_watch_history.map(async (element, index) => {
-                            const { streamID, ...rest } = element.toJSON()
-                            const streamData = await TitleInstallmentStreamWatchHistory.#models.TitleInstallmentStream.GetByID(
-                                streamID,
-                                transaction
-                            )
-                            return { ...rest, ...streamData }
-                        })
-                    )
-                )
-            } catch (err) {
-                Logging.LogError(
-                    `could not get list of ${TitleInstallmentStreamWatchHistory.name} from database by using email:${email} --- ${err.message}`
-                )
-                reject(new Error(errormsg.fallback))
-            }
-        })
-    }
-
-    static GetWatchHistoryByEmailANDStreamID(email, streamID, transaction = null) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                if (await this.Exists(email, streamID)) {
-                    const default_query = {
+                    {
                         where: {
                             email: email,
                             streamID: streamID,
                         },
                     }
+                )
+            } else {
+                const msg = `could not update date of ${TitleInstallmentStreamWatchHistory.name} with streamID:${streamID} does not exist`
+                Logging.LogError(msg)
+                throw new Error(msg)
+            }
+        } catch (err) {
+            Logging.LogError(
+                `could not update date of ${TitleInstallmentStreamWatchHistory.name} with streamID:${streamID} --- ${err.message}`
+            )
+            throw new Error(errormsg.fallback)
+        }
+    }
 
-                    if (transaction) {
-                        default_query.transaction = transaction
-                    }
+    static async GetWatchHistoryByEmail(
+        email,
+        { orderByDescDateLastedWatched = false, latestStreamPerSeries = false, titleID = null, limit = 10, offset = 0 } = {},
+        transaction = null
+    ) {
+        try {
+            const default_query = {
+                where: {
+                    email: email,
+                },
+                limit: limit,
+                offset: offset,
+            }
 
-                    const original_title_installment_watch_history = await TitleInstallmentStreamWatchHistory.findOne({
-                        where: default_query.where,
-                        attributes: {
-                            exclude: ["createdAt", "updatedAt"],
-                            include: ["email", "streamID", "dateLastWatched", "lastTimeStampInSeconds"],
-                        },
-                        transaction: default_query.transaction,
-                    })
+            let orderList = latestStreamPerSeries || orderByDescDateLastedWatched ? ["dateLastWatched", "DESC"] : undefined
+            if (orderList) {
+                default_query.order = [orderList]
+            }
 
-                    const { streamID: _streamID, ...rest } = original_title_installment_watch_history.toJSON()
+            // get a single stream that was the most recently watched of that title series
+            if (latestStreamPerSeries) {
+                default_query.group = ["titleID"]
+            }
+
+            const original_title_installment_watch_history_query = {
+                where: default_query.where,
+                group: default_query.group,
+                order: default_query.order,
+                attributes: {
+                    exclude: ["createdAt", "updatedAt", "email"],
+                    include: [
+                        "email",
+                        "streamID",
+                        latestStreamPerSeries
+                            ? [Sequelize.fn("MAX", Sequelize.col("dateLastWatched")), "dateLastWatched"]
+                            : "dateLastWatched",
+                        "lastTimeStampInSeconds",
+                    ],
+                },
+                include: [
+                    {
+                        model: TitleInstallmentStreamWatchHistory.#models.TitleInstallmentStream,
+                        required: true,
+                        attributes: [],
+                    },
+                ],
+            }
+
+            // if titleID is provided we can get the watch history of specific titles
+            if (titleID) {
+                original_title_installment_watch_history_query.include[0].where.titleID = titleID
+            }
+
+            const original_title_installment_watch_history = await TitleInstallmentStreamWatchHistory.findAll(
+                original_title_installment_watch_history_query
+            )
+
+            return await Promise.all(
+                original_title_installment_watch_history.map(async (element, _index) => {
+                    const { streamID, ...rest } = element.toJSON()
                     const streamData = await TitleInstallmentStreamWatchHistory.#models.TitleInstallmentStream.GetByID(
                         streamID,
                         transaction
                     )
+                    return { ...rest, ...streamData }
+                })
+            )
+        } catch (err) {
+            Logging.LogError(
+                `could not get list of ${TitleInstallmentStreamWatchHistory.name} from database by using email:${email} --- ${err.message}`
+            )
+            throw new Error(errormsg.fallback)
+        }
+    }
 
-                    resolve({ ...rest, ...streamData })
-                } else {
-                    const msg = `could not get ${TitleInstallmentStreamWatchHistory.name} with email:${email} and streamID:${streamID} does not exist`
-                    Logging.LogError(msg)
-                    reject(new Error(msg))
+    static async GetWatchHistoryByEmailANDStreamID(email, streamID, transaction = null) {
+        try {
+            if (await this.Exists(email, streamID)) {
+                const default_query = {
+                    where: {
+                        email: email,
+                        streamID: streamID,
+                    },
                 }
-            } catch (err) {
-                Logging.LogError(
-                    `could not get stream in ${TitleInstallmentStreamWatchHistory.name} from the database ${email}|${streamID} --- ${err.message}`
-                )
-                reject(new Error(errormsg.fallback))
+
+                if (transaction) {
+                    default_query.transaction = transaction
+                }
+
+                const original_title_installment_watch_history = await TitleInstallmentStreamWatchHistory.findOne({
+                    where: default_query.where,
+                    attributes: {
+                        exclude: ["createdAt", "updatedAt"],
+                        include: ["email", "streamID", "dateLastWatched", "lastTimeStampInSeconds"],
+                    },
+                    transaction: default_query.transaction,
+                })
+
+                const { streamID: _streamID, ...rest } = original_title_installment_watch_history.toJSON()
+                const streamData = await TitleInstallmentStreamWatchHistory.#models.TitleInstallmentStream.GetByID(streamID, transaction)
+
+                return { ...rest, ...streamData }
+            } else {
+                const msg = `could not get ${TitleInstallmentStreamWatchHistory.name} with email:${email} and streamID:${streamID} does not exist`
+                Logging.LogError(msg)
+                throw new Error(msg)
             }
-        })
+        } catch (err) {
+            Logging.LogError(
+                `could not get stream in ${TitleInstallmentStreamWatchHistory.name} from the database ${email}|${streamID} --- ${err.message}`
+            )
+            throw new Error(errormsg.fallback)
+        }
     }
 }
 

@@ -1,3 +1,5 @@
+import { ERROR_MESSAGES } from "../../../../shared/log-messages"
+
 export async function FetchIntallmentsByTitleID(titleID) {
     try {
         const response = await fetch(`/api/title/installment?titleID=${titleID}`, {
@@ -19,7 +21,7 @@ export async function FetchIntallmentsByTitleID(titleID) {
         }
 
         return data
-    } catch (err) {
+    } catch {
         return null
     }
 }
@@ -45,7 +47,7 @@ export async function FetchIntallmentByID(installmentID) {
         }
 
         return data
-    } catch (err) {
+    } catch {
         return null
     }
 }
@@ -62,7 +64,7 @@ export async function DeleteInstallmentByID(installmentID) {
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 
@@ -89,7 +91,7 @@ export async function AddInstallment({ titleID, label, isSeason }) {
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 
@@ -116,7 +118,7 @@ export async function UpdateInstallment(installmentID, { label = null, installme
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 

@@ -5,6 +5,7 @@
     "main": "server-main.cjs",
     "scripts": {
         "dev": "nodemon server-main.cjs -- -d",
+        "lint": "eslint .",
         "start": "node server-main.cjs",
         "build": "node build.mjs",
         "clean": "rimraf ../../dist/server"

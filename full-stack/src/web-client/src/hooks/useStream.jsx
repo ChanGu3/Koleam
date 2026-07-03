@@ -207,11 +207,6 @@ export function useUpdateVideoRender({ onSuccess = () => {}, onError = () => {},
 
                 // DO NOT await these, as the EventSource queries function never "resolves".
                 queryClient.invalidateQueries({ queryKey: ["STREAM", "VIDEO", streamID, "RENDER_INFO"] })
-                queryClient.invalidateQueries({ queryKey: ["STREAM", streamID, "AUDIO", label, "RENDER_INFO"] })
-                queryClient.invalidateQueries({ queryKey: ["STREAM", streamID, "SUBTITLE", label, isCC, "RENDER_INFO"] })
-
-                // DO NOT await this, as the EventSource query function never "resolves".
-                queryClient.invalidateQueries({ queryKey: ["STREAM", "VIDEO", streamID, "RENDER_INFO"] })
             }
 
             // useStreamVideoRenderInfo hook when the job is complete.

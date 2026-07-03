@@ -50,7 +50,7 @@ class TitleRating extends ModelExtension {
     /**
      * @override
      */
-    static async Connect_Associations({ sequelize, models }) {
+    static async Connect_Associations({ sequelize: _s, models }) {
         TitleRating.belongsTo(models.Title, {
             foreignKey: "titleID",
             sourceKey: "id",
@@ -84,142 +84,126 @@ class TitleRating extends ModelExtension {
     // resolve --> instance: created Member
     //
     // rating must be a INTEGER within [1,5]
-    static AddToDB(email, titleID, rating) {
-        return new Promise(async (resolve, reject) => {
-            if (await this.Exists(email, titleID)) {
-                Logging.LogWarning(`email & titleID pair exists`)
-                reject(new Error(`${email} already has this ${titleID}`))
-                return
-            }
+    static async AddToDB(email, titleID, rating) {
+        if (await this.Exists(email, titleID)) {
+            Logging.LogWarning(`email & titleID pair exists`)
+            throw new Error(`${email} already has this ${titleID}`)
+        }
 
-            try {
-                const newTitleRate = await TitleRating.build({
-                    email: email,
-                    titleID: titleID,
-                    rating: rating,
-                })
+        try {
+            const newTitleRate = await TitleRating.build({
+                email: email,
+                titleID: titleID,
+                rating: rating,
+            })
 
-                await newTitleRate.validate()
+            await newTitleRate.validate()
 
-                await newTitleRate.save()
+            await newTitleRate.save()
 
-                resolve(newTitleRate)
-            } catch (err) {
-                Logging.LogError(`could not add  ${TitleRating.name} to database ${email}|${titleID} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
+            return newTitleRate
+        } catch (err) {
+            Logging.LogError(`could not add  ${TitleRating.name} to database ${email}|${titleID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> nothing
     //
-    static RemoveFromDB(email, titleID) {
-        return new Promise(async (resolve, reject) => {
-            if (!(await this.Exists(email, titleID))) {
-                Logging.LogWarning(`email & titleID pair does not exist`)
-                reject(new Error(`${email} does not have a rating for ${titleID}`))
-                return
-            }
+    static async RemoveFromDB(email, titleID) {
+        if (!(await this.Exists(email, titleID))) {
+            Logging.LogWarning(`email & titleID pair does not exist`)
+            throw new Error(`${email} does not have a rating for ${titleID}`)
+        }
 
-            try {
-                await TitleRating.destroy({
+        try {
+            await TitleRating.destroy({
+                where: {
+                    email: email,
+                    titleID: titleID,
+                },
+            })
+
+            return
+        } catch (err) {
+            Logging.LogError(`could not remove ${TitleRating.name} from database ${email}|${titleID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
+    }
+
+    //
+    // reject --> string: error msg
+    // resolve --> nothing
+    //
+    static async UpdateDB(email, titleID, { rating = undefined } = {}) {
+        if (!(await this.Exists(email, titleID))) {
+            Logging.LogWarning(`email & titleID pair does not exist`)
+            throw new Error(`${email} does not have a rating for ${titleID}`)
+        }
+
+        try {
+            await TitleRating.update(
+                {
+                    rating: rating,
+                },
+                {
                     where: {
                         email: email,
                         titleID: titleID,
                     },
-                })
+                }
+            )
 
-                resolve()
-            } catch (err) {
-                Logging.LogError(`could not remove ${TitleRating.name} from database ${email}|${titleID} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
+            return
+        } catch (err) {
+            Logging.LogError(`could not update ${TitleRating.name} from database ${email}|${titleID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
-    //
-    // reject --> string: error msg
-    // resolve --> nothing
-    //
-    static UpdateDB(email, titleID, { rating = undefined } = {}) {
-        return new Promise(async (resolve, reject) => {
-            if (!(await this.Exists(email, titleID))) {
-                Logging.LogWarning(`email & titleID pair does not exist`)
-                reject(new Error(`${email} does not have a rating for ${titleID}`))
-                return
-            }
+    static async GetAllByTitleID(titleID, { limit = 10, offset = 0 } = {}) {
+        try {
+            const titleRatings = await TitleRating.findAll({
+                where: {
+                    titleID: titleID,
+                    limit: limit,
+                    offset: offset,
+                },
+            })
 
-            try {
-                await TitleRating.update(
-                    {
-                        rating: rating,
-                    },
-                    {
-                        where: {
-                            email: email,
-                            titleID: titleID,
-                        },
-                    }
-                )
-
-                resolve()
-            } catch (err) {
-                Logging.LogError(`could not update ${TitleRating.name} from database ${email}|${titleID} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
-    }
-
-    static GetAllByTitleID(titleID, { limit = 10, offset = 0 } = {}) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const titleRatings = await TitleRating.findAll({
-                    where: {
-                        titleID: titleID,
-                        limit: limit,
-                        offset: offset,
-                    },
-                })
-                resolve(
-                    titleRatings.map((element) => {
-                        return element.toJSON()
-                    })
-                )
-            } catch (err) {
-                Logging.LogError(`could not get list of ${TitleRating.name} from database using titleID:${titleID} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
+            return titleRatings.map((element) => {
+                return element.toJSON()
+            })
+        } catch (err) {
+            Logging.LogError(`could not get list of ${TitleRating.name} from database using titleID:${titleID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> instance: single found TitleRating
     //
-    static GetByEmailANDTitleID(email, titleID) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const titleRating = await TitleRating.findOne({
-                    where: {
-                        email: email,
-                        titleID: titleID,
-                    },
-                })
+    static async etByEmailANDTitleID(email, titleID) {
+        try {
+            const titleRating = await TitleRating.findOne({
+                where: {
+                    email: email,
+                    titleID: titleID,
+                },
+            })
 
-                if (titleRating) {
-                    resolve(titleRating.toJSON())
-                } else {
-                    reject(new Error(`email:${email} has not rated titleID:${titleID}`))
-                }
-            } catch (err) {
-                Logging.LogError(
-                    `could not get ${TitleRating.name} from database using email:${email}|titleID:${titleID} --- ${err.message}`
-                )
-                reject(new Error(errormsg.fallback))
+            if (titleRating) {
+                return titleRating.toJSON()
+            } else {
+                throw new Error(`email:${email} has not rated titleID:${titleID}`)
             }
-        })
+        } catch (err) {
+            Logging.LogError(`could not get ${TitleRating.name} from database using email:${email}|titleID:${titleID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
     /**

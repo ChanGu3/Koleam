@@ -1,6 +1,6 @@
 import { useContext } from "react"
 import { MemberContext } from "../contexts/createContext/MemberContext.jsx"
-import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query"
+import { useQueryClient, useMutation } from "@tanstack/react-query"
 import { DeleteMember } from "../services/FetchMembers.js"
 
 /** * Hook for member related functions and data.
@@ -23,18 +23,6 @@ export function useDeleteMember() {
         mutationFn: async (email) => await DeleteMember(email),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["ADMINISTRATION", "MODERATION", "MEMBERS"] })
-        },
-    })
-}
-
-export function useMemberUpdateRating(titleID) {
-    const queryClient = useQueryClient()
-    return useMutation({
-        mutationKey: ["USER", "RATING", titleID],
-        mutationFn: async (rating) => await MemberUpdateRatingOfTitle(titleID, rating),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["TITLE", "BY_ID", titleID] })
-            queryClient.invalidateQueries({ queryKey: ["USER", "RATING", titleID] })
         },
     })
 }

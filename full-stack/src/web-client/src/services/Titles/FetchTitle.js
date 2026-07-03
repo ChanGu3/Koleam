@@ -23,7 +23,7 @@ export async function FetchTitleInstallmentStreamHistory(limit = 10, offset = 0)
         }
 
         return data
-    } catch (err) {
+    } catch {
         return null
     }
 }
@@ -49,7 +49,7 @@ export async function FetchGetCarousel(limit = 7, offset = 0) {
         }
 
         return data
-    } catch (err) {
+    } catch {
         return null
     }
 }
@@ -75,7 +75,7 @@ export async function FetchGetSeriesShuffle(limit = 10) {
         }
 
         return data
-    } catch (err) {
+    } catch {
         return null
     }
 }
@@ -179,7 +179,7 @@ export async function FetchTitleByID(titleID) {
         }
 
         return data
-    } catch (err) {
+    } catch {
         return null
     }
 }
@@ -196,7 +196,7 @@ export async function DeleteTitleByID(titleID) {
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 
@@ -248,7 +248,7 @@ export async function AddTitle({
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 
@@ -296,7 +296,7 @@ export async function UpdateTitle(
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 

@@ -1,4 +1,4 @@
-const { DataTypes, Op, fn, col, literal } = require("sequelize")
+const { DataTypes, Op, col, literal } = require("sequelize")
 const { Logging, errormsg } = require("../../server-logging.cjs")
 const { uploads } = require("../../server-uploads.cjs")
 const { ModelExtension } = require("../model-extension.cjs")
@@ -61,7 +61,7 @@ class Title extends ModelExtension {
     /**
      * @override
      */
-    static async Connect_Associations({ sequelize, models }) {
+    static async Connect_Associations({ sequelize: _s, models }) {
         Title.hasMany(models.TitleInstallment, {
             foreignKey: "titleID",
             sourceKey: "id",
@@ -110,33 +110,29 @@ class Title extends ModelExtension {
         return `${title.id}`
     }
 
-    static #CreateDirectory(title) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const dirName = this.#TitleDirPath(title)
-                await uploads.mkDir(dirName)
-                resolve(dirName)
-            } catch (err) {
-                Logging.LogError(`title directory creation could not be resolved for id:${title.id} --- ${err}`)
-                reject({ error: err.message })
-            }
-        })
+    static async #CreateDirectory(title) {
+        try {
+            const dirName = this.#TitleDirPath(title)
+            await uploads.mkDir(dirName)
+            return dirName
+        } catch (err) {
+            Logging.LogError(`title directory creation could not be resolved for id:${title.id} --- ${err}`)
+            throw { error: err.message }
+        }
     }
 
-    static #DeleteDirectory(title) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const dirName = this.#TitleDirPath(title)
-                await uploads.recursiveDirDeleteInTitles(dirName)
-                resolve(dirName)
-            } catch (err) {
-                Logging.LogError(`title directory removal could not be resolved for id:${title.id} --- ${err}`)
-                reject({ error: err.message })
-            }
-        })
+    static async #DeleteDirectory(title) {
+        try {
+            const dirName = this.#TitleDirPath(title)
+            await uploads.recursiveDirDeleteInTitles(dirName)
+            return dirName
+        } catch (err) {
+            Logging.LogError(`title directory removal could not be resolved for id:${title.id} --- ${err}`)
+            throw { error: err.message }
+        }
     }
 
-    static AddToDB(
+    static async AddToDB(
         label,
         description = null,
         copyright = null,
@@ -145,34 +141,32 @@ class Title extends ModelExtension {
         filmAgeMin = null,
         transaction = null
     ) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const title = await Title.build(
-                    {
-                        label: label,
-                        description: description,
-                        copyright: copyright,
-                        originalTranslation: originalTranslation,
-                        filmSuitability: filmSuitability,
-                        filmAgeMin: filmAgeMin,
-                    },
-                    { transaction: transaction }
-                )
+        try {
+            const title = await Title.build(
+                {
+                    label: label,
+                    description: description,
+                    copyright: copyright,
+                    originalTranslation: originalTranslation,
+                    filmSuitability: filmSuitability,
+                    filmAgeMin: filmAgeMin,
+                },
+                { transaction: transaction }
+            )
 
-                await title.validate({ transaction: transaction })
-                await title.save({ transaction: transaction })
+            await title.validate({ transaction: transaction })
+            await title.save({ transaction: transaction })
 
-                await this.#CreateDirectory(title)
+            await this.#CreateDirectory(title)
 
-                resolve(title)
-            } catch (err) {
-                Logging.LogError(`could not add title to database ${label} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
+            return title
+        } catch (err) {
+            Logging.LogError(`could not add title to database ${label} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
-    static UpdateInDB(
+    static async UpdateInDB(
         id,
         {
             label = undefined,
@@ -184,78 +178,74 @@ class Title extends ModelExtension {
         } = {},
         transaction = null
     ) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const title = await Title.GetByID(id)
-                if (!(await uploads.doesTitlesPathExist(this.#TitleDirPath(title)))) {
-                    await this.#CreateDirectory(title)
-                    Logging.LogWarning(`directory does not exist had to re-create directory for title called ${title.title}`)
-                }
-
-                const updateValues = {}
-                if (label) {
-                    updateValues.label = label
-                }
-                if (description) {
-                    updateValues.description = description
-                }
-                if (copyright) {
-                    updateValues.copyright = copyright
-                }
-                if (originalTranslation) {
-                    updateValues.originalTranslation = originalTranslation
-                }
-                if (filmAgeMin) {
-                    updateValues.filmAgeMin = filmAgeMin
-                }
-
-                if (filmSuitability) {
-                    updateValues.filmSuitability = filmSuitability
-                }
-
-                const query = {}
-                query.where = {}
-                query.where.id = id
-                if (transaction) {
-                    query.transaction = transaction
-                }
-
-                await Title.update(updateValues, query)
-
-                resolve()
-            } catch (err) {
-                Logging.LogError(`could not update title in database ${id} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
+        try {
+            const title = await Title.GetByID(id)
+            if (!(await uploads.doesTitlesPathExist(this.#TitleDirPath(title)))) {
+                await this.#CreateDirectory(title)
+                Logging.LogWarning(`directory does not exist had to re-create directory for title called ${title.title}`)
             }
-        })
+
+            const updateValues = {}
+            if (label) {
+                updateValues.label = label
+            }
+            if (description) {
+                updateValues.description = description
+            }
+            if (copyright) {
+                updateValues.copyright = copyright
+            }
+            if (originalTranslation) {
+                updateValues.originalTranslation = originalTranslation
+            }
+            if (filmAgeMin) {
+                updateValues.filmAgeMin = filmAgeMin
+            }
+
+            if (filmSuitability) {
+                updateValues.filmSuitability = filmSuitability
+            }
+
+            const query = {}
+            query.where = {}
+            query.where.id = id
+            if (transaction) {
+                query.transaction = transaction
+            }
+
+            await Title.update(updateValues, query)
+
+            return
+        } catch (err) {
+            Logging.LogError(`could not update title in database ${id} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
-    static RemoveFromDB(id) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                if (await this.Exists(id)) {
-                    const title = await Title.findByPk(id)
-                    const dirName = this.#TitleDirPath(title)
+    static async RemoveFromDB(id) {
+        try {
+            if (await this.Exists(id)) {
+                const title = await Title.findByPk(id)
+                const dirName = this.#TitleDirPath(title)
 
-                    await Title.destroy({
-                        where: {
-                            id: title.id,
-                        },
-                    })
+                await Title.destroy({
+                    where: {
+                        id: title.id,
+                    },
+                })
 
-                    if (await uploads.doesTitlesPathExist(dirName)) {
-                        this.#DeleteDirectory(title)
-                    }
-                } else {
-                    Logging.LogWarning(`title with id:${id} does not exists so removing is unnecessary`)
+                if (await uploads.doesTitlesPathExist(dirName)) {
+                    this.#DeleteDirectory(title)
                 }
-
-                resolve()
-            } catch (err) {
-                Logging.LogError(`could not remove title from database ${id} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
+            } else {
+                Logging.LogWarning(`title with id:${id} does not exists so removing is unnecessary`)
             }
-        })
+
+            return
+        } catch (err) {
+            Logging.LogError(`could not remove title from database ${id} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
     static GET_INSTALLMENT_INCLUDE() {
@@ -427,74 +417,13 @@ class Title extends ModelExtension {
         ]
     }
 
-    static GetByID(id, transaction = null) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                if (await this.Exists(id)) {
-                    const default_query = {
-                        where: {
-                            id: id,
-                        },
-                        group: [col("Title.id")],
-                    }
-
-                    if (transaction) {
-                        default_query.transaction = transaction
-                    }
-
-                    const original_title_data = await Title.findOne({
-                        where: default_query.where,
-                        attributes: {
-                            exclude: ["createdAt", "updatedAt"],
-                            include: ["id", "label", "description", "copyright", "originalTranslation"].concat(
-                                Title.GET_INSTALLMENT_INCLUDE(),
-                                Title.GET_OTHERTRANSLATIONS_INCLUDE(),
-                                Title.GET_RATINGS_INCLUDE(),
-                                Title.GET_GENRES_INCLUDE(),
-                                Title.GET_FAVORITES_INCLUDE(),
-                                Title.GET_CONTENT_ADVISORIES_INCLUDE()
-                            ),
-                        },
-                        group: default_query.group,
-                    })
-
-                    const {
-                        createdAt: c1,
-                        updatedAt: u1,
-                        all_other_translations,
-                        all_genres,
-                        all_content_advisories,
-                        ...rest1
-                    } = original_title_data.toJSON()
-                    const all_title_data = {
-                        ...rest1,
-                        all_other_translations: all_other_translations ? all_other_translations.split(",") : [],
-                        all_genres: all_genres ? all_genres.split(",") : [],
-                        all_content_advisories: all_content_advisories ? all_content_advisories.split(",") : [],
-                    }
-
-                    resolve(all_title_data)
-                } else {
-                    Logging.LogError(`could not get title with id: ${id}`)
-                    reject({ error: `could not get title with id: ${id}` })
-                }
-            } catch (err) {
-                Logging.LogError(`could not get title with id: ${id} --- ${err}`)
-                reject({ error: err.message })
-            }
-        })
-    }
-
-    static GetAll({ getNewestReleases = false, limit = 10, offset = 0, search = undefined, genereFilter = [] } = {}, transaction = null) {
-        return new Promise(async (resolve, reject) => {
-            const newestReleasesShowing = 6
-
-            try {
+    static async GetByID(id, transaction = null) {
+        try {
+            if (await this.Exists(id)) {
                 const default_query = {
-                    where: {},
-                    include: [],
-                    order: [],
-                    having: {},
+                    where: {
+                        id: id,
+                    },
                     group: [col("Title.id")],
                 }
 
@@ -502,76 +431,134 @@ class Title extends ModelExtension {
                     default_query.transaction = transaction
                 }
 
-                if (getNewestReleases) {
-                    default_query.order.push(["createdAt", "ASC"])
-                }
-
-                if (genereFilter && genereFilter.length > 0) {
-                    default_query.include.push({
-                        model: Title.#models.TitleGenre,
-                        required: true,
-                        attributes: [],
-                        where: {
-                            genre: {
-                                [Op.in]: genereFilter,
-                            },
-                        },
-                    })
-                }
-
-                if (search) {
-                    default_query.where.label = { [Op.like]: `%${search}%` }
-                }
-
-                default_query.limit = getNewestReleases ? newestReleasesShowing : limit
-
-                default_query.offset = getNewestReleases ? 0 : offset
-
-                const original_title_data = await Title.findAll({
+                const original_title_data = await Title.findOne({
                     where: default_query.where,
-                    include: default_query.include,
                     attributes: {
                         exclude: ["createdAt", "updatedAt"],
                         include: ["id", "label", "description", "copyright", "originalTranslation"].concat(
-                            this.GET_INSTALLMENT_INCLUDE(),
-                            this.GET_OTHERTRANSLATIONS_INCLUDE(),
-                            this.GET_RATINGS_INCLUDE(),
-                            this.GET_GENRES_INCLUDE(),
-                            this.GET_FAVORITES_INCLUDE(),
+                            Title.GET_INSTALLMENT_INCLUDE(),
+                            Title.GET_OTHERTRANSLATIONS_INCLUDE(),
+                            Title.GET_RATINGS_INCLUDE(),
+                            Title.GET_GENRES_INCLUDE(),
+                            Title.GET_FAVORITES_INCLUDE(),
                             Title.GET_CONTENT_ADVISORIES_INCLUDE()
                         ),
                     },
                     group: default_query.group,
-                    having: default_query.having,
-                    order: default_query.order,
-                    limit: default_query.limit,
-                    offset: default_query.offset,
                 })
 
-                resolve(
-                    original_title_data.map((element, index) => {
-                        const {
-                            createdAt: c1,
-                            updatedAt: u1,
-                            all_other_translations,
-                            all_genres,
-                            all_content_advisories,
-                            ...rest1
-                        } = element.toJSON()
-                        const all_title_data = {
-                            ...rest1,
-                            all_other_translations: all_other_translations ? all_other_translations.split(",") : [],
-                            all_genres: all_genres ? all_genres.split(",") : [],
-                            all_content_advisories: all_content_advisories ? all_content_advisories.split(",") : [],
-                        }
-                        return all_title_data
-                    })
-                )
-            } catch (err) {
-                Logging.LogError(`could not get all titles --- ${err}`)
-                reject({ error: err.message })
+                const {
+                    createdAt: _c1,
+                    updatedAt: _u1,
+                    all_other_translations,
+                    all_genres,
+                    all_content_advisories,
+                    ...rest1
+                } = original_title_data.toJSON()
+                const all_title_data = {
+                    ...rest1,
+                    all_other_translations: all_other_translations ? all_other_translations.split(",") : [],
+                    all_genres: all_genres ? all_genres.split(",") : [],
+                    all_content_advisories: all_content_advisories ? all_content_advisories.split(",") : [],
+                }
+
+                return all_title_data
+            } else {
+                Logging.LogError(`could not get title with id: ${id}`)
+                throw { error: `could not get title with id: ${id}` }
             }
-        })
+        } catch (err) {
+            Logging.LogError(`could not get title with id: ${id} --- ${err}`)
+            throw { error: err.message }
+        }
+    }
+
+    static async GetAll(
+        { getNewestReleases = false, limit = 10, offset = 0, search = undefined, genereFilter = [] } = {},
+        transaction = null
+    ) {
+        const newestReleasesShowing = 6
+
+        try {
+            const default_query = {
+                where: {},
+                include: [],
+                order: [],
+                having: {},
+                group: [col("Title.id")],
+            }
+
+            if (transaction) {
+                default_query.transaction = transaction
+            }
+
+            if (getNewestReleases) {
+                default_query.order.push(["createdAt", "ASC"])
+            }
+
+            if (genereFilter && genereFilter.length > 0) {
+                default_query.include.push({
+                    model: Title.#models.TitleGenre,
+                    required: true,
+                    attributes: [],
+                    where: {
+                        genre: {
+                            [Op.in]: genereFilter,
+                        },
+                    },
+                })
+            }
+
+            if (search) {
+                default_query.where.label = { [Op.like]: `%${search}%` }
+            }
+
+            default_query.limit = getNewestReleases ? newestReleasesShowing : limit
+
+            default_query.offset = getNewestReleases ? 0 : offset
+
+            const original_title_data = await Title.findAll({
+                where: default_query.where,
+                include: default_query.include,
+                attributes: {
+                    exclude: ["createdAt", "updatedAt"],
+                    include: ["id", "label", "description", "copyright", "originalTranslation"].concat(
+                        this.GET_INSTALLMENT_INCLUDE(),
+                        this.GET_OTHERTRANSLATIONS_INCLUDE(),
+                        this.GET_RATINGS_INCLUDE(),
+                        this.GET_GENRES_INCLUDE(),
+                        this.GET_FAVORITES_INCLUDE(),
+                        Title.GET_CONTENT_ADVISORIES_INCLUDE()
+                    ),
+                },
+                group: default_query.group,
+                having: default_query.having,
+                order: default_query.order,
+                limit: default_query.limit,
+                offset: default_query.offset,
+            })
+
+            return original_title_data.map((element, _index) => {
+                const {
+                    createdAt: _c1,
+                    updatedAt: _u1,
+                    all_other_translations,
+                    all_genres,
+                    all_content_advisories,
+                    ...rest1
+                } = element.toJSON()
+                const all_title_data = {
+                    ...rest1,
+                    all_other_translations: all_other_translations ? all_other_translations.split(",") : [],
+                    all_genres: all_genres ? all_genres.split(",") : [],
+                    all_content_advisories: all_content_advisories ? all_content_advisories.split(",") : [],
+                }
+                return all_title_data
+            })
+        } catch (err) {
+            Logging.LogError(`could not get all titles --- ${err}`)
+            throw { error: err.message }
+        }
     }
 }
 

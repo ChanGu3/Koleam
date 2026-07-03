@@ -9,7 +9,7 @@ class Member extends ModelExtension {
     /**
      * @override
      */
-    static async Initialize({ sequelize, models }) {
+    static async Initialize({ sequelize, models: _m }) {
         Member.init(
             {
                 email: {
@@ -45,230 +45,207 @@ class Member extends ModelExtension {
         return instance ? true : false
     }
 
-    static GetAll({ limit = 10, offset = 0, search = null } = {}) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const querys = {
-                    where: {},
-                }
-                if (limit) {
-                    querys.limit = limit
-                }
-                if (offset) {
-                    querys.offset = offset
-                }
-
-                if (search) {
-                    querys.where.email = {
-                        [Op.like]: `%${search}%`,
-                    }
-                }
-
-                const members = await Member.findAll(querys)
-
-                resolve(
-                    members.map((element) => {
-                        const { password, ...rest } = element.toJSON()
-                        return rest
-                    })
-                )
-            } catch (err) {
-                Logging.LogError(`could not get all members --- ${err}`)
-                reject({ error: err.message })
+    static async GetAll({ limit = 10, offset = 0, search = null } = {}) {
+        try {
+            const querys = {
+                where: {},
             }
-        })
+            if (limit) {
+                querys.limit = limit
+            }
+            if (offset) {
+                querys.offset = offset
+            }
+
+            if (search) {
+                querys.where.email = {
+                    [Op.like]: `%${search}%`,
+                }
+            }
+
+            const members = await Member.findAll(querys)
+
+            return members.map((element) => {
+                const { password: _, ...rest } = element.toJSON()
+                return rest
+            })
+        } catch (err) {
+            Logging.LogError(`could not get all members --- ${err}`)
+            throw { error: err.message }
+        }
     }
 
     //
     // reject --> null
     // resolve --> instance: Member
     //
-    static GetByEmail(email) {
-        return new Promise(async (resolve, reject) => {
-            const emailLower = email.toLowerCase()
-            if (await Member.Exists(emailLower)) {
-                const member = await Member.findByPk(emailLower)
-                const { password, ...rest } = member.toJSON()
-                resolve(rest)
-            } else {
-                reject(null)
-            }
-        })
+    static async GetByEmail(email) {
+        const emailLower = email.toLowerCase()
+        if (await Member.Exists(emailLower)) {
+            const member = await Member.findByPk(emailLower)
+            const { password: _p, ...rest } = member.toJSON()
+            return rest
+        } else {
+            throw null
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> instance: created Member
     //
-    static AddToDB(email, password) {
-        return new Promise(async (resolve, reject) => {
-            const emailLower = email.toLowerCase()
+    static async AddToDB(email, password) {
+        const emailLower = email.toLowerCase()
 
-            if (await Member.Exists(emailLower)) {
-                reject(new Error(errormsg.emailExists))
-                return
-            }
+        if (await Member.Exists(emailLower)) {
+            throw new Error(errormsg.emailExists)
+        }
 
-            if (validatePassword(password) === false) {
-                reject(new Error("Invalid password format"))
-            }
+        if (validatePassword(password) === false) {
+            throw new Error("Invalid password format")
+        }
 
-            try {
-                const hash = await HashPassword(password, saltRounds)
+        try {
+            const hash = await HashPassword(password, saltRounds)
 
-                const newMember = Member.build({
-                    email: emailLower,
-                    password: hash,
-                })
+            const newMember = Member.build({
+                email: emailLower,
+                password: hash,
+            })
 
-                await newMember.validate()
+            await newMember.validate()
 
-                await newMember.save()
+            await newMember.save()
 
-                resolve(newMember)
-            } catch (err) {
-                Logging.LogError(`Could Not Add Member To Database ${email} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
+            return newMember
+        } catch (err) {
+            Logging.LogError(`Could Not Add Member To Database ${email} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> nothing
     //
-    static RemoveByEmail(email) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                await Member.destroy({ where: { email: email } })
-                resolve()
-            } catch (err) {
-                reject(new Error(errormsg.fallback))
-            }
-        })
+    static async RemoveByEmail(email) {
+        try {
+            await Member.destroy({ where: { email: email } })
+            return
+        } catch {
+            throw new Error(errormsg.fallback)
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> instance: authorized Member
     //
-    static Authentification(email, password) {
-        return new Promise(async (resolve, reject) => {
-            const emailLower = email.toLowerCase()
+    static async Authentification(email, password) {
+        const emailLower = email.toLowerCase()
 
-            if (await Member.Exists(emailLower)) {
-                const existingUser = await Member.findByPk(emailLower)
-                if (existingUser) {
-                    try {
-                        if (await bcrypt.compare(password, existingUser.password)) {
-                            resolve(existingUser)
-                        } else {
-                            reject(new Error(errormsg.memberAuthentificationFail))
-                        }
-                    } catch (err) {
-                        Logging.LogError(`Could Not Hash ${email} --- ${err.message}`)
-                        reject(new Error(errormsg.fallback))
+        if (await Member.Exists(emailLower)) {
+            const existingUser = await Member.findByPk(emailLower)
+            if (existingUser) {
+                try {
+                    if (await bcrypt.compare(password, existingUser.password)) {
+                        return existingUser
+                    } else {
+                        throw new Error(errormsg.memberAuthentificationFail)
                     }
-                } else {
-                    reject(new Error(errormsg.memberAuthentificationFail))
+                } catch (err) {
+                    Logging.LogError(`Could Not Hash ${email} --- ${err.message}`)
+                    throw new Error(errormsg.fallback)
                 }
             } else {
-                reject(new Error(errormsg.memberAuthentificationFail))
+                throw new Error(errormsg.memberAuthentificationFail)
             }
-        })
+        } else {
+            throw new Error(errormsg.memberAuthentificationFail)
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> instance: updated Member
     //
-    static UpdateEmail(oldEmail, newEmail) {
-        return new Promise(async (resolve, reject) => {
-            const oldEmailLower = oldEmail.toLowerCase()
-            const newEmailLower = newEmail.toLowerCase()
+    static async UpdateEmail(oldEmail, newEmail) {
+        const oldEmailLower = oldEmail.toLowerCase()
+        const newEmailLower = newEmail.toLowerCase()
 
-            try {
-                // Check if old email exists
-                if (!(await Member.Exists(oldEmailLower))) {
-                    Logging.LogError(`User not found ${oldEmail} to ${newEmail}`)
-                    reject(new Error("User not found"))
-                    return
-                }
+        try {
+            // Check if old email exists
+            if (!(await Member.Exists(oldEmailLower))) {
+                Logging.LogError(`User not found ${oldEmail} to ${newEmail}`)
+                throw new Error("User not found")
+            }
 
-                // Check if new email already exists
-                if (await Member.Exists(newEmailLower)) {
-                    Logging.LogError(`New email already exists ${oldEmail} to ${newEmail}`)
-                    reject(new Error("New email already exists"))
-                    return
-                }
+            // Check if new email already exists
+            if (await Member.Exists(newEmailLower)) {
+                Logging.LogError(`New email already exists ${oldEmail} to ${newEmail}`)
+                throw new Error("New email already exists")
+            }
 
-                if (validateEmail(newEmailLower) === false) {
-                    Logging.LogError(`Invalid email format ${oldEmail} to ${newEmail}`)
-                    reject(new Error("Invalid email format"))
-                    return
-                }
+            if (validateEmail(newEmailLower) === false) {
+                Logging.LogError(`Invalid email format ${oldEmail} to ${newEmail}`)
+                throw new Error("Invalid email format")
+            }
 
-                // Update email
-                await Member.update(
-                    {
-                        email: newEmail,
+            // Update email
+            await Member.update(
+                {
+                    email: newEmail,
+                },
+                {
+                    where: {
+                        email: oldEmail,
                     },
-                    {
-                        where: {
-                            email: oldEmail,
-                        },
-                    }
-                )
+                }
+            )
 
-                resolve({ success: "Successfully updated email" })
-            } catch (err) {
-                Logging.LogError(`Could Not Update Email ${oldEmail} to ${newEmail} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
+            return { success: "Successfully updated email" }
+        } catch (err) {
+            Logging.LogError(`Could Not Update Email ${oldEmail} to ${newEmail} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> instance: updated Member
     //
-    static UpdatePassword(email, currentPassword, newPassword) {
-        return new Promise(async (resolve, reject) => {
-            const emailLower = email.toLowerCase()
+    static async UpdatePassword(email, currentPassword, newPassword) {
+        const emailLower = email.toLowerCase()
 
-            try {
-                // Check if user exists
-                if (!(await Member.Exists(emailLower))) {
-                    reject(new Error("User not found"))
-                    return
-                }
-
-                const existingMember = await Member.findByPk(emailLower)
-
-                // Verify current password
-                if (!(await bcrypt.compare(currentPassword, existingMember.password))) {
-                    reject(new Error("Current password is incorrect"))
-                    return
-                }
-
-                if (validatePassword(newPassword) === false) {
-                    reject(new Error(validePasswordFailMsg))
-                    return
-                }
-
-                // Hash new password
-                const newHash = await HashPassword(newPassword, saltRounds)
-
-                // Update password
-                existingMember.password = newHash
-                await existingMember.save()
-
-                resolve(existingMember)
-            } catch (err) {
-                Logging.LogError(`Could Not Update Password for ${email} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
+        try {
+            // Check if user exists
+            if (!(await Member.Exists(emailLower))) {
+                throw new Error("User not found")
             }
-        })
+
+            const existingMember = await Member.findByPk(emailLower)
+
+            // Verify current password
+            if (!(await bcrypt.compare(currentPassword, existingMember.password))) {
+                new Error("Current password is incorrect")
+            }
+
+            if (validatePassword(newPassword) === false) {
+                new Error(validePasswordFailMsg)
+            }
+
+            // Hash new password
+            const newHash = await HashPassword(newPassword, saltRounds)
+
+            // Update password
+            existingMember.password = newHash
+            await existingMember.save()
+
+            return existingMember
+        } catch (err) {
+            Logging.LogError(`Could Not Update Password for ${email} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 }
 

@@ -9,7 +9,7 @@ function SearchBarUI({ placeholder, setSearchQuery, className }) {
         }, 500)
 
         return () => clearTimeout(delayDebounceFn)
-    }, [currentSearchQuery])
+    }, [currentSearchQuery, setSearchQuery])
 
     return (
         <input

@@ -52,7 +52,7 @@ async function MemberGetSingleMember(req, res) {
         const member = await db.models.Member.GetByEmail(req.session.member.email)
         res.status(200).json(member)
     } catch {
-        res.status(500).json({ error: `could not get member ${email}` })
+        res.status(500).json({ error: `could not get member` })
     }
 }
 

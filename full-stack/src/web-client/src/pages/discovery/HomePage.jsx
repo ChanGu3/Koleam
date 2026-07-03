@@ -51,7 +51,7 @@ function HomePage() {
         if (memberisSignedIn) {
             refetchWatchHistory()
         }
-    }, [memberisSignedIn])
+    }, [memberisSignedIn, refetchWatchHistory])
 
     return (
         <>
@@ -85,7 +85,7 @@ function HomePage() {
                     title="Continue Watching"
                     sliderList={
                         dataWatchHistory
-                            ? dataWatchHistory.map((stream, index) => {
+                            ? dataWatchHistory.map((stream, _index) => {
                                   return (
                                       <StreamModule
                                           key={stream.id}
@@ -120,7 +120,7 @@ function HomePage() {
                     title="Titles Shuffle"
                     sliderList={
                         dataShuffle
-                            ? dataShuffle.map((titleItem, index) => {
+                            ? dataShuffle.map((titleItem, _index) => {
                                   return (
                                       <SeriesModule
                                           key={titleItem.id}

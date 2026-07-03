@@ -27,7 +27,7 @@ async function AttemptMemberSignUp(req, res, next) {
     const { email, password } = req.body
 
     try {
-        const newMember = await db.models.Member.AddToDB(email, password)
+        await db.models.Member.AddToDB(email, password)
         next()
     } catch (err) {
         res.status(502).json({ error: err.message })
@@ -49,7 +49,7 @@ async function AttemptAdminSignIn(req, res) {
         req.session.admin = {}
         req.session.admin.username = adminJSON.username
         //req.session.member_id = member.id; [NOTE MEMEBER AND ADMIN SESSIONS ARE THE SAME BUT ITS OKAY SINCE THEY SHARE THE SAME SESSIONID Space]
-        const newSession = await db.models.Session.AddToDB(req.sessionID, adminJSON.username, db.models.Session.SESSION_ROLES.ADMIN)
+        await db.models.Session.AddToDB(req.sessionID, adminJSON.username, db.models.Session.SESSION_ROLES.ADMIN)
         res.status(200).end()
     } catch (err) {
         res.clearCookie("connect.sid")
@@ -82,7 +82,7 @@ async function AddAdmin(req, res) {
     const { username, password } = req.body
 
     try {
-        const newAdmin = await db.models.Admin.AddToDB(username, password)
+        await db.models.Admin.AddToDB(username, password)
         res.status(200).json({ success: `successfully added ${username} as an admin` })
     } catch (err) {
         res.status(500).json({ error: err.message })

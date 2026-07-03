@@ -3,7 +3,7 @@ import { useState } from "react"
 import useAdmin from "../../../hooks/useAdmin.jsx"
 import { SettingInput } from "../../../components/Settings/SettingInput.jsx"
 
-export function UsernamePopupFill({}) {
+export function UsernamePopupFill() {
     const { adminAccountData } = useAdmin()
 
     return (
@@ -11,7 +11,7 @@ export function UsernamePopupFill({}) {
             <SettingInput
                 label={"Username"}
                 value={adminAccountData?.username}
-                onChange={(value) => {}}
+                onChange={(_value) => {}}
                 autoComplete={"username"}
                 placeholder={"Username"}
                 isSecret={false}

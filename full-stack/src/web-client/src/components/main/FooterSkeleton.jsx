@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 import "../../tailwind.css"
-import { useNavigate } from "react-router-dom"
 // TODO: possibly remove this entirley or use it
 
 function LinksTitle({ titleName }) {
@@ -38,7 +37,6 @@ function LinkTab({ titleName, links }) {
 }
 
 function FooterSkeleton() {
-    const navigate = useNavigate
     const [isMember, SetIsMember] = useState(false)
     const [isAdmin, SetIsAdmin] = useState(false)
 

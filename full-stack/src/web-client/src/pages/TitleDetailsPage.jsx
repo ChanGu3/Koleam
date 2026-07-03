@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useMemo } from "react"
 
-import { useParams, useNavigate, data } from "react-router-dom"
+import { useParams, useNavigate } from "react-router-dom"
 import Dropdown from "../components/Dropdown.jsx"
 import StreamModule2 from "../components/modules/StreamModule2.jsx"
 import FavoriteButton from "../components/FavoriteButton.jsx"
@@ -29,19 +29,11 @@ function TitleDetailsPage() {
 
     // Member Data
     const { memberIsSignedIn } = useMember()
-    const {
-        data: memberRating,
-        error: isErrorMemberRating,
-        isLoading: isLoadingMemberRating,
-    } = useMemberGetRating(titleID, memberIsSignedIn)
+    const { data: memberRating } = useMemberGetRating(titleID, memberIsSignedIn)
     const { mutate: SetCurrentRating } = useMemberUpdateRating(titleID)
     // Title Data
     const { data: title, error: isErrorTitle, isLoading: isLoadingTitle } = useGetTitleByID(titleID)
-    const {
-        data: installments,
-        error: isErrorTitleInstallments,
-        isLoading: isLoadingTitleInstallments,
-    } = useGetIntallmentsByTitleID(titleID)
+    const { data: installments } = useGetIntallmentsByTitleID(titleID)
     const [mostRecentWatchedStreamData, SetMostRecentWatchedStreamData] = useState(null)
 
     const [currentInstallmentIndex, SetCurrentInstallmentIndex] = useState(0)
@@ -56,7 +48,7 @@ function TitleDetailsPage() {
         if (title && isErrorTitle) {
             navigate(FULL_ROUTES.NOT_FOUND)
         }
-    }, [title])
+    }, [title, isErrorTitle, label, navigate])
 
     // Gets the Installments Data along with their streams
     useEffect(() => {
@@ -79,40 +71,30 @@ function TitleDetailsPage() {
 
     function ChangeStreamListGrid(index) {
         SetCurrentInstallmentIndex(index)
-        SortByToggled(installments[index].TitleInstallmentStreams)
     }
 
     function ToggleOldest() {
         SetIsOldest(!isOldest)
     }
 
-    function SortByToggled(streamList) {
-        if (isOldest) {
-            SetStreamListGrid(
-                [...streamList].sort(
-                    (titleStreamA, titleStreamB) => new Date(titleStreamB.releaseDate) - new Date(titleStreamA.releaseDate)
-                )
-            )
-        } else {
-            SetStreamListGrid(
-                [...streamList].sort(
-                    (titleStreamA, titleStreamB) => new Date(titleStreamA.releaseDate) - new Date(titleStreamB.releaseDate)
-                )
-            )
+    const sortedStreamListGrid = useMemo(() => {
+        if (!streamListGrid) {
+            return null
         }
-    }
 
-    useEffect(() => {
-        if (streamListGrid) {
-            SortByToggled(streamListGrid)
-        }
-    }, [isOldest])
+        return [...streamListGrid].sort((titleStreamA, titleStreamB) => {
+            const dateA = new Date(titleStreamA.releaseDate)
+            const dateB = new Date(titleStreamB.releaseDate)
+
+            return isOldest ? dateB - dateA : dateA - dateB
+        })
+    }, [streamListGrid, isOldest])
 
     useEffect(() => {
         if (isErrorTitle || (!title && !isLoadingTitle)) {
             navigate(FULL_ROUTES.NOT_FOUND)
         }
-    }, [title])
+    }, [title, isErrorTitle, isLoadingTitle, navigate])
 
     if (isLoadingTitle || !title) {
         return (
@@ -176,7 +158,7 @@ function TitleDetailsPage() {
                     {/* Description */}
                     <div className="mt-16 md:mx-4 flex flex-col md:w-[85%]">
                         <p className="text-s-secondary text-sm font-semibold py-1 underline underline-offset-4">Description:</p>
-                        <p className={`whitespace-pre-wrap text-s-white text-xs w-[100%] ${isShowingDetails ? "" : "line-clamp-4"}`}>
+                        <p className={`whitespace-pre-wrap text-s-white text-xs w-full ${isShowingDetails ? "" : "line-clamp-4"}`}>
                             {title ? title.description : ""}
                         </p>
 
@@ -186,13 +168,13 @@ function TitleDetailsPage() {
                         <div className={`w-full flex flex-col justify-start gap-y-2 ${isShowingDetails ? "" : "hidden"}`}>
                             <p
                                 id="originaltranslation"
-                                className="text-s-dark-secondary text-xs break-words whitespace-normal"
+                                className="text-s-dark-secondary text-xs wrap-break-word whitespace-normal"
                             >
                                 <span className="text-s-white">Original Translation:</span> {title ? title.originalTranslation : ""}
                             </p>
                             <p
                                 id="othertranslation"
-                                className={`text-s-dark-secondary text-xs break-words whitespace-normal`}
+                                className={`text-s-dark-secondary text-xs wrap-break-word whitespace-normal`}
                             >
                                 <span className="text-s-white">Other Translation:</span>
                                 {" ["}
@@ -200,7 +182,7 @@ function TitleDetailsPage() {
                                     ? title.all_other_translations.map((el, index) => {
                                           return (
                                               <span
-                                                  className="mx-0.25"
+                                                  className="mx-px"
                                                   key={index}
                                               >
                                                   {el}
@@ -213,7 +195,7 @@ function TitleDetailsPage() {
                             </p>
                             <p
                                 id="categories"
-                                className="text-s-dark-secondary text-xs break-words whitespace-normal"
+                                className="text-s-dark-secondary text-xs wrap-break-word whitespace-normal"
                             >
                                 <span className="text-s-white">Genres:</span>
                                 {title && title.all_genres.length > 0
@@ -232,7 +214,7 @@ function TitleDetailsPage() {
                             </p>
                             <p
                                 id="othertranslation"
-                                className={`text-s-dark-secondary text-xs break-words whitespace-normal`}
+                                className={`text-s-dark-secondary text-xs wrap-break-word whitespace-normal`}
                             >
                                 <span className="text-red-300">Content Advisory:</span>
                                 {" ["}
@@ -240,7 +222,7 @@ function TitleDetailsPage() {
                                     ? title.all_content_advisories.map((el, index) => {
                                           return (
                                               <span
-                                                  className="mx-0.25"
+                                                  className="mx-px"
                                                   key={index}
                                               >
                                                   {el}
@@ -253,13 +235,13 @@ function TitleDetailsPage() {
                             </p>
                             <p
                                 id="sutability"
-                                className="text-s-dark-secondary text-xs  break-words whitespace-normal"
+                                className="text-s-dark-secondary text-xs  wrap-break-word whitespace-normal"
                             >
                                 <span className="text-red-300">Suitability:</span> {`(${title.filmSuitability}, +${title.filmAgeMin})`}
                             </p>
                             <p
                                 id="seriescopyright"
-                                className="text-s-primary text-xs break-words whitespace-normal"
+                                className="text-s-primary text-xs wrap-break-word whitespace-normal"
                             >
                                 &copy; {title ? title.copyright : ""}
                             </p>
@@ -275,7 +257,7 @@ function TitleDetailsPage() {
                                 {isShowingDetails ? "Less Details" : "More Details"}
                             </button>
                         </div>
-                        <div className="border border-s-dark-secondary w-[100%]"></div>
+                        <div className="border border-s-dark-secondary w-full"></div>
                     </div>
 
                     {/* Season/Movie/Episodes */}
@@ -366,8 +348,8 @@ function TitleDetailsPage() {
                         </div>
 
                         <div className="grid grid-flow-row grid-cols-2 xl:grid-cols-3 lg:p-0 gap-x-8 gap-y-6 md:gap-y-8 mt-8 md:mt-0">
-                            {streamListGrid
-                                ? streamListGrid.map((streamItem, index) => {
+                            {sortedStreamListGrid
+                                ? sortedStreamListGrid.map((streamItem, index) => {
                                       return (
                                           <StreamModule2
                                               key={index}

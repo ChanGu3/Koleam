@@ -121,7 +121,7 @@ async function TestUsingMKV(models, animeCloudsSeason1ep1) {
     )
 }
 
-async function DevSetup({ sequelize, models }) {
+async function DevSetup({ sequelize: _s, models }) {
     try {
         // Force sync all models to create tables
         await models.Member.sync({ force: true })
@@ -143,21 +143,21 @@ async function DevSetup({ sequelize, models }) {
         await models.StreamAudio.sync({ force: true })
 
         const testMember = await models.Member.AddToDB("test@gmail.com", "Password*0")
-        const test1Member = await models.Member.AddToDB("test1@gmail.com", "Password*0")
-        const test2Member = await models.Member.AddToDB("test2@gmail.com", "Password*0")
-        const test3Member = await models.Member.AddToDB("test3@gmail.com", "Password*0")
-        const test4Member = await models.Member.AddToDB("test4@gmail.com", "Password*0")
-        const test5Member = await models.Member.AddToDB("test5@gmail.com", "Password*0")
-        const test6Member = await models.Member.AddToDB("test6@gmail.com", "Password*0")
-        const test7Member = await models.Member.AddToDB("test7@gmail.com", "Password*0")
-        const test8Member = await models.Member.AddToDB("test8@gmail.com", "Password*0")
-        const test9Member = await models.Member.AddToDB("test9@gmail.com", "Password*0")
-        const test10Member = await models.Member.AddToDB("test10@gmail.com", "Password*0")
-        const test11Member = await models.Member.AddToDB("test11@gmail.com", "Password*0")
-        const test12Member = await models.Member.AddToDB("test12@gmail.com", "Password*0")
+        await models.Member.AddToDB("test1@gmail.com", "Password*0")
+        await models.Member.AddToDB("test2@gmail.com", "Password*0")
+        await models.Member.AddToDB("test3@gmail.com", "Password*0")
+        await models.Member.AddToDB("test4@gmail.com", "Password*0")
+        await models.Member.AddToDB("test5@gmail.com", "Password*0")
+        await models.Member.AddToDB("test6@gmail.com", "Password*0")
+        await models.Member.AddToDB("test7@gmail.com", "Password*0")
+        await models.Member.AddToDB("test8@gmail.com", "Password*0")
+        await models.Member.AddToDB("test9@gmail.com", "Password*0")
+        await models.Member.AddToDB("test10@gmail.com", "Password*0")
+        await models.Member.AddToDB("test11@gmail.com", "Password*0")
+        await models.Member.AddToDB("test12@gmail.com", "Password*0")
 
         // GENRE SETUP
-        const genres = await models.Genre.DefaultSetup()
+        await models.Genre.DefaultSetup()
 
         // CLEAN AN SETUP DEFAULT Titles
         await uploadsDev.clearEntireTitlesFolder()
@@ -173,7 +173,7 @@ async function DevSetup({ sequelize, models }) {
         models.TitleContentAdvisory.AddToDB(animeClouds.id, "Alcohol Use")
 
         await uploadsDev.copyImageFileToTitlePath("clouds.jpg", `${animeClouds.id}/${uploads.COVER_FILENAME}`)
-        const animeCloudsGenre1 = await models.TitleGenre.AddToDB(animeClouds.id, "Action")
+        await models.TitleGenre.AddToDB(animeClouds.id, "Action")
 
         const animeCloudsSeason1 = await models.TitleInstallment.AddToDB(animeClouds.id, "Season 1", true, 1)
         const animeCloudsSeason1ep1 = await models.TitleInstallmentStream.AddToDB(
@@ -295,7 +295,7 @@ async function DevSetup({ sequelize, models }) {
 
         const anime1 = await models.Title.AddToDB("StarlitHorizon", lorem, "starlit.inc", "Japanese", FILM_RATING.PG, 13)
         await uploadsDev.copyImageFileToTitlePath("starhorizon.jpg", `${anime1.id}/${uploads.COVER_FILENAME}`)
-        const anime1Genre1 = await models.TitleGenre.AddToDB(anime1.id, "Action")
+        await models.TitleGenre.AddToDB(anime1.id, "Action")
 
         const anime1Season1 = await models.TitleInstallment.AddToDB(anime1.id, "Season 1", true, 1)
         const anime1Season1ep1 = await models.TitleInstallmentStream.AddToDB(
@@ -313,7 +313,7 @@ async function DevSetup({ sequelize, models }) {
 
         const anime2 = await models.Title.AddToDB("MoonlitSakura", lorem, "sakura.inc", "Japanese", FILM_RATING.PG, 13)
         await uploadsDev.copyImageFileToTitlePath("moonsakura.jpg", `${anime2.id}/${uploads.COVER_FILENAME}`)
-        const anime2Genre1 = await models.TitleGenre.AddToDB(anime2.id, "Action")
+        await models.TitleGenre.AddToDB(anime2.id, "Action")
 
         const anime3 = await models.Title.AddToDB("CrimsonWave", lorem, "crimson.inc", "Japanese", FILM_RATING.PG, 13)
         await uploadsDev.copyImageFileToTitlePath("crimsonwave.jpg", `${anime3.id}/${uploads.COVER_FILENAME}`)
@@ -334,8 +334,8 @@ async function DevSetup({ sequelize, models }) {
         await uploadsDev.copyImageFileToTitlePath("radiantkoi.jpg", `${anime8.id}/${uploads.COVER_FILENAME}`)
 
         // Favorite
-        const testFavorite1 = await models.TitleFavorite.AddToDB(testMember.email, animeClouds.id)
-        const testLike1 = await models.TitleInstallmentStreamLike.AddToDB(testMember.email, animeCloudsSeason1ep1.id)
+        await models.TitleFavorite.AddToDB(testMember.email, animeClouds.id)
+        await models.TitleInstallmentStreamLike.AddToDB(testMember.email, animeCloudsSeason1ep1.id)
         await models.TitleInstallmentStreamWatchHistory.AddToDB(testMember.email, animeCloudsSeason1ep5.id)
         await models.TitleInstallmentStreamWatchHistory.AddToDB(testMember.email, animeCloudsSeason1ep1.id)
         await models.TitleInstallmentStreamWatchHistory.AddToDB(testMember.email, animeCloudsSeason1ep2.id)

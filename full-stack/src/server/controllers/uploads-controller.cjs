@@ -23,7 +23,7 @@ async function GetTitleCover(req, res) {
             res.status(404).end()
         }
         res.status(200).sendFile(filePath)
-    } catch (err) {
+    } catch {
         res.status(400).end()
     }
 }
@@ -71,7 +71,7 @@ async function GetStreamUploads(req, res) {
             if (ext === ".ass" || ext === ".ssa") res.setHeader("Content-Type", "text/plain")
 
             return res.status(200).sendFile(filePath)
-        } catch (err) {
+        } catch {
             return res.status(404).end()
         }
     }
@@ -91,7 +91,7 @@ async function GetTitleInstallmentStreamThumbnail(req, res) {
             res.status(404).end()
         }
         res.status(200).sendFile(filePath)
-    } catch (err) {
+    } catch {
         res.status(404).end()
     }
 }

@@ -36,6 +36,7 @@ function LogDev(msg) {
 const errormsg = {
     fallback,
     emailExists,
+    usernameExists,
     memberAuthentificationFail,
     adminAuthentificationFail,
     sessionDoesNotExist,

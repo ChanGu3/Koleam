@@ -37,7 +37,7 @@ class TitleOtherTranslation extends ModelExtension {
     /**
      * @override
      */
-    static async Connect_Associations({ sequelize, models }) {
+    static async Connect_Associations({ sequelize: _s, models }) {
         TitleOtherTranslation.belongsTo(models.Title, {
             foreignKey: "titleID",
             sourceKey: "id",
@@ -64,154 +64,133 @@ class TitleOtherTranslation extends ModelExtension {
     // reject --> string: error msg
     // resolve --> instance: created title other translation
     //
-    static AddToDB(titleID, translation, transaction = null) {
-        return new Promise(async (resolve, reject) => {
-            if (await this.Exists(titleID, translation, transaction)) {
-                Logging.LogWarning(`titleID & translation pair exists`)
-                reject(new Error(`title already has this translation`))
-                return
+    static async AddToDB(titleID, translation, transaction = null) {
+        if (await this.Exists(titleID, translation, transaction)) {
+            Logging.LogWarning(`titleID & translation pair exists`)
+            throw new Error(`title already has this translation`)
+        }
+
+        try {
+            const newTitleOtherTranslation = await TitleOtherTranslation.build({
+                titleID: titleID,
+                translation: translation,
+            })
+
+            await newTitleOtherTranslation.validate()
+
+            if (transaction) {
+                await newTitleOtherTranslation.save({ transaction })
+            } else {
+                await newTitleOtherTranslation.save()
             }
 
-            try {
-                const newTitleOtherTranslation = await TitleOtherTranslation.build({
+            return newTitleOtherTranslation
+        } catch (err) {
+            Logging.LogError(`could not add ${TitleOtherTranslation.name} to database ${titleID}|${translation} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
+    }
+
+    //
+    // reject --> string: error msg
+    // resolve --> nothing
+    //
+    static async RemoveFromDB(titleID, translation) {
+        if (!(await this.Exists(titleID, translation))) {
+            Logging.LogWarning(`titleID & translation pair does not exist exists`)
+            throw new Error(`${titleID} is already not having ${translation} not as a translation`)
+        }
+
+        try {
+            await TitleOtherTranslation.destroy({
+                where: {
                     titleID: titleID,
                     translation: translation,
-                })
-
-                await newTitleOtherTranslation.validate()
-
-                if (transaction) {
-                    await newTitleOtherTranslation.save({ transaction })
-                } else {
-                    await newTitleOtherTranslation.save()
-                }
-
-                resolve(newTitleOtherTranslation)
-            } catch (err) {
-                Logging.LogError(`could not add ${TitleOtherTranslation.name} to database ${titleID}|${translation} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
+                },
+            })
+        } catch (err) {
+            Logging.LogError(`could not remove ${TitleOtherTranslation.name} from database ${titleID}|${translation} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> nothing
     //
-    static RemoveFromDB(titleID, translation) {
-        return new Promise(async (resolve, reject) => {
-            if (!(await this.Exists(titleID, translation))) {
-                Logging.LogWarning(`titleID & translation pair does not exist exists`)
-                reject(new Error(`${titleID} is already not having ${translation} not as a translation`))
-                return
+    static async RemoveAllByTitleIDFromDB(titleID, transaction = null) {
+        try {
+            const query = {}
+            query.where = {}
+            query.where.titleID = titleID
+            if (transaction) {
+                query.transaction = transaction
             }
 
-            try {
-                await TitleOtherTranslation.destroy({
+            await TitleOtherTranslation.destroy(query)
+        } catch (err) {
+            Logging.LogError(`could not remove all ${TitleOtherTranslation.name} from database by ${titleID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
+    }
+
+    static async GetAllByTitleID(titleID, { limit = 10, offset = 0 } = {}) {
+        try {
+            const titleOtherTranslations = await TitleOtherTranslation.findAll({
+                where: {
+                    titleID: titleID,
+                    limit: limit,
+                    offset: offset,
+                },
+            })
+            return titleOtherTranslations.map((element) => {
+                const { titleID: _t, createdAt: _c, updatedAt: _u, ...rest } = element.toJSON()
+                return rest
+            })
+        } catch (err) {
+            Logging.LogError(
+                `could not get list of ${TitleOtherTranslation.name} from database using titleID:${titleID} --- ${err.message}`
+            )
+            throw new Error(errormsg.fallback)
+        }
+    }
+
+    static async GetAllByTranslation(translation, { limit = 10, offset = 0 } = {}) {
+        try {
+            const titleOtherTranslations = await TitleOtherTranslation.findAll({
+                where: {
+                    translation: translation,
+                    limit: limit,
+                    offset: offset,
+                },
+            })
+            return titleOtherTranslations
+        } catch (err) {
+            Logging.LogError(
+                `could not get list of ${TitleOtherTranslation.name} from database using translation:${translation} --- ${err.message}`
+            )
+            throw new Error(errormsg.fallback)
+        }
+    }
+
+    static async GetByTitleTranslation(titleID, translation) {
+        try {
+            if (await this.Exists(titleID, translation)) {
+                const titleGenre = await TitleOtherTranslation.findOne({
                     where: {
                         titleID: titleID,
                         translation: translation,
                     },
                 })
-
-                resolve()
-            } catch (err) {
-                Logging.LogError(
-                    `could not remove ${TitleOtherTranslation.name} from database ${titleID}|${translation} --- ${err.message}`
-                )
-                reject(new Error(errormsg.fallback))
+                return titleGenre
+            } else {
+                Logging.LogWarning(`${TitleOtherTranslation.name} does not exist ${titleID}|${translation}`)
+                throw new Error(errormsg.titleOtherTranslationDoesNotExist)
             }
-        })
-    }
-
-    //
-    // reject --> string: error msg
-    // resolve --> nothing
-    //
-    static RemoveAllByTitleIDFromDB(titleID, transaction = null) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const query = {}
-                query.where = {}
-                query.where.titleID = titleID
-                if (transaction) {
-                    query.transaction = transaction
-                }
-
-                const deleted = await TitleOtherTranslation.destroy(query)
-                resolve()
-            } catch (err) {
-                Logging.LogError(`could not remove all ${TitleOtherTranslation.name} from database by ${titleID} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
-    }
-
-    static GetAllByTitleID(titleID, { limit = 10, offset = 0 } = {}) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const titleOtherTranslations = await TitleOtherTranslation.findAll({
-                    where: {
-                        titleID: titleID,
-                        limit: limit,
-                        offset: offset,
-                    },
-                })
-                resolve(
-                    titleOtherTranslations.map((element) => {
-                        const { titleID, createdAt, updatedAt, ...rest } = element.toJSON()
-                        return rest
-                    })
-                )
-            } catch (err) {
-                Logging.LogError(
-                    `could not get list of ${TitleOtherTranslation.name} from database using titleID:${titleID} --- ${err.message}`
-                )
-                reject(new Error(errormsg.fallback))
-            }
-        })
-    }
-
-    static GetAllByTranslation(translation, { limit = 10, offset = 0 } = {}) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const titleOtherTranslations = await TitleOtherTranslation.findAll({
-                    where: {
-                        translation: translation,
-                        limit: limit,
-                        offset: offset,
-                    },
-                })
-                resolve(titleOtherTranslations)
-            } catch (err) {
-                Logging.LogError(
-                    `could not get list of ${TitleOtherTranslation.name} from database using translation:${translation} --- ${err.message}`
-                )
-                reject(new Error(errormsg.fallback))
-            }
-        })
-    }
-
-    static GetByTitleTranslation(titleID, translation) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                if (await this.Exists(titleID, translation)) {
-                    const titleGenre = await TitleOtherTranslation.findOne({
-                        where: {
-                            titleID: titleID,
-                            translation: translation,
-                        },
-                    })
-                    resolve(titleGenre)
-                } else {
-                    Logging.LogWarning(`${TitleOtherTranslation.name} does not exist ${titleID}|${translation} --- ${err.message}`)
-                    reject(new Error(errormsg.titleOtherTranslationDoesNotExist))
-                }
-            } catch (err) {
-                Logging.LogError(`could not get ${TitleOtherTranslation.name} from database ${titleID}|${translation} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
+        } catch (err) {
+            Logging.LogError(`could not get ${TitleOtherTranslation.name} from database ${titleID}|${translation} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 }
 

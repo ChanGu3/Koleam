@@ -4,7 +4,7 @@ const minimist = require("minimist")
 const argv = minimist(process.argv.slice(2))
 const isDev = argv.dev === true || argv.d === true
 
-const { Logging, errormsg } = require("./server-logging.cjs")
+const { Logging } = require("./server-logging.cjs")
 const path = require("path")
 const fs = require("fs").promises
 
@@ -40,10 +40,10 @@ function getTempPath(relativePath) {
 //
 async function doesUploadsPathExist(relativePat = "") {
     try {
-        const fullPath = path.join(pathUploads, relativePath)
+        const fullPath = path.join(pathUploads, relativePat)
         await fs.access(fullPath)
         return true
-    } catch (err) {
+    } catch {
         //Logging.LogWarning(`could not find if path ${dirpath} exists in uploads`);
         return false
     }
@@ -57,8 +57,7 @@ async function doesTitlesPathExist(relativePath = "") {
         const fullPath = path.join(pathTitles, relativePath)
         await fs.access(fullPath)
         return true
-    } catch (err) {
-        //Logging.LogWarning(`could not find if path ${dirpath} exists in uploads`);
+    } catch {
         return false
     }
 }
@@ -74,7 +73,7 @@ async function doesTempFileExist(filename = "") {
         }
         await fs.access(fullPath)
         return true
-    } catch (err) {
+    } catch {
         return false
     }
 }
@@ -221,7 +220,7 @@ async function uploadTempFile(filename, buffer) {
             return fullPath
         }
     } catch (err) {
-        Logging.LogError(`could not upload file to relativepath:${relativePath} --- ${err}`)
+        Logging.LogError(`could not upload file to filename:${filename} --- ${err}`)
         throw err
     }
 }
@@ -353,13 +352,16 @@ function getExtensionFromSubtitleCodec(codecName) {
     }
 }
 
+/**
+ * @param {(progress: any) => void} onProgress
+ */
 function generateSingleVideo(
     video_id,
     inputFile,
     outputPlaylist,
     videoIndex = 0,
     videoResolution = 1080,
-    onProgress = (progress) => {},
+    onProgress = () => {},
     onComplete = () => {}
 ) {
     return new Promise((resolve, reject) => {
@@ -410,7 +412,10 @@ function generateSingleVideo(
     })
 }
 
-async function generateAllResFromCap(video_id, inputFile, relativePath, onProgress = (progress) => {}, onComplete = () => {}) {
+/**
+ * @param {(progress: any) => void} onProgress
+ */
+async function generateAllResFromCap(video_id, inputFile, relativePath, onProgress = () => {}, onComplete = () => {}) {
     const metadata = await probeMediaFileInfo(inputFile)
     const streamVideoData = metadata.streams.filter((s) => s.codec_type === "video")[0]
     if (!streamVideoData || !streamVideoData.height) {
@@ -475,7 +480,10 @@ async function deleteAllRes(relativePath) {
     }
 }
 
-function generateSingleAudio(audio_id, inputFile, outputPlaylist, streamIndex = 0, onProgress = (progress) => {}, onComplete = () => {}) {
+/**
+ * @param {(progress: any) => void} onProgress
+ */
+function generateSingleAudio(audio_id, inputFile, outputPlaylist, streamIndex = 0, onProgress = () => {}, onComplete = () => {}) {
     return new Promise((resolve, reject) => {
         const outputDir = path.dirname(outputPlaylist)
         const segmentFilename = path.join(outputDir, `segment_audio_${streamIndex}_%06d.ts`).replace(/\\/g, "/")
@@ -517,15 +525,10 @@ function generateSingleAudio(audio_id, inputFile, outputPlaylist, streamIndex = 
     })
 }
 
-async function generateAudio(
-    audio_id,
-    inputFile,
-    relativePath,
-    streamIndex,
-    audioName,
-    onProgress = (progress) => {},
-    onComplete = () => {}
-) {
+/**
+ * @param {(progress: any) => void} onProgress
+ */
+async function generateAudio(audio_id, inputFile, relativePath, streamIndex, audioName, onProgress = () => {}, onComplete = () => {}) {
     const relativePathDirComplete = path.join(relativePath, "audio", audioName)
     if (await doesTitlesPathExist(relativePathDirComplete)) {
         await recursiveDirDeleteInTitles(relativePathDirComplete)
@@ -558,13 +561,16 @@ async function renameAudio(relativePath, previousAudioName, audioName) {
     }
 }
 
+/**
+ * @param {(progress: any) => void} onProgress
+ */
 function generateSingleSubtitle(
     subtitle_id,
     inputFile,
     outputFolder,
     subName,
     streamIndex = 0,
-    onProgress = (progress) => {},
+    onProgress = () => {},
     onComplete = () => {}
 ) {
     return new Promise((resolve, reject) => {
@@ -607,15 +613,11 @@ function generateSingleSubtitle(
     })
 }
 
-async function generateSubtitle(
-    subtitle_id,
-    inputFile,
-    relativePath,
-    streamIndex,
-    subName,
-    onProgress = (progress) => {},
-    onComplete = () => {}
-) {
+/**
+ *
+ *  @param {(progress: any) => void} onProgress
+ */
+async function generateSubtitle(subtitle_id, inputFile, relativePath, streamIndex, subName, onProgress = () => {}, onComplete = () => {}) {
     const relativePathDirComplete = path.join(relativePath, "subs")
     const relativePlaylistComplete = path.join(relativePathDirComplete, `${subName}.m3u8`)
 
@@ -635,7 +637,9 @@ async function generateSubtitle(
     try {
         await fs.access(webvttPath)
         hasAccess = true
-    } catch (err) {}
+    } catch (err) {
+        Logging.LogError(`${err.message}`)
+    }
 
     if (hasAccess) {
         const fileContent = await fs.readFile(webvttPath, "utf-8")

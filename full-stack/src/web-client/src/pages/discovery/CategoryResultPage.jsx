@@ -33,7 +33,7 @@ function CategoryResult({ isGenre = false, isAZ = false }) {
                         navigate("/404")
                     }
                 })
-                .catch((err) => {
+                .catch(() => {
                     navigate("/404")
                 })
 
@@ -41,7 +41,7 @@ function CategoryResult({ isGenre = false, isAZ = false }) {
         } else if (isAZ) {
             document.title = "A-Z"
         }
-    }, [genre])
+    }, [genre, generUPPER, isAZ, isGenre, navigate])
 
     return (
         <>
@@ -60,7 +60,7 @@ function CategoryResult({ isGenre = false, isAZ = false }) {
                             lastPage && lastPage.length === categoryGetLimit ? allPages.length * categoryGetLimit : undefined
                         }
                         pxCutoffHeight={128}
-                        ItemRenderer={({ index, dataItem }) => {
+                        ItemRenderer={({ _index, dataItem }) => {
                             return (
                                 <SeriesModule
                                     key={dataItem.id}

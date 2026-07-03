@@ -43,7 +43,9 @@ export async function isAdminAuthorized() {
                 return true
             }
         }
-    } catch (error) {}
+    } catch (error) {
+        console.error(`Error checking admin authorization: ${error.message}`)
+    }
 
     return false
 }

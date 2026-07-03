@@ -1,5 +1,5 @@
 import TextLink, { TextButton } from "../text/TextLink"
-import { COPYRIGHT_NAME, Z_INDEX } from "../../constants"
+import { COPYRIGHT_NAME } from "../../constants"
 
 function FooterLinkTitle({ label }) {
     return <p className="text-xs md:text-sm text-s-white">{label}</p>

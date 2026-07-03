@@ -43,7 +43,7 @@ class TitleInstallmentStreamLike extends ModelExtension {
     /**
      * @override
      */
-    static async Connect_Associations({ sequelize, models }) {
+    static async Connect_Associations({ sequelize: _s, models }) {
         TitleInstallmentStreamLike.belongsTo(models.Member, {
             foreignKey: "email",
             targetKey: "email",
@@ -75,137 +75,116 @@ class TitleInstallmentStreamLike extends ModelExtension {
     // reject --> string: error msg
     // resolve --> instance: created instance
     //
-    static AddToDB(email, streamID) {
-        return new Promise(async (resolve, reject) => {
-            if (await this.Exists(email, streamID)) {
-                Logging.LogWarning(`email, streamID pair exists`)
-                reject(new Error(`${email} already has ${streamID} liked`))
-                return
-            }
+    static async AddToDB(email, streamID) {
+        if (await this.Exists(email, streamID)) {
+            Logging.LogWarning(`email, streamID pair exists`)
+            throw new Error(`${email} already has ${streamID} liked`)
+        }
 
-            try {
-                const newTitleInstallmentStreamLike = await TitleInstallmentStreamLike.build({
-                    email: email,
-                    streamID: streamID,
-                })
+        try {
+            const newTitleInstallmentStreamLike = await TitleInstallmentStreamLike.build({
+                email: email,
+                streamID: streamID,
+            })
 
-                await newTitleInstallmentStreamLike.validate()
+            await newTitleInstallmentStreamLike.validate()
 
-                await newTitleInstallmentStreamLike.save()
+            await newTitleInstallmentStreamLike.save()
 
-                resolve(newTitleInstallmentStreamLike)
-            } catch (err) {
-                Logging.LogError(`could not add ${TitleInstallmentStreamLike.name} to database ${email}|${streamID} --- ${err.message}`)
-                reject(new Error(errormsg.fallback))
-            }
-        })
+            return newTitleInstallmentStreamLike
+        } catch (err) {
+            Logging.LogError(`could not add ${TitleInstallmentStreamLike.name} to database ${email}|${streamID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
     //
     // reject --> string: error msg
     // resolve --> nothing
     //
-    static RemoveFromDB(email, streamID) {
-        return new Promise(async (resolve, reject) => {
-            if (!(await this.Exists(email, streamID))) {
-                Logging.LogWarning(`email, streamID pair does not exist`)
-                reject(new Error(`${email} already does not have ${streamID} liked`))
-                return
-            }
+    static async RemoveFromDB(email, streamID) {
+        if (!(await this.Exists(email, streamID))) {
+            Logging.LogWarning(`email, streamID pair does not exist`)
+            throw new Error(`${email} already does not have ${streamID} liked`)
+        }
 
-            try {
-                await TitleInstallmentStreamLike.destroy({
-                    where: {
-                        email: email,
-                        streamID: streamID,
-                    },
-                })
-
-                resolve()
-            } catch (err) {
-                Logging.LogError(
-                    `could not remove ${TitleInstallmentStreamLike.name} from database ${email}|${streamID} --- ${err.message}`
-                )
-                reject(new Error(errormsg.fallback))
-            }
-        })
+        try {
+            await TitleInstallmentStreamLike.destroy({
+                where: {
+                    email: email,
+                    streamID: streamID,
+                },
+            })
+        } catch (err) {
+            Logging.LogError(`could not remove ${TitleInstallmentStreamLike.name} from database ${email}|${streamID} --- ${err.message}`)
+            throw new Error(errormsg.fallback)
+        }
     }
 
-    static GetAllByStreamID(streamID, { limit = 10, offset = 0 } = {}) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const streamLikes = await TitleInstallmentStreamLike.findAll({
-                    where: {
-                        streamID: streamID,
-                        limit: limit,
-                        offset: offset,
-                    },
-                })
+    static async GetAllByStreamID(streamID, { limit = 10, offset = 0 } = {}) {
+        try {
+            const streamLikes = await TitleInstallmentStreamLike.findAll({
+                where: {
+                    streamID: streamID,
+                    limit: limit,
+                    offset: offset,
+                },
+            })
 
-                if (streamLikes) {
-                    resolve(
-                        streamLikes.map((element) => {
-                            const { createdAt, updatedAt, ...rest } = element.toJSON()
-                            return rest
-                        })
-                    )
-                } else {
-                    reject(new Error(`no likes exist for the streamID:${streamID}`))
-                }
-            } catch (err) {
-                Logging.LogError(
-                    `could not get list of ${TitleInstallmentStreamLike.name} from database using streamID:${streamID} --- ${err.message}`
-                )
-                reject(new Error(errormsg.fallback))
+            if (streamLikes) {
+                return streamLikes.map((element) => {
+                    const { createdAt: _c, updatedAt: _u, ...rest } = element.toJSON()
+                    return rest
+                })
+            } else {
+                throw new Error(`no likes exist for the streamID:${streamID}`)
             }
-        })
+        } catch (err) {
+            Logging.LogError(
+                `could not get list of ${TitleInstallmentStreamLike.name} from database using streamID:${streamID} --- ${err.message}`
+            )
+            throw new Error(errormsg.fallback)
+        }
     }
 
-    static GetCountByStreamID(streamID) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const streamLikes = await TitleInstallmentStreamLike.findAll({
-                    where: {
-                        streamID: streamID,
-                    },
-                })
+    static async GetCountByStreamID(streamID) {
+        try {
+            const streamLikes = await TitleInstallmentStreamLike.findAll({
+                where: {
+                    streamID: streamID,
+                },
+            })
 
-                if (streamLikes) {
-                    resolve(streamLikes.length)
-                } else {
-                    reject(new Error(`no likes exist for the streamID:${streamID}`))
-                }
-            } catch (err) {
-                Logging.LogError(
-                    `could not get list of ${TitleInstallmentStreamLike.name} from database using streamID:${streamID} --- ${err.message}`
-                )
-                reject(new Error(errormsg.fallback))
+            if (streamLikes) {
+                return streamLikes.length
+            } else {
+                throw new Error(`no likes exist for the streamID:${streamID}`)
             }
-        })
+        } catch (err) {
+            Logging.LogError(
+                `could not get list of ${TitleInstallmentStreamLike.name} from database using streamID:${streamID} --- ${err.message}`
+            )
+            throw new Error(errormsg.fallback)
+        }
     }
 
-    static GetByEmailANDStreamID(email, streamID) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const streamLikes = await TitleInstallmentStreamLike.findOne({
-                    where: {
-                        email: email,
-                        streamID: streamID,
-                    },
-                    attributes: { exclude: ["createdAt", "updatedAt"] },
-                })
-                if (streamLikes) {
-                    resolve(streamLikes.toJSON())
-                } else {
-                    reject(new Error(`email:${email} doesn't have streamID:${streamID} liked`))
-                }
-            } catch (err) {
-                Logging.LogError(
-                    `could not get ${TitleInstallmentStreamLike.name} from database using email:${email}|streamID:${streamID} --- ${err.message}`
-                )
-                reject(new Error(errormsg.fallback))
+    static async GetByEmailANDStreamID(email, streamID) {
+        try {
+            const streamLikes = await TitleInstallmentStreamLike.findOne({
+                where: {
+                    email: email,
+                    streamID: streamID,
+                },
+                attributes: { exclude: ["createdAt", "updatedAt"] },
+            })
+            if (streamLikes) {
+                return streamLikes.toJSON()
+            } else {
+                throw new Error(`email:${email} doesn't have streamID:${streamID} liked`)
             }
-        })
+        } catch {
+            throw new Error(errormsg.fallback)
+        }
     }
 }
 

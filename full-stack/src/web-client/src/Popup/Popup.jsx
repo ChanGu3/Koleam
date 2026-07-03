@@ -21,7 +21,7 @@ function Popup({ children, isOpen, onClickOutside, onClose, className = "", popu
         return () => {
             document.removeEventListener("mousedown", handleMouseDown)
         }
-    }, [isOpen, onClose])
+    }, [isOpen, onClose, onClickOutside, outsideOnDownCloses])
 
     if (!isOpen) return null
 

@@ -26,7 +26,7 @@ export async function UpdateLogStream(streamID, lastTimeStampInSeconds) {
         }
 
         return data
-    } catch (err) {
+    } catch {
         return null
     }
 }
@@ -48,14 +48,12 @@ export async function FetchLogStream(streamID) {
 
         const data = await response.json()
 
-        console.log(data)
-
         if (data.error) {
             return null
         }
 
         return data
-    } catch (err) {
+    } catch {
         return null
     }
 }
@@ -82,7 +80,7 @@ export async function FetchStreamByID(streamID) {
         }
 
         return data
-    } catch (err) {
+    } catch {
         return null
     }
 }
@@ -99,7 +97,7 @@ export async function DeleteStreamByID(streamID) {
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 
@@ -127,7 +125,7 @@ export async function AddStream({ titleID, installmentID, label, streamNumber, s
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 
@@ -144,7 +142,7 @@ export async function AddStream({ titleID, installmentID, label, streamNumber, s
  */
 export async function UpdateStream(
     streamID,
-    { label = null, streamNumber = null, synopsis = null, releaseDate = null, streamThumbnail = null }
+    { label = null, streamNumber: _s = null, synopsis = null, releaseDate = null, streamThumbnail = null }
 ) {
     const formData = new FormData()
     formData.append("streamData", JSON.stringify({ label, synopsis, releaseDate }))
@@ -160,7 +158,7 @@ export async function UpdateStream(
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 
@@ -189,7 +187,7 @@ export async function FetchSubtitleByStreamIDLabelExt(streamID, label, ext) {
         const data = await response.text()
 
         return data
-    } catch (err) {
+    } catch {
         return null
     }
 }
@@ -211,7 +209,7 @@ export async function AddStreamVideo(streamID, tempFileID) {
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 
@@ -230,7 +228,7 @@ export async function DeleteStreamVideo(streamID) {
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 
@@ -252,7 +250,7 @@ export async function UpdateStreamVideo(streamID, tempFileID) {
             },
         })
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 
@@ -309,7 +307,7 @@ export async function AddStreamAudio(streamID, label, streamIndexAudioOnly, temp
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 
@@ -328,7 +326,7 @@ export async function DeleteStreamAudio(streamID, label) {
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 
@@ -358,7 +356,7 @@ export async function UpdateStreamAudio(streamID, label, { newFile = null, newLa
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 
@@ -416,7 +414,7 @@ export async function AddStreamSubtitle(streamID, label, isCC, streamIndexSubtit
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 
@@ -435,7 +433,7 @@ export async function DeleteStreamSubtitle(streamID, label, isCC) {
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 
@@ -465,7 +463,7 @@ export async function UpdateStreamSubtitle(streamID, label, isCC, { newFile = nu
         })
 
         data = await response.json()
-    } catch (err) {
+    } catch {
         throw Error(ERROR_MESSAGES.SHARED.unexpected)
     }
 

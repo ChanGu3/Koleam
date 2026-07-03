@@ -24,8 +24,6 @@ export async function SignOut(routeName) {
     } catch (error) {
         throw error
     }
-
-    return false
 }
 
 /**
@@ -73,8 +71,6 @@ export async function MemberSignIn(email, password) {
     } catch (error) {
         throw error
     }
-
-    return false
 }
 
 /**
@@ -120,8 +116,6 @@ export async function MemberSignUp(email, password, passwordAgain) {
     } catch (error) {
         throw error
     }
-
-    return false
 }
 
 /**
@@ -170,6 +164,4 @@ export async function AdminSignIn(username, password) {
     } catch (error) {
         throw error
     }
-
-    return false
 }

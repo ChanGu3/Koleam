@@ -56,7 +56,7 @@ function Search() {
                             lastPage && lastPage.length === searchGetLimit ? allPages.length * searchGetLimit : undefined
                         }
                         pxCutoffHeight={128}
-                        ItemRenderer={({ index, dataItem }) => {
+                        ItemRenderer={({ index: _i, dataItem }) => {
                             return (
                                 <SeriesModule
                                     key={dataItem.id}

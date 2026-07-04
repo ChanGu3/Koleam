@@ -1,0 +1,2 @@
+- [ ] I carefully read and followed the respective contributing files for [contribution](https://github.com/ChanGu3/Koleam/blob/main/CONTRIBUTING.md) and agree to them.
+- [ ] I have added all the issue numbers (Ex. closes #28, #24, #43) that are being closed by this pull request including this description.

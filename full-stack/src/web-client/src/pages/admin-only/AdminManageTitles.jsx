@@ -29,6 +29,7 @@ import {
     CheckCircle,
     CircleCheck,
     Circle,
+    HardDriveDownload,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import SearchBarUI from "../../components/SearchBarUI.jsx"
@@ -909,7 +910,9 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios: _a, subtitl
     const queryClient = useQueryClient()
     const uploadID = useId()
     const [isLoadingFFmpeg, setLoadingFFmpeg] = useState(true)
-    const [isLoadingMediaFile, setIsLoadingMediaFile] = useState(true)
+    const [isUploadingMediaFile, setIsUploadingMediaFile] = useState(true)
+    const [startedUploadingMediaFile, setStartedUploadingMediaFile] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const [uploadProgress, setUploadProgress] = useState(0)
     const [mediaFailure, setMediaFailure] = useState(!file && !fileType)
     const [mediaFailureMessage, setMediaFailureMessage] = useState(null)
@@ -922,6 +925,8 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios: _a, subtitl
     const [selectedAudioMedia, setSelectedAudioMedia] = useState(null)
     const [selectedSubtitleMedia, setSelectedSubtitleMedia] = useState(null)
 
+    const tempFileUploadRef = useRef(new TempFileUpload(file, 1024 * 1024 * 5))
+    const ffmpegRef = useRef(new FFmpeg())
     useEffect(() => {
         if (!file || !fileType) {
             setMediaFailure(true)
@@ -930,8 +935,8 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios: _a, subtitl
     }, [file, fileType])
 
     const CancelUpload = useCallback(() => {
-        tempFileUpload.current &&
-            tempFileUpload.current
+        tempFileUploadRef.current &&
+            tempFileUploadRef.current
                 .CancelUpload()
                 .then(() => {
                     addError("Successfully Force Cancelled Upload On Server", 8)
@@ -941,140 +946,128 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios: _a, subtitl
                 })
     }, [addError])
 
-    const tempFileUpload = useRef(null)
-    const isInitialized = useRef(false)
-    const ffmpegRef = useRef(new FFmpeg())
+    async function RunAll(ffmpeg, tempFileUpload) {
+        setStartedUploadingMediaFile(true)
+        await ffmpeg.load({
+            coreURL: "/ffmpegwasm/ffmpeg-core.js",
+            wasmURL: "/ffmpegwasm/ffmpeg-core.wasm",
+        })
+        setLoadingFFmpeg(false)
+        await LoadMedia(ffmpeg)
+        StartUpload(tempFileUpload).then()
+    }
+
+    async function LoadMedia(ffmpeg) {
+        try {
+            const tempJSONFilename = `${uploadID}_probe_data.json`
+            const filename = `${uploadID}_${file.name.toLowerCase()}`
+
+            const array8 = await fetchFile(file)
+            await ffmpeg.writeFile(filename, array8)
+            await ffmpeg.ffprobe([
+                "-v",
+                "error",
+                "-show_format",
+                "-show_streams",
+                "-print_format",
+                "json",
+                filename,
+                "-o",
+                tempJSONFilename,
+            ])
+
+            const fileData = await ffmpeg.readFile(tempJSONFilename)
+            const jsonString = new TextDecoder().decode(fileData)
+            const probeData = JSON.parse(jsonString)
+
+            try {
+                await ffmpeg.deleteFile(filename)
+                await ffmpeg.deleteFile(tempJSONFilename)
+            } catch (err) {
+                console.warn("Error deleting temp files from ffmpeg (possibly already deleted)", err)
+            }
+
+            if (!probeData || !probeData.streams || probeData.streams.length <= 0) {
+                throw new Error("No streams exist in the media file select another file to upload")
+            }
+
+            let tempVideoMedia = null
+            let tempAudioMedia = []
+            let tempSubtitleMedia = []
+
+            probeData.streams.forEach((stream, index) => {
+                const label =
+                    stream.tags &&
+                    (stream.tags.title
+                        ? stream.tags.title
+                        : stream.tags.language
+                          ? stream.tags.language
+                          : `${stream.codec_type} ${index + 1}`)
+                if (!tempVideoMedia && stream.codec_type === "video") {
+                    tempVideoMedia = { videoIndex: 0 }
+                } else if (stream.codec_type === "audio") {
+                    tempAudioMedia.push({ audioIndex: tempAudioMedia.length, label: label, probeIndex: index })
+                } else if (stream.codec_type === "subtitle") {
+                    let isCC = stream.disposition && (stream.disposition["captions"] === 1 || stream.disposition["hearing_impaired"] === 1)
+                    const title = stream.tags && stream.tags.title ? stream.tags.title.toLowerCase() : ""
+                    isCC = isCC || title.includes("sdh") || title.includes("cc") || title.includes("closed caption")
+                    tempSubtitleMedia.push({ subtitleIndex: tempSubtitleMedia.length, label: label, isCC: isCC, probeIndex: index })
+                }
+            })
+
+            setVideoMedia(tempVideoMedia)
+            setAudioMedia(tempAudioMedia.length > 0 ? tempAudioMedia : null)
+            setSubtitleMedia(tempSubtitleMedia.length > 0 ? tempSubtitleMedia : null)
+            setSelectedVideoMedia(true)
+            setSelectedAudioMedia(new Array(tempAudioMedia.length).fill(true))
+            setSelectedSubtitleMedia(new Array(tempSubtitleMedia.length).fill(true))
+            return
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async function StartUpload(tempFileUpload) {
+        setIsUploadingMediaFile(true)
+
+        tempFileUpload
+            .StartUpload((percentDownloaded) => {
+                setUploadProgress(percentDownloaded)
+                if (percentDownloaded >= 100) {
+                    setIsUploadingMediaFile(false)
+                }
+            })
+            .catch((error) => {
+                setMediaFailure(true)
+                addError(`${error.message}`, 1)
+                setMediaFailureMessage(`${error.message}`)
+                console.error(error)
+                CancelUpload()
+            })
+    }
 
     useEffect(() => {
-        if (isInitialized.current) return
-
-        isInitialized.current = true
         const ffmpeg = ffmpegRef.current
+        const tempFileUpload = tempFileUploadRef.current
 
-        async function RunAll() {
-            await ffmpeg.load({
-                coreURL: "/ffmpegwasm/ffmpeg-core.js",
-                wasmURL: "/ffmpegwasm/ffmpeg-core.wasm",
-            })
-            setLoadingFFmpeg(false)
-            await LoadMedia(ffmpeg)
-            StartUpload().then()
-        }
-
-        async function LoadMedia(ffmpeg) {
-            try {
-                const tempJSONFilename = `${uploadID}_probe_data.json`
-                const filename = `${uploadID}_${file.name.toLowerCase()}`
-
-                const array8 = await fetchFile(file)
-                await ffmpeg.writeFile(filename, array8)
-                await ffmpeg.ffprobe([
-                    "-v",
-                    "error",
-                    "-show_format",
-                    "-show_streams",
-                    "-print_format",
-                    "json",
-                    filename,
-                    "-o",
-                    tempJSONFilename,
-                ])
-
-                const fileData = await ffmpeg.readFile(tempJSONFilename)
-                const jsonString = new TextDecoder().decode(fileData)
-                const probeData = JSON.parse(jsonString)
-
-                try {
-                    await ffmpeg.deleteFile(filename)
-                    await ffmpeg.deleteFile(tempJSONFilename)
-                } catch (err) {
-                    console.warn("Error deleting temp files from ffmpeg (possibly already deleted)", err)
-                }
-
-                if (!probeData || !probeData.streams || probeData.streams.length <= 0) {
-                    throw new Error("No streams exist in the media file select another file to upload")
-                }
-
-                let tempVideoMedia = null
-                let tempAudioMedia = []
-                let tempSubtitleMedia = []
-
-                probeData.streams.forEach((stream, index) => {
-                    const label =
-                        stream.tags &&
-                        (stream.tags.title
-                            ? stream.tags.title
-                            : stream.tags.language
-                              ? stream.tags.language
-                              : `${stream.codec_type} ${index + 1}`)
-                    if (!tempVideoMedia && stream.codec_type === "video") {
-                        tempVideoMedia = { videoIndex: 0 }
-                    } else if (stream.codec_type === "audio") {
-                        tempAudioMedia.push({ audioIndex: tempAudioMedia.length, label: label, probeIndex: index })
-                    } else if (stream.codec_type === "subtitle") {
-                        let isCC =
-                            stream.disposition && (stream.disposition["captions"] === 1 || stream.disposition["hearing_impaired"] === 1)
-                        const title = stream.tags && stream.tags.title ? stream.tags.title.toLowerCase() : ""
-                        isCC = isCC || title.includes("sdh") || title.includes("cc") || title.includes("closed caption")
-                        tempSubtitleMedia.push({ subtitleIndex: tempSubtitleMedia.length, label: label, isCC: isCC, probeIndex: index })
-                    }
-                })
-
-                setVideoMedia(tempVideoMedia)
-                setAudioMedia(tempAudioMedia.length > 0 ? tempAudioMedia : null)
-                setSubtitleMedia(tempSubtitleMedia.length > 0 ? tempSubtitleMedia : null)
-                setSelectedVideoMedia(true)
-                setSelectedAudioMedia(new Array(tempAudioMedia.length).fill(true))
-                setSelectedSubtitleMedia(new Array(tempSubtitleMedia.length).fill(true))
-                return
-            } catch (error) {
-                throw error
-            }
-        }
-
-        async function StartUpload() {
-            tempFileUpload.current = new TempFileUpload(file, 1024 * 1024 * 5)
-
-            tempFileUpload.current
-                .StartUpload((percentDownloaded) => {
-                    setUploadProgress(percentDownloaded)
-                    if (percentDownloaded >= 100) {
-                        setIsLoadingMediaFile(false)
-                    }
-                })
-                .catch((error) => {
-                    setMediaFailure(true)
-                    addError(`${error.message}`, 1)
-                    setMediaFailureMessage(`${error.message}`)
-                    console.error(error)
-                    CancelUpload()
-                })
-        }
-
-        RunAll().catch((err) => {
-            setMediaFailureMessage(err.message)
-            setMediaFailure(true)
-        })
-
-        const ffmpegTemp = ffmpegRef.current
         return () => {
-            setMediaFailure(false)
-
-            if (tempFileUpload.current) {
-                try {
-                    tempFileUpload.current.CancelUpload({ force: false })
-                } catch (e) {
-                    console.error("Error cancelling upload on unmount", e)
+            if (startedUploadingMediaFile) {
+                if (ffmpeg && ffmpeg.loaded) {
+                    try {
+                        ffmpeg.terminate()
+                    } catch (err) {
+                        console.error("Error terminating ffmpeg", err)
+                    }
                 }
-                tempFileUpload.current = null
-            }
 
-            const ffmpeg = ffmpegTemp
-            if (ffmpeg && ffmpeg.loaded) {
-                ffmpeg.terminate()
+                if (!isSubmitting && tempFileUpload && (tempFileUpload.UploadState === 1 || tempFileUpload.UploadState === 2)) {
+                    tempFileUpload.CancelUpload({ force: false }).catch((err) => {
+                        console.error("Error cancelling upload on unmount", err)
+                    })
+                }
             }
         }
-    }, [CancelUpload, addError, file, uploadID])
+    }, [startedUploadingMediaFile, isSubmitting])
 
     function isAllInfoFilled() {
         let isAllFilled = true
@@ -1144,6 +1137,8 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios: _a, subtitl
             return
         }
 
+        setIsSubmitting(true)
+
         if (subtitleMedia) {
             for (const [index, item] of subtitleMedia.entries()) {
                 if (selectedSubtitleMedia[index]) {
@@ -1153,7 +1148,7 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios: _a, subtitl
                             streamIndexSubtitleOnly: item.subtitleIndex,
                             isCC: item.isCC,
                             label: item.label,
-                            tempFileID: tempFileUpload.current.LastUploadData.id,
+                            tempFileID: tempFileUploadRef.current.LastUploadData.id,
                         })
                     } catch (err) {
                         console.error(err)
@@ -1170,7 +1165,7 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios: _a, subtitl
                             streamID: streamID,
                             streamIndexAudioOnly: item.audioIndex,
                             label: item.label,
-                            tempFileID: tempFileUpload.current.LastUploadData.id,
+                            tempFileID: tempFileUploadRef.current.LastUploadData.id,
                         })
                     } catch (err) {
                         console.error(err)
@@ -1182,9 +1177,9 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios: _a, subtitl
         if (videoMedia) {
             try {
                 if (video) {
-                    await updateVideoRender({ streamID: streamID, tempFileID: tempFileUpload.current.LastUploadData.id })
+                    await updateVideoRender({ streamID: streamID, tempFileID: tempFileUploadRef.current.LastUploadData.id })
                 } else {
-                    await addVideoRender({ streamID: streamID, tempFileID: tempFileUpload.current.LastUploadData.id })
+                    await addVideoRender({ streamID: streamID, tempFileID: tempFileUploadRef.current.LastUploadData.id })
                 }
             } catch (err) {
                 console.error(err)
@@ -1202,7 +1197,28 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios: _a, subtitl
         <div className="flex flex-col  gap-6 shadow-sharp-left shadow-black/70 bg-s-dark-primary w-[80lvw] h-fit max-h-[80vh] rounded-sm px-2 py-4 overflow-y-auto">
             <p className="text-center text-s-white font-semibold text-2xl w-[60lvw] self-center p-1 rounded-xs">Stream Media Upload</p>
 
-            {isLoadingFFmpeg && !mediaFailure ? (
+            {!startedUploadingMediaFile ? (
+                <>
+                    <div className="flex flex-col gap-4 p-2">
+                        <TitleButton
+                            className="w-48 h-16 self-center"
+                            icon={HardDriveDownload}
+                            label={"Upload"}
+                            onClick={() => {
+                                RunAll(ffmpegRef.current, tempFileUploadRef.current).catch((err) => {
+                                    setMediaFailureMessage(err.message)
+                                    setMediaFailure(true)
+                                })
+                            }}
+                        />
+                        <p className="text-center text-s-white text-md md:text-lg">
+                            To render new media on the server you must upload the file to the server first please hit upload to start the
+                            process! You can then modify the stream media attributes while the file is uploading to the server. Once the
+                            upload has completed you can then submit the media to be rendered on the server.
+                        </p>
+                    </div>
+                </>
+            ) : isLoadingFFmpeg && !mediaFailure ? (
                 <div className="flex flex-col gap-4 p-2">
                     <DefaultSpinner size={{ sm: 32, md: 48 }} />
                     <p className="text-center text-s-white text-md md:text-lg">wait a moment getting file info</p>
@@ -1210,7 +1226,7 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios: _a, subtitl
             ) : (
                 <>
                     <div className="flex flex-col p-2 items-center justify-center gap-6 w-full">
-                        {isLoadingMediaFile && !mediaFailure ? (
+                        {isUploadingMediaFile && !mediaFailure ? (
                             <>
                                 <p className="flex flex-col gap-1 text-center text-s-error md:w-[55lvw]">
                                     <span className="font-bold">ATTENTION!</span> The media file is currently uploading to the server you
@@ -1365,13 +1381,12 @@ function UploadMediaForm({ streamID, existingMedia: { video, audios: _a, subtitl
                                         <TitleButton
                                             label={"Cancel Media Upload"}
                                             onClick={() => {
-                                                CancelUpload()
                                                 onClose()
                                             }}
                                         />
                                     )}
 
-                                {!isLoadingMediaFile && (
+                                {!isUploadingMediaFile && (
                                     <TitleButton
                                         label={"Submit Selected Media"}
                                         onClick={async () => {
@@ -1545,20 +1560,13 @@ function StreamFormPlusVideo({ video, onDelete = () => {} }) {
 
     return (
         <div
-            className={`flex flex-col items-center justify-center gap-1 ${videoProgress ? "bg-s-white/40" : video ? "bg-s-success/80" : "bg-s-error/80"} text-s-white font-semibold p-2 rounded-sm`}
+            className={`flex flex-col items-center justify-center gap-1 ${videoProgress ? "bg-s-white/40" : video && video?.isDownloaded ? "bg-s-success/80" : "bg-s-error/80"} text-s-white font-semibold p-2 rounded-sm`}
         >
-            {videoProgress ? (
+            {!videoProgress ? (
                 <>
-                    <DefaultSpinner size={{ default: 64 }} />
-                    <p className="text-s-dark-tertiary">
-                        Processing Video Render: <span className="font-bold">{videoProgress.toFixed(2)}%</span>
-                    </p>
-                </>
-            ) : (
-                <>
-                    <p>{video ? "Video Is Uploaded!" : "No Video Uploaded"}</p>
-                    {video ? <Check size={36}></Check> : <CircleX size={36}></CircleX>}
-                    {video && (
+                    <p>{video && video?.isDownloaded ? "Video Is Uploaded!" : "No Video Uploaded"}</p>
+                    {video && video?.isDownloaded ? <Check size={36}></Check> : <CircleX size={36}></CircleX>}
+                    {video && video?.isDownloaded && (
                         <TitleButton
                             className={"bg-red-400/90 hover:bg-red-400/70 active:bg-red-400/50"}
                             defaultColor={false}
@@ -1569,6 +1577,13 @@ function StreamFormPlusVideo({ video, onDelete = () => {} }) {
                             Icon={Trash}
                         />
                     )}
+                </>
+            ) : (
+                <>
+                    <DefaultSpinner size={{ default: 64 }} />
+                    <p className="text-s-dark-tertiary">
+                        Processing Video Render: <span className="font-bold">{videoProgress.toFixed(2)}%</span>
+                    </p>
                 </>
             )}
         </div>
@@ -2987,8 +3002,11 @@ function InputSelectMulti({
 
 function InputBox({ isChecked, setIsChecked, children, className = "" }) {
     return (
-        <div className={`${className} w-fit flex flex-col md:flex-row items-center justify-between gap-2 p-2 cursor-pointer`}>
-            <button onClick={() => setIsChecked(!isChecked)}>
+        <div className={`${className} w-fit flex flex-col md:flex-row items-center justify-between gap-2 p-2`}>
+            <button
+                className="cursor-pointer"
+                onClick={() => setIsChecked(!isChecked)}
+            >
                 {isChecked ? (
                     <CircleCheck size={32} />
                 ) : (

@@ -52,7 +52,10 @@ jobs:
         run: |
           rm -rf ./$RELEASES_PATH
           mkdir -p ./$RELEASES_PATH
-          zip -r ./$RELEASES_PATH/koleam-${{ github.ref_name }}d${{ env.CURRENT_DATE }}.zip ./$DIST_PATH
+          OUTPUT_ZIP="$PWD/$RELEASES_PATH/koleam-${{ github.ref_name }}d${{ env.CURRENT_DATE }}.zip"
+          mv ./full-stack/dist ./full-stack/koleam-${{ github.ref_name }}d${{ env.CURRENT_DATE }}
+          cd ./full-stack
+          zip -r "$OUTPUT_ZIP" koleam-${{ github.ref_name }}d${{ env.CURRENT_DATE }}
 
       - name: create release
         uses: softprops/action-gh-release@v3

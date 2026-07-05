@@ -62,7 +62,7 @@ Thease are the main tools used on the frontend of course look at [package.json](
 
 <b>HLS:</b> Heavily simplifies the process of fetching the m3u8 files to serve the media files subtile, audio, and video. Dealing with buffering, auto resolution for less fortunate playback speeds, loading the different media files segments, and more.
 
-<b>LIBASS.wasm:</b> Used to draw more advanced subtitles, SubStation Alpha (.ssa) and Advanced SubStation (.ass) onto the canvas of the video player instead of the default .vtt subtitling.
+<b>LIBASS.wasm:</b> Also known as Octopus subtitles, used to draw more advanced subtitles, SubStation Alpha (.ssa) and Advanced SubStation (.ass) onto the canvas of the video player instead of the default .vtt subtitling.
 
 <b>Lucide React:</b> Definitely an honorable mention as it makes up much of the svg icons using their library for ease of use.
 

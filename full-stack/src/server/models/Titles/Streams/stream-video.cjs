@@ -250,15 +250,15 @@ class StreamVideo extends ModelExtension {
                             },
                             () => StreamVideo.#OnRenderCycleComplete(streamVideo)
                         )
-                        .then(async () => {
-                            // when using a transaction it is assumed master file is not written to automatically.
+                        .then(async () => {})
+                        .catch(async (err) => {
+                            await uploads_video.deleteVideo(streamID, stream.titleID, stream.installmentID, stream.label)
+                            Logging.LogError(`${err.message}`)
+                        })
+                        .finally(async () => {
                             if (!transaction) {
                                 await StreamVideo.#models.TitleInstallmentStream.RewriteMediaMasterFile(streamID)
                             }
-                        })
-                        .catch(async (err) => {
-                            await uploads_video.deleteVideo(stream.titleID, stream.installmentID, stream.label)
-                            Logging.LogError(`${err.message}`)
                         })
 
                     // when using a transaction it is assumed master file is not written to automatically.

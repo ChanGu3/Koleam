@@ -18,6 +18,10 @@ export class TempFileUpload {
         this.#firstUploadResolve = resolve
     })
 
+    get UploadState() {
+        return this.#uploadState
+    }
+
     get LastUploadData() {
         return this.#lastUploadData
     }

@@ -1,4 +1,4 @@
-import { defineConfig } from "vite"
+import { defineConfig, normalizePath } from "vite"
 import react from "@vitejs/plugin-react"
 import { viteStaticCopy } from "vite-plugin-static-copy"
 import path from "path"
@@ -11,11 +11,11 @@ const nodeModulesPathSrc = path.resolve(__dirname, "..", "node_modules")
 
 // octopus libass-wasm subtitles
 const libasswasmWorkerPathSrc = path.resolve(nodeModulesPathSrc, "libass-wasm", "dist", "js")
-const jassubWorkerPathDst = path.join("libasswasm")
+const jassubWorkerPathDst = "libasswasm"
 
 // ffmpeg probe extracting stream data from media files
 const ffmpegWorkerPathSrc = path.resolve(nodeModulesPathSrc, "@ffmpeg", "core", "dist", "esm")
-const ffmpegWorkerPathDst = path.join("ffmpegwasm")
+const ffmpegWorkerPathDst = "ffmpegwasm"
 
 export default defineConfig(({ mode }) => {
     const isAdminView = mode === "admin"
@@ -31,27 +31,27 @@ export default defineConfig(({ mode }) => {
             viteStaticCopy({
                 targets: [
                     {
-                        src: path.join(libasswasmWorkerPathSrc, "subtitles-octopus-worker.js"),
+                        src: normalizePath(path.join(libasswasmWorkerPathSrc, "subtitles-octopus-worker.js")),
                         dest: jassubWorkerPathDst,
                         rename: { stripBase: true },
                     },
                     {
-                        src: path.join(libasswasmWorkerPathSrc, "subtitles-octopus-worker-legacy.js"),
+                        src: normalizePath(path.join(libasswasmWorkerPathSrc, "subtitles-octopus-worker-legacy.js")),
                         dest: jassubWorkerPathDst,
                         rename: { stripBase: true },
                     },
                     {
-                        src: path.join(libasswasmWorkerPathSrc, "subtitles-octopus-worker.wasm"),
+                        src: normalizePath(path.join(libasswasmWorkerPathSrc, "subtitles-octopus-worker.wasm")),
                         dest: jassubWorkerPathDst,
                         rename: { stripBase: true },
                     },
                     {
-                        src: path.join(ffmpegWorkerPathSrc, "ffmpeg-core.js"),
+                        src: normalizePath(path.join(ffmpegWorkerPathSrc, "ffmpeg-core.js")),
                         dest: ffmpegWorkerPathDst,
                         rename: { stripBase: true },
                     },
                     {
-                        src: path.join(ffmpegWorkerPathSrc, "ffmpeg-core.wasm"),
+                        src: normalizePath(path.join(ffmpegWorkerPathSrc, "ffmpeg-core.wasm")),
                         dest: ffmpegWorkerPathDst,
                         rename: { stripBase: true },
                     },

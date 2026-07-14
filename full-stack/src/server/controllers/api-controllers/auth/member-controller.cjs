@@ -197,7 +197,7 @@ async function MemberGetTitleRating(req, res) {
     const { titleID } = req.params
 
     try {
-        const titleRate = await db.models.TitleRating.GetByEmailANDTitleID(req.session.member.email, titleID)
+        const titleRate = await db.models.TitleRating.GetAllByTitleIDetByEmailANDTitleID(req.session.member.email, titleID)
         res.status(200).json(titleRate)
     } catch (err) {
         res.status(500).json({ error: err.message })

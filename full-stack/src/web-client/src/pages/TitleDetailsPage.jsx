@@ -52,14 +52,14 @@ function TitleDetailsPage() {
 
     // Gets the Installments Data along with their streams
     useEffect(() => {
-        if (installments && installments[0]) {
-            SetStreamListGrid(installments[0].TitleInstallmentStreams)
+        if (installments && installments[currentInstallmentIndex]) {
+            SetStreamListGrid(installments[currentInstallmentIndex].TitleInstallmentStreams)
         }
-        if (memberIsSignedIn && installments && installments[0] && installments[0].TitleInstallmentStreams[0]) {
+        if (memberIsSignedIn && installments && installments[0] && installments[currentInstallmentIndex].TitleInstallmentStreams[0]) {
             const installment1stream1 = installments[0].TitleInstallmentStreams[0]
             SetMostRecentWatchedStreamData({ installment: installments[0], stream: installment1stream1 })
         }
-    }, [installments, memberIsSignedIn])
+    }, [installments, currentInstallmentIndex, memberIsSignedIn])
 
     function OnRatingChange(rating) {
         if (memberRating && rating === memberRating.rating) {

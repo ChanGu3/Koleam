@@ -62,7 +62,7 @@ export default defineConfig(({ mode }) => {
             exclude: ["@ffmpeg/ffmpeg", "@ffmpeg/util", "@ffmpeg/core"],
         },
         server: {
-            host: false, // Exposes the server to your local network
+            host: true, // Exposes the server to your local network
             fs: {
                 allow: [".."],
             },

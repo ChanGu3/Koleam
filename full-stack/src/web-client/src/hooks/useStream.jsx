@@ -144,11 +144,11 @@ export function useMemberUpdateLike(streamID) {
     })
 }
 
-export function useMemberGetWatchHistory(limit = 12, offset = 0, memberIsSignedIn) {
+export function useMemberGetWatchHistory(limit = 12, offset = 0, titleID = null, memberIsSignedIn) {
     return useQuery({
-        queryKey: ["USER", "WATCH_HISTORY"],
-        queryFn: async () => await FetchTitleInstallmentStreamHistory(limit, offset),
-        enabled: !!memberIsSignedIn,
+        queryKey: titleID ? ["USER", titleID, "WATCH_HISTORY"] : ["USER", "WATCH_HISTORY"],
+        queryFn: async () => await FetchTitleInstallmentStreamHistory(limit, offset, titleID),
+        enabled: !!memberIsSignedIn && titleID !== undefined,
     })
 }
 

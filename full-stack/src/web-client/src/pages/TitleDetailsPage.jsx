@@ -21,6 +21,7 @@ import { FILLED_ROUTES, FULL_ROUTES } from "../constants.js"
 import { Link } from "react-router-dom"
 import RatingStars from "../components/title/RatingStars.jsx"
 import RatingDropdown from "../components/title/RatingDropdown.jsx"
+import { useMemberGetWatchHistory } from "../hooks/useStream.jsx"
 
 function TitleDetailsPage() {
     const { titleID, label } = useParams()
@@ -41,6 +42,8 @@ function TitleDetailsPage() {
     const [isOldest, SetIsOldest] = useState(false)
     const [isShowingDetails, SetIsShowingDetails] = useState(false)
 
+    const { data: latestWatchedStream, error: isErrorLatestWatched } = useMemberGetWatchHistory(1, 0, titleID, memberIsSignedIn)
+
     // Gets the Basic Title Data
     useEffect(() => {
         document.title = `${label}`
@@ -55,11 +58,20 @@ function TitleDetailsPage() {
         if (installments && installments[currentInstallmentIndex]) {
             SetStreamListGrid(installments[currentInstallmentIndex].TitleInstallmentStreams)
         }
-        if (memberIsSignedIn && installments && installments[0] && installments[currentInstallmentIndex].TitleInstallmentStreams[0]) {
-            const installment1stream1 = installments[0].TitleInstallmentStreams[0]
-            SetMostRecentWatchedStreamData({ installment: installments[0], stream: installment1stream1 })
+
+        if (memberIsSignedIn) {
+            if (latestWatchedStream && latestWatchedStream.length == 1 && !isErrorLatestWatched) {
+                // gets members latest
+                SetMostRecentWatchedStreamData({ installment: latestWatchedStream[0].TitleInstallment, stream: latestWatchedStream[0] })
+            } else if (installments) {
+                // gets the first stream of the first installment with a stream
+                const firstInstallment = installments.find((el) => el.TitleInstallmentStreams.length > 0)
+                if (firstInstallment) {
+                    SetMostRecentWatchedStreamData({ installment: firstInstallment, stream: firstInstallment.TitleInstallmentStreams[0] })
+                }
+            }
         }
-    }, [installments, currentInstallmentIndex, memberIsSignedIn])
+    }, [latestWatchedStream, isErrorLatestWatched, installments, currentInstallmentIndex, memberIsSignedIn])
 
     function OnRatingChange(rating) {
         if (memberRating && rating === memberRating.rating) {

@@ -16,7 +16,7 @@ import useMember from "../../hooks/useMember.jsx"
 import { useMemberGetWatchHistory } from "../../hooks/useStream.jsx"
 
 function HomePage() {
-    const { memberisSignedIn } = useMember()
+    const { memberIsSignedIn } = useMember()
 
     const {
         data: dataCarousel,
@@ -32,7 +32,7 @@ function HomePage() {
         error: isErrorWatchHistory,
         isLoading: isLoadingWatchHistory,
         refetch: refetchWatchHistory,
-    } = useMemberGetWatchHistory(0, 12, memberisSignedIn)
+    } = useMemberGetWatchHistory(12, 0, null, memberIsSignedIn)
 
     const {
         data: dataShuffle,
@@ -48,10 +48,10 @@ function HomePage() {
     }, [])
 
     useEffect(() => {
-        if (memberisSignedIn) {
+        if (memberIsSignedIn) {
             refetchWatchHistory()
         }
-    }, [memberisSignedIn, refetchWatchHistory])
+    }, [memberIsSignedIn, refetchWatchHistory])
 
     return (
         <>

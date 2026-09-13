@@ -2,11 +2,14 @@
 
 import { ERROR_MESSAGES } from "../../../../shared/log-messages"
 
-export async function FetchTitleInstallmentStreamHistory(limit = 10, offset = 0) {
+export async function FetchTitleInstallmentStreamHistory(limit = 10, offset = 0, titleID = null) {
     try {
-        const response = await fetch(`/api/title/member/stream/lastwatched?latestStreamPerSeries=true&limit=${limit}&offset=${offset}`, {
-            method: "GET",
-        })
+        const response = await fetch(
+            `/api/title/member/stream/lastwatched?latestStreamPerTitle=true&limit=${limit}&offset=${offset}&titleID=${titleID}`,
+            {
+                method: "GET",
+            }
+        )
 
         if (!response.ok) {
             return null

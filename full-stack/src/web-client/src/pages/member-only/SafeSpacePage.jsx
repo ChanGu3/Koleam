@@ -27,7 +27,7 @@ function SafeSpacePage() {
         data: dataWatchHistory,
         error: isErrorWatchHistory,
         isLoading: isLoadingWatchHistory,
-    } = useMemberGetWatchHistory(12, 0, memberIsSignedIn)
+    } = useMemberGetWatchHistory(12, 0, null, memberIsSignedIn)
 
     useEffect(() => {
         document.title = "Safe Space"

@@ -169,7 +169,7 @@ class TitleInstallmentStreamWatchHistory extends ModelExtension {
 
     static async GetWatchHistoryByEmail(
         email,
-        { orderByDescDateLastedWatched = false, latestStreamPerSeries = false, titleID = null, limit = 10, offset = 0 } = {},
+        { orderByDescDateLastestWatched = false, latestStreamPerTitle = false, titleID = null, limit = 10, offset = 0 } = {},
         transaction = null
     ) {
         try {
@@ -181,13 +181,12 @@ class TitleInstallmentStreamWatchHistory extends ModelExtension {
                 offset: offset,
             }
 
-            let orderList = latestStreamPerSeries || orderByDescDateLastedWatched ? ["dateLastWatched", "DESC"] : undefined
+            let orderList = latestStreamPerTitle || orderByDescDateLastestWatched ? ["dateLastWatched", "DESC"] : undefined
             if (orderList) {
                 default_query.order = [orderList]
             }
 
-            // get a single stream that was the most recently watched of that title series
-            if (latestStreamPerSeries) {
+            if (latestStreamPerTitle) {
                 default_query.group = ["titleID"]
             }
 
@@ -200,8 +199,8 @@ class TitleInstallmentStreamWatchHistory extends ModelExtension {
                     include: [
                         "email",
                         "streamID",
-                        latestStreamPerSeries
-                            ? [Sequelize.fn("MAX", Sequelize.col("dateLastWatched")), "dateLastWatched"]
+                        latestStreamPerTitle
+                            ? [Sequelize.fn("MAX", Sequelize.col("dateLastWatched")), "dateLastWatched"] // get a single stream that was the most recently watched of that title series
                             : "dateLastWatched",
                         "lastTimeStampInSeconds",
                     ],
@@ -211,11 +210,12 @@ class TitleInstallmentStreamWatchHistory extends ModelExtension {
                         model: TitleInstallmentStreamWatchHistory.#models.TitleInstallmentStream,
                         required: true,
                         attributes: [],
+                        where: {},
                     },
                 ],
             }
 
-            // if titleID is provided we can get the watch history of specific titles
+            // if titleID is provided we can get the watch history of specific title
             if (titleID) {
                 original_title_installment_watch_history_query.include[0].where.titleID = titleID
             }

@@ -189,7 +189,7 @@ function TitleStream() {
             <main className="">
                 {/* Title Image */}
                 <Link to={{ pathname: FILLED_ROUTES.TITLE_PAGE(title.id, title.label) }}>
-                    <div className="relative w-full h-[16vw] ">
+                    <div className="relative w-full h-[6vw] ">
                         <div className="absolute top-0 left-0 z-2 w-full h-full flex justify-start items-center px-8">
                             <p className="text-lg md:text-4xl font-semibold text-s-white bg-black/60 rounded-sm px-4 py-2">{title.label}</p>
                         </div>

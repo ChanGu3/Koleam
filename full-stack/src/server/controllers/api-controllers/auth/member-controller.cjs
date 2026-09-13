@@ -57,10 +57,10 @@ async function MemberGetSingleMember(req, res) {
 }
 
 async function MemberGetAllTitleStreamHistory(req, res) {
-    const { latestStreamPerSeries, titleID, limit, offset } = req.query
+    const { latestStreamPerTitle, titleID, limit, offset } = req.query
 
     const query = {}
-    query.latestStreamPerSeries = latestStreamPerSeries === "true" ? true : false
+    query.latestStreamPerTitle = latestStreamPerTitle === "true" ? true : false
     query.titleID = titleID ? titleID : false
     query.limit = limit && !Number.isNaN(Number(limit)) ? Number(limit) : false
     query.offset = offset && !Number.isNaN(Number(offset)) ? Number(offset) : false
